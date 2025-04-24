@@ -6,30 +6,33 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 exports.handler = async (event) => {
-  const { message } = JSON.parse(event.body);
-
   try {
+    const { message } = JSON.parse(event.body);
+
     const completion = await openai.createChatCompletion({
       model: "gpt-4",
       messages: [
         {
           role: "system",
-          content: "You are a simulated EMS patient. Respond only as if you are the patient in a medical emergency. Do not explain your reasoning.",
+          content: "You are a simulated EMS patient. Answer only as the patient in a medical emergency.",
         },
         { role: "user", content: message },
       ],
     });
 
-    const reply = completion.data.choices[0].message.content;
+    const reply = completion.data.choices[0]?.message?.content;
+
+    console.log("GPT Reply:", reply);
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ reply }), // ✅ must be `reply`
+      body: JSON.stringify({ reply: reply || "No response from AI." }),
     };
   } catch (error) {
+    console.error("Function Error:", error.message);
     return {
       statusCode: 500,
-      body: JSON.stringify({ reply: "Error generating patient response." }),
+      body: JSON.stringify({ reply: "Server error while generating response." }),
     };
   }
 };
