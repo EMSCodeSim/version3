@@ -1,4 +1,5 @@
-[[redirects]]
-  from = "/scenarios/*"
-  to = "/scenarios/:splat"
-  status = 200
+[functions]
+  node_bundler = "esbuild"
+
+[build.environment]
+  NODE_VERSION = "18"
