@@ -12,21 +12,24 @@ exports.handler = async (event) => {
     const completion = await openai.createChatCompletion({
       model: "gpt-4",
       messages: [
-        { role: "system", content: "You are a simulated EMS patient. Only respond as a patient in a medical scenario." },
-        { role: "user", content: message }
-      ]
+        {
+          role: "system",
+          content: "You are a simulated EMS patient. Respond only as if you are the patient in a medical emergency. Do not explain your reasoning.",
+        },
+        { role: "user", content: message },
+      ],
     });
 
     const reply = completion.data.choices[0].message.content;
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ reply })  // ✅ Must use 'reply'
+      body: JSON.stringify({ reply }), // ✅ must be `reply`
     };
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ reply: "Error generating patient response." })
+      body: JSON.stringify({ reply: "Error generating patient response." }),
     };
   }
 };
