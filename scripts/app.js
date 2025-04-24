@@ -8,9 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   startBtn.addEventListener("click", () => {
     fetch("/scenarios/chest_pain_002/dispatch.txt")
       .then(response => {
-        if (!response.ok) {
-          throw new Error("Dispatch file not found.");
-        }
+        if (!response.ok) throw new Error("Dispatch file not found.");
         return response.text();
       })
       .then(data => {
@@ -28,14 +26,12 @@ document.addEventListener("DOMContentLoaded", () => {
   sendBtn.addEventListener("click", handleUserInput);
 
   userInput.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-      handleUserInput();
-    }
+    if (event.key === "Enter") handleUserInput();
   });
 
   function handleUserInput() {
     const text = userInput.value.trim();
-    if (text === "") return;
+    if (!text) return;
 
     const userBubble = document.createElement("p");
     userBubble.textContent = `You: ${text}`;
@@ -49,11 +45,13 @@ document.addEventListener("DOMContentLoaded", () => {
     })
       .then(res => res.json())
       .then(data => {
+        console.log("AI Response:", data); // Debugging
         const responseBubble = document.createElement("p");
         responseBubble.textContent = `Patient: ${data.reply}`;
         display.appendChild(responseBubble);
       })
       .catch(err => {
+        console.error("Fetch Error:", err);
         const errorBubble = document.createElement("p");
         errorBubble.textContent = "Error getting response from patient.";
         display.appendChild(errorBubble);
