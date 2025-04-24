@@ -1,7 +1,7 @@
 const { Configuration, OpenAIApi } = require("openai");
 
 const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
 
@@ -18,9 +18,10 @@ exports.handler = async (event) => {
     });
 
     const reply = completion.data.choices[0].message.content;
+
     return {
       statusCode: 200,
-      body: JSON.stringify({ reply })
+      body: JSON.stringify({ reply })  // ✅ Must use 'reply'
     };
   } catch (error) {
     return {
