@@ -1,0 +1,4 @@
+[[redirects]]
+  from = "/scenarios/*"
+  to = "/scenarios/:splat"
+  status = 200
