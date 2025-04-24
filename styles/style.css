@@ -1,0 +1,52 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #e0f0ff;
+  margin: 0;
+  padding: 0;
+}
+
+header {
+  background-color: white;
+  padding: 10px;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  border-bottom: 2px solid #ccc;
+}
+
+button {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+main {
+  padding: 20px;
+}
+
+.display-box {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  min-height: 200px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+#userInputArea {
+  display: flex;
+  gap: 10px;
+}
+
+#userInput {
+  flex: 1;
+  padding: 10px;
+  font-size: 16px;
+}
+
+#sendBtn {
+  padding: 10px 20px;
+  font-size: 16px;
+}
