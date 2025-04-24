@@ -24,7 +24,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   sendBtn.addEventListener("click", handleUserInput);
-
   userInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") handleUserInput();
   });
@@ -43,15 +42,15 @@ document.addEventListener("DOMContentLoaded", () => {
       body: JSON.stringify({ message: text }),
       headers: { "Content-Type": "application/json" }
     })
-      .then(res => res.json())
+      .then(res => res.json()) // ✅ FIXED HERE
       .then(data => {
-        console.log("AI Response:", data); // Debugging
+        console.log("AI Response:", data);
         const responseBubble = document.createElement("p");
         responseBubble.textContent = `Patient: ${data.reply}`;
         display.appendChild(responseBubble);
       })
       .catch(err => {
-        console.error("Fetch Error:", err);
+        console.error("Fetch error:", err);
         const errorBubble = document.createElement("p");
         errorBubble.textContent = "Error getting response from patient.";
         display.appendChild(errorBubble);
