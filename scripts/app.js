@@ -22,4 +22,26 @@ document.addEventListener("DOMContentLoaded", () => {
   endBtn.addEventListener("click", () => {
     display.innerHTML = "<p>Scenario ended. Thank you for participating.</p>";
   });
+
+  const userInput = document.getElementById("userInput");
+  const sendBtn = document.getElementById("sendBtn");
+
+  sendBtn.addEventListener("click", handleUserInput);
+
+  userInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      handleUserInput();
+    }
+  });
+
+  function handleUserInput() {
+    const text = userInput.value.trim();
+    if (text === "") return;
+
+    const bubble = document.createElement("p");
+    bubble.textContent = `You: ${text}`;
+    display.appendChild(bubble);
+
+    userInput.value = "";
+  }
 });
