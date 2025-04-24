@@ -14,7 +14,7 @@ exports.handler = async (event) => {
       messages: [
         {
           role: "system",
-          content: "You are a simulated EMS patient. Answer only as the patient in a medical emergency.",
+          content: "You are a simulated EMS patient. Answer only as a patient during a medical emergency. Respond briefly and naturally as if you're in distress.",
         },
         { role: "user", content: message },
       ],
