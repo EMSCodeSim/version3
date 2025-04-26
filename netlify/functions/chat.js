@@ -1,11 +1,11 @@
-const { Configuration, OpenAIApi } = require("openai");
+import { Configuration, OpenAIApi } from "openai";
 
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   try {
     const { message } = JSON.parse(event.body);
 
@@ -14,7 +14,7 @@ exports.handler = async (event) => {
       messages: [
         {
           role: "system",
-          content: "You are a simulated EMS patient. Answer only as a patient during a medical emergency. Respond briefly and naturally as if you're in distress.",
+          content: "You are a simulated EMS patient. Respond only as the patient in a medical emergency. Respond briefly and naturally.",
         },
         { role: "user", content: message },
       ],
@@ -28,6 +28,7 @@ exports.handler = async (event) => {
       statusCode: 200,
       body: JSON.stringify({ reply: reply || "No response from AI." }),
     };
+
   } catch (error) {
     console.error("Function Error:", error.message);
     return {
