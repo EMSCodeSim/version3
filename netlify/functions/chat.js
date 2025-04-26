@@ -1,11 +1,11 @@
-import { Configuration, OpenAIApi } from "openai";
+const { Configuration, OpenAIApi } = require("openai");
 
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
 
-export const handler = async (event) => {
+exports.handler = async (event) => {
   try {
     const { message } = JSON.parse(event.body);
 
@@ -14,7 +14,7 @@ export const handler = async (event) => {
       messages: [
         {
           role: "system",
-          content: "You are a simulated EMS patient. Respond only as the patient in a medical emergency. Respond briefly and naturally.",
+          content: "You are a simulated EMS patient. Answer only as the patient during a medical emergency. Respond briefly and naturally.",
         },
         { role: "user", content: message },
       ],
