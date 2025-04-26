@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const userInput = document.getElementById("userInput");
   const sendBtn = document.getElementById("sendBtn");
 
+  // Load dispatch text when Start Scenario is clicked
   startBtn.addEventListener("click", () => {
     fetch("/scenarios/chest_pain_002/dispatch.txt")
       .then(response => {
@@ -19,15 +20,22 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   });
 
+  // Clear display when End Scenario is clicked
   endBtn.addEventListener("click", () => {
     display.innerHTML = "<p>Scenario ended. Thank you for participating.</p>";
   });
 
+  // Send button click event
   sendBtn.addEventListener("click", handleUserInput);
+
+  // Enter key event
   userInput.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") handleUserInput();
+    if (event.key === "Enter") {
+      handleUserInput();
+    }
   });
 
+  // Handle sending user input to AI
   function handleUserInput() {
     const text = userInput.value.trim();
     if (!text) return;
@@ -39,12 +47,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     fetch("/.netlify/functions/chat", {
       method: "POST",
-      body: JSON.stringify({ message: text }),
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text })
     })
-      .then(res => res.json()) // ✅ FIXED HERE
+      .then(res => res.json())
       .then(data => {
-        console.log("AI Response:", data);
+        console.log("AI Response:", data); // Debug output
         const responseBubble = document.createElement("p");
         responseBubble.textContent = `Patient: ${data.reply}`;
         display.appendChild(responseBubble);
