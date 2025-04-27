@@ -1,26 +1,25 @@
-const { Configuration, OpenAIApi } = require("openai");
+const OpenAI = require("openai");
 
-const configuration = new Configuration({
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-const openai = new OpenAIApi(configuration);
 
 exports.handler = async (event) => {
   try {
     const { message } = JSON.parse(event.body);
 
-    const completion = await openai.createChatCompletion({
+    const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
         {
           role: "system",
-          content: "You are a simulated EMS patient. Answer only as the patient during a medical emergency. Respond briefly and naturally.",
+          content: "You are a simulated EMS patient. Respond only as the patient during a medical emergency. Respond briefly and naturally.",
         },
         { role: "user", content: message },
       ],
     });
 
-    const reply = completion.data.choices[0]?.message?.content;
+    const reply = completion.choices[0]?.message?.content;
 
     console.log("GPT Reply:", reply);
 
