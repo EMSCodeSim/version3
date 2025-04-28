@@ -83,7 +83,7 @@
 </header>
 
 <div id="chat-display">
-  <!-- Chat messages appear here -->
+  <!-- Chat messages will appear here -->
 </div>
 
 <div id="input-area">
@@ -91,7 +91,8 @@
   <button id="send-btn" onclick="sendMessage()">Send</button>
 </div>
 
-<script src="app.js"></script>
+<!-- IMPORTANT: Load app.js AFTER page content -->
+<script src="./app.js" defer></script>
 
 </body>
 </html>
