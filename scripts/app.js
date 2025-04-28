@@ -1,3 +1,18 @@
+// ========= Global Variables =========
+let hardcodedResponses = [];
+let unknownQuestions = [];
+
+// ========= Load Hardcoded Responses at Start =========
+fetch('./scenarios/chest_pain_002/chat_log.json')
+  .then(response => response.json())
+  .then(data => {
+    hardcodedResponses = data;
+    console.log('Hardcoded responses loaded.');
+  })
+  .catch(error => {
+    console.error('Failed to load hardcoded responses:', error);
+  });
+
 // ========= Start Scenario =========
 function startScenario() {
   console.log('Scenario started.');
@@ -35,6 +50,11 @@ function showScenePhoto(photoPath) {
 function endScenario() {
   console.log('Scenario ended.');
   addMessageToChat('system', 'Scenario ended. Please review your actions.');
+
+  // Save unknown questions if any
+  if (unknownQuestions.length > 0) {
+    downloadUnknownQuestions();
+  }
 }
 
 // ========= Send Message =========
@@ -82,38 +102,63 @@ function addMessageToChat(sender, message) {
   chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
-// ========= Process User Input (Fixed) =========
+// ========= Process User Input (Hardcoded First, Then AI) =========
 function processUserInput(message) {
-  console.log(`Sending message to ChatGPT backend: ${message}`);
+  console.log(`User input: ${message}`);
 
-  fetch('/.netlify/functions/chat', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ content: message })
-  })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error('Failed to get response from Chat function.');
-    }
-    return response.json();
-  })
-  .then(data => {
-    if (data) {
-      if (data.patientReply) {
-        addMessageToChat('patient', data.patientReply);
-      } else if (data.proctorReply) {
-        addMessageToChat('proctor', data.proctorReply);
-      } else {
-        addMessageToChat('system', 'No valid response from AI.');
+  const normalizedMessage = message.trim().toLowerCase();
+  const matchedResponse = hardcodedResponses.find(entry => entry.userQuestion.trim().toLowerCase() === normalizedMessage);
+
+  if (matchedResponse) {
+    console.log('Matched hardcoded response.');
+    addMessageToChat(matchedResponse.role, matchedResponse.aiResponse);
+  } else {
+    console.log('No hardcoded match found. Logging and sending to ChatGPT backend.');
+
+    // Log unknown question
+    unknownQuestions.push({
+      userQuestion: message,
+      timestamp: new Date().toISOString()
+    });
+
+    fetch('/.netlify/functions/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ content: message })
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to get response from Chat function.');
       }
-    }
-  })
-  .catch(error => {
-    console.error(error);
-    addMessageToChat('system', 'Error contacting AI service.');
-  });
+      return response.json();
+    })
+    .then(data => {
+      if (data) {
+        if (data.patientReply) {
+          addMessageToChat('patient', data.patientReply);
+        } else if (data.proctorReply) {
+          addMessageToChat('proctor', data.proctorReply);
+        } else {
+          addMessageToChat('system', 'No valid AI response.');
+        }
+      }
+    })
+    .catch(error => {
+      console.error(error);
+      addMessageToChat('system', 'Error contacting AI service.');
+    });
+  }
+}
+
+// ========= Download Unknown Questions =========
+function downloadUnknownQuestions() {
+  const blob = new Blob([JSON.stringify(unknownQuestions, null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'unknown_questions.json';
+  link.click();
 }
 
 // ========= Triggers =========
