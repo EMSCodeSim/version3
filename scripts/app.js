@@ -5,37 +5,42 @@ document.addEventListener("DOMContentLoaded", () => {
   const userInput = document.getElementById("userInput");
   const sendBtn = document.getElementById("sendBtn");
 
-  // Load dispatch text when Start Scenario is clicked
+  let patientInfo = ""; // store hidden patient info here
+
   startBtn.addEventListener("click", () => {
     fetch("/scenarios/chest_pain_002/dispatch.txt")
       .then(response => {
         if (!response.ok) throw new Error("Dispatch file not found.");
         return response.text();
       })
-      .then(data => {
-        display.innerHTML = `<strong>Dispatch:</strong> ${data}`;
+      .then(dispatchData => {
+        display.innerHTML = `<strong>Dispatch:</strong> ${dispatchData}`;
+        // After dispatch loads, also load patient file
+        return fetch("/scenarios/chest_pain_002/patient.txt");
+      })
+      .then(response => {
+        if (!response.ok) throw new Error("Patient file not found.");
+        return response.text();
+      })
+      .then(patientData => {
+        patientInfo = patientData; // store it for use when sending to AI
+        console.log("Loaded patient info:", patientInfo); // Debug
       })
       .catch(error => {
-        display.innerHTML = `<span style='color:red;'>Error loading dispatch: ${error.message}</span>`;
+        console.error("Loading error:", error);
+        display.innerHTML = `<span style='color:red;'>Error loading scenario: ${error.message}</span>`;
       });
   });
 
-  // Clear display when End Scenario is clicked
   endBtn.addEventListener("click", () => {
     display.innerHTML = "<p>Scenario ended. Thank you for participating.</p>";
   });
 
-  // Send button click event
   sendBtn.addEventListener("click", handleUserInput);
-
-  // Enter key event
   userInput.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-      handleUserInput();
-    }
+    if (event.key === "Enter") handleUserInput();
   });
 
-  // Handle sending user input to AI
   function handleUserInput() {
     const text = userInput.value.trim();
     if (!text) return;
@@ -48,11 +53,13 @@ document.addEventListener("DOMContentLoaded", () => {
     fetch("/.netlify/functions/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text })
+      body: JSON.stringify({ 
+        message: text, 
+        patientInfo: patientInfo // Pass patient data to backend
+      })
     })
       .then(res => res.json())
       .then(data => {
-        console.log("AI Response:", data); // Debug output
         const responseBubble = document.createElement("p");
         responseBubble.textContent = `Patient: ${data.reply}`;
         display.appendChild(responseBubble);
