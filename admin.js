@@ -54,7 +54,7 @@ function deleteTrigger(index) {
   renderTriggers();
 }
 
-// Render on page load
+// Render on admin page load
 if (document.getElementById('trigger-manager')) {
   renderTriggers();
 }
