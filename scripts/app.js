@@ -4,8 +4,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const display = document.getElementById("scenarioDisplay");
   const userInput = document.getElementById("userInput");
   const sendBtn = document.getElementById("sendBtn");
+  const downloadLogBtn = document.getElementById("downloadLogBtn");
 
   let patientInfo = "";
+  let chatLog = []; // ✅ New log array to track conversation
 
   startBtn.addEventListener("click", () => {
     fetch("/scenarios/chest_pain_002/dispatch.txt")
@@ -59,10 +61,12 @@ document.addEventListener("DOMContentLoaded", () => {
     display.appendChild(userBubble);
     userInput.value = "";
 
+    const role = isProctorQuestion(text) ? "proctor" : "patient";
+
     const payload = {
       message: text,
       patientInfo: patientInfo,
-      role: isProctorQuestion(text) ? "proctor" : "patient"
+      role: role
     };
 
     fetch("/.netlify/functions/chat", {
@@ -73,8 +77,15 @@ document.addEventListener("DOMContentLoaded", () => {
       .then(res => res.json())
       .then(data => {
         const responseBubble = document.createElement("p");
-        responseBubble.textContent = `${payload.role === "proctor" ? "Proctor" : "Patient"}: ${data.reply}`;
+        responseBubble.textContent = `${role === "proctor" ? "Proctor" : "Patient"}: ${data.reply}`;
         display.appendChild(responseBubble);
+
+        // ✅ Log this question/response
+        chatLog.push({
+          userQuestion: text,
+          aiResponse: data.reply,
+          role: role
+        });
       })
       .catch(err => {
         console.error("Fetch error:", err);
@@ -82,5 +93,19 @@ document.addEventListener("DOMContentLoaded", () => {
         errorBubble.textContent = "Error getting response.";
         display.appendChild(errorBubble);
       });
+  }
+
+  // ✅ New: Download the chat log as JSON
+  if (downloadLogBtn) {
+    downloadLogBtn.addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(chatLog, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "chat_log.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
   }
 });
