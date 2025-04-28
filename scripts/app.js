@@ -1,4 +1,18 @@
-// ========== Send Message ==========
+// ========= App Logic =========
+
+// Start Scenario
+function startScenario() {
+  console.log('Scenario started.');
+  addMessageToChat('system', 'Dispatch information appears here.');
+}
+
+// End Scenario
+function endScenario() {
+  console.log('Scenario ended.');
+  addMessageToChat('system', 'Scenario ended. Please review your actions.');
+}
+
+// Send Message
 function sendMessage() {
   const userInput = document.getElementById('user-input');
   const userMessage = userInput.value.trim();
@@ -10,24 +24,12 @@ function sendMessage() {
   userInput.value = '';
 }
 
-// ========== Start Scenario ==========
-function startScenario() {
-  console.log('Scenario started.');
-  addMessageToChat('system', 'Dispatch information appears here.');
-}
-
-// ========== End Scenario ==========
-function endScenario() {
-  console.log('Scenario ended.');
-  addMessageToChat('system', 'Scenario ended. Please review your actions.');
-}
-
-// ========== Open Admin ==========
+// Open Admin
 function openAdmin() {
   window.open('admin.html', '_blank');
 }
 
-// ========== Display Chat Message ==========
+// Add Message to Chat
 function addMessageToChat(sender, message) {
   const chatDisplay = document.getElementById('chat-display');
   const messageDiv = document.createElement('div');
@@ -47,19 +49,18 @@ function addMessageToChat(sender, message) {
   chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
-// ========== Process User Input (Placeholder) ==========
+// Placeholder for AI input
 function processUserInput(message) {
-  console.log(`Processing user input: ${message}`);
-  // GPT AI handling goes here
+  console.log(`Processing input: ${message}`);
 }
 
-// ========== Trigger Checking ==========
+// Triggers
 let triggers = JSON.parse(localStorage.getItem('triggers')) || [];
 
 function checkForTrigger(userMessage) {
   for (let trigger of triggers) {
     if (userMessage.toLowerCase().includes(trigger.pattern.toLowerCase())) {
-      console.log(`Trigger found for: "${trigger.pattern}"`);
+      console.log(`Trigger found: ${trigger.pattern}`);
       for (let action of trigger.actions) {
         handleTriggerAction(action);
       }
@@ -83,3 +84,9 @@ function handleTriggerAction(action) {
     alert('Patient photo would display!');
   }
 }
+
+// Expose to global window so buttons can find them
+window.startScenario = startScenario;
+window.endScenario = endScenario;
+window.sendMessage = sendMessage;
+window.openAdmin = openAdmin;
