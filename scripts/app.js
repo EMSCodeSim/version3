@@ -72,7 +72,7 @@ function openAdmin() {
 }
 
 // ========= Add Message to Chat =========
-function addMessageToChat(sender, message) {
+function addMessageToChat(sender, message, voice = null) {
   const chatDisplay = document.getElementById('chat-display');
   const messageDiv = document.createElement('div');
   messageDiv.style.marginBottom = "10px";
@@ -87,12 +87,12 @@ function addMessageToChat(sender, message) {
     messageDiv.style.textAlign = "left";
     messageDiv.style.color = "blue";
     messageDiv.innerHTML = `<strong>Patient:</strong> ${message}`;
-    speakTextTTS(message, 'patient');
+    speakTextTTS(message, 'patient', voice);
   } else if (sender === 'proctor') {
     messageDiv.style.textAlign = "left";
     messageDiv.style.color = "gray";
     messageDiv.innerHTML = `<strong>Proctor:</strong> ${message}`;
-    speakTextTTS(message, 'proctor');
+    speakTextTTS(message, 'proctor', voice);
   } else {
     messageDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
   }
@@ -107,7 +107,7 @@ function processUserInput(message) {
   const match = hardcodedResponses.find(entry => entry.userQuestion.trim().toLowerCase() === normalizedMessage);
 
   if (match) {
-    addMessageToChat(match.role, match.aiResponse);
+    addMessageToChat(match.role, match.aiResponse, match.voice || null);
   } else {
     console.log('No hardcoded match. Sending to AI...');
 
@@ -198,9 +198,9 @@ function launchAppTrigger(trigger) {
   alert('Simulated App Launch');
 }
 
-// ========= Speak Text with Real TTS-1 Voices (Randomized for Patients) =========
-async function speakTextTTS(text, role) {
-  const voice = role === 'patient' ? 'fable' : 'shimmer';
+// ========= Speak Text with Real TTS-1 Voices =========
+async function speakTextTTS(text, role, customVoice = null) {
+  const voice = customVoice || (role === 'patient' ? 'fable' : 'shimmer');
 
   const response = await fetch('/.netlify/functions/tts', {
     method: 'POST',
