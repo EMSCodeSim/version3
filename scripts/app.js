@@ -54,6 +54,9 @@ function addMessageToChat(sender, message) {
   } else if (sender === 'system') {
     messageDiv.style.textAlign = "center";
     messageDiv.innerHTML = `<em>${message}</em>`;
+  } else if (sender === 'bot') {
+    messageDiv.style.textAlign = "left";
+    messageDiv.innerHTML = `<strong>Bot:</strong> ${message}`;
   } else {
     messageDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
   }
@@ -62,10 +65,34 @@ function addMessageToChat(sender, message) {
   chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
-// ========= Placeholder for Processing User Input (GPT or logic) =========
+// ========= Process User Input (send to Netlify function) =========
 function processUserInput(message) {
-  console.log(`Processing user input: ${message}`);
-  // Your AI call or simulation processing goes here
+  console.log(`Sending message to ChatGPT backend: ${message}`);
+
+  fetch('/.netlify/functions/chat', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ userMessage: message })
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Failed to get response from Chat function.');
+    }
+    return response.json();
+  })
+  .then(data => {
+    if (data && data.botReply) {
+      addMessageToChat('bot', data.botReply);
+    } else {
+      addMessageToChat('system', 'No valid response from AI.');
+    }
+  })
+  .catch(error => {
+    console.error(error);
+    addMessageToChat('system', 'Error contacting AI service.');
+  });
 }
 
 // ========= Triggers =========
@@ -99,7 +126,7 @@ function handleTriggerAction(action) {
   }
 }
 
-// ========= Expose Functions to Window (for buttons) =========
+// ========= Expose Functions to Window (so buttons can find them) =========
 window.startScenario = startScenario;
 window.endScenario = endScenario;
 window.sendMessage = sendMessage;
