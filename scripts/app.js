@@ -7,7 +7,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const downloadLogBtn = document.getElementById("downloadLogBtn");
 
   let patientInfo = "";
-  let chatLog = []; // ✅ New log array to track conversation
+  let chatLog = []; // stores log of current chat
+  let hardcodedAnswers = []; // ✅ load hardcoded answers
+
+  // Load hardcoded answers from file
+  fetch("/chat_log.json")
+    .then(response => response.json())
+    .then(data => {
+      hardcodedAnswers = data;
+      console.log("Hardcoded answers loaded:", hardcodedAnswers);
+    })
+    .catch(error => console.error("Error loading hardcoded answers:", error));
 
   startBtn.addEventListener("click", () => {
     fetch("/scenarios/chest_pain_002/dispatch.txt")
@@ -52,6 +62,14 @@ document.addEventListener("DOMContentLoaded", () => {
     return proctorKeywords.some(keyword => text.toLowerCase().includes(keyword));
   }
 
+  function findHardcodedAnswer(text, role) {
+    text = text.toLowerCase();
+    const match = hardcodedAnswers.find(entry => 
+      entry.userQuestion.toLowerCase() === text && entry.role === role
+    );
+    return match ? match.aiResponse : null;
+  }
+
   function handleUserInput() {
     const text = userInput.value.trim();
     if (!text) return;
@@ -63,39 +81,58 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const role = isProctorQuestion(text) ? "proctor" : "patient";
 
-    const payload = {
-      message: text,
-      patientInfo: patientInfo,
-      role: role
-    };
+    // ✅ First try to find a hardcoded answer
+    const hardcodedResponse = findHardcodedAnswer(text, role);
 
-    fetch("/.netlify/functions/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    })
-      .then(res => res.json())
-      .then(data => {
-        const responseBubble = document.createElement("p");
-        responseBubble.textContent = `${role === "proctor" ? "Proctor" : "Patient"}: ${data.reply}`;
-        display.appendChild(responseBubble);
+    if (hardcodedResponse) {
+      console.log("Hardcoded response found:", hardcodedResponse);
+      const responseBubble = document.createElement("p");
+      responseBubble.textContent = `${role === "proctor" ? "Proctor" : "Patient"}: ${hardcodedResponse}`;
+      display.appendChild(responseBubble);
 
-        // ✅ Log this question/response
-        chatLog.push({
-          userQuestion: text,
-          aiResponse: data.reply,
-          role: role
-        });
-      })
-      .catch(err => {
-        console.error("Fetch error:", err);
-        const errorBubble = document.createElement("p");
-        errorBubble.textContent = "Error getting response.";
-        display.appendChild(errorBubble);
+      chatLog.push({
+        userQuestion: text,
+        aiResponse: hardcodedResponse,
+        role: role,
+        source: "hardcoded"
       });
+
+    } else {
+      console.log("No hardcoded response. Sending to GPT-4 Turbo...");
+      // Fall back to GPT-4 if no hardcoded answer
+      const payload = {
+        message: text,
+        patientInfo: patientInfo,
+        role: role
+      };
+
+      fetch("/.netlify/functions/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+        .then(res => res.json())
+        .then(data => {
+          const responseBubble = document.createElement("p");
+          responseBubble.textContent = `${role === "proctor" ? "Proctor" : "Patient"}: ${data.reply}`;
+          display.appendChild(responseBubble);
+
+          chatLog.push({
+            userQuestion: text,
+            aiResponse: data.reply,
+            role: role,
+            source: "gpt"
+          });
+        })
+        .catch(err => {
+          console.error("Fetch error:", err);
+          const errorBubble = document.createElement("p");
+          errorBubble.textContent = "Error getting response.";
+          display.appendChild(errorBubble);
+        });
+    }
   }
 
-  // ✅ New: Download the chat log as JSON
   if (downloadLogBtn) {
     downloadLogBtn.addEventListener("click", () => {
       const blob = new Blob([JSON.stringify(chatLog, null, 2)], { type: "application/json" });
