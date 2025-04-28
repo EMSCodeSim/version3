@@ -9,16 +9,16 @@ exports.handler = async (event) => {
     const { message, patientInfo } = JSON.parse(event.body);
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4-turbo",   // ✅ Using GPT-4 Turbo (correct and fast)
       messages: [
         {
           role: "system",
-          content: `You will role-play as a realistic patient in a medical emergency based on the following information: ${patientInfo}. 
+          content: `You will role-play as a realistic patient in a medical emergency based on the following information: ${patientInfo}.
           Only answer questions the user directly asks. 
           Do not guide, coach, or volunteer information. 
           Use emotional, physical, and verbal responses appropriate to the patient's condition. 
           React realistically if the user does not build rapport, misses key assessments, or delays treatment. 
-          Adjust your answers based on the user's assessment and treatment quality.`
+          Adjust your answers based on the user's assessment and treatment quality.`,
         },
         { role: "user", content: message },
       ],
