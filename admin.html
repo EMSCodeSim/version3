@@ -2,19 +2,55 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Admin Panel</title>
+  <title>Admin Panel - Hardcode Manager</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f1f5f9;
+      margin: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    .pending, .approved {
+      background: white;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    input, select, textarea, button {
+      margin: 5px 0;
+      padding: 8px;
+      width: 100%;
+    }
+    button {
+      background-color: teal;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: darkslategray;
+    }
+  </style>
 </head>
+
 <body>
-  <h1>Admin Panel - Manage Triggers</h1>
 
-  <div id="trigger-manager">
-    <input type="text" id="trigger-pattern" placeholder="Enter trigger phrase (example: breath sounds)">
-    <input type="text" id="trigger-actions" placeholder="Enter actions (comma separated, example: play_breath_sounds,show_scene_photo)">
-    <button onclick="addOrUpdateTrigger()">Add / Update Trigger</button>
-  </div>
+<h1>Hardcode Manager</h1>
 
-  <div id="trigger-list"></div>
+<div class="pending">
+  <h2>Pending Unknown Questions</h2>
+  <div id="pending-list"></div>
+</div>
 
-  <script src="admin.js"></script>
+<div class="approved">
+  <h2>Approved Hardcoded Responses</h2>
+  <div id="approved-list"></div>
+</div>
+
+<script src="./scripts/admin.js"></script>
+
 </body>
 </html>
