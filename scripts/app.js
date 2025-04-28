@@ -87,10 +87,12 @@ function addMessageToChat(sender, message) {
     messageDiv.style.textAlign = "left";
     messageDiv.style.color = "blue";
     messageDiv.innerHTML = `<strong>Patient:</strong> ${message}`;
+    speakTextTTS(message, 'patient');
   } else if (sender === 'proctor') {
     messageDiv.style.textAlign = "left";
     messageDiv.style.color = "gray";
     messageDiv.innerHTML = `<strong>Proctor:</strong> ${message}`;
+    speakTextTTS(message, 'proctor');
   } else {
     messageDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
   }
@@ -99,7 +101,7 @@ function addMessageToChat(sender, message) {
   chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
-// ========= Process User Input (MAIN FIX HERE) =========
+// ========= Process User Input =========
 function processUserInput(message) {
   const normalizedMessage = message.trim().toLowerCase();
   const match = hardcodedResponses.find(entry => entry.userQuestion.trim().toLowerCase() === normalizedMessage);
@@ -196,7 +198,31 @@ function launchAppTrigger(trigger) {
   alert('Simulated App Launch');
 }
 
-// ========= Expose Functions Globally =========
+// ========= Speak with Real TTS-1 Voices =========
+async function speakTextTTS(text, role) {
+  const voice = role === 'patient' ? 'shimmer' : 'alloy';
+
+  const response = await fetch('/.netlify/functions/tts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: text, voice: voice })
+  });
+
+  if (!response.ok) {
+    console.error('TTS API Error');
+    return;
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+  const source = audioContext.createBufferSource();
+  source.buffer = audioBuffer;
+  source.connect(audioContext.destination);
+  source.start(0);
+}
+
+// ========= Expose Functions =========
 window.startScenario = startScenario;
 window.endScenario = endScenario;
 window.sendMessage = sendMessage;
