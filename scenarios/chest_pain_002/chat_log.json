@@ -1,32 +1,102 @@
 [
   {
-    "userQuestion": "do you have chest pain",
-    "aiResponse": "Yes, I have this heavy pressure in my chest. It started about 10 minutes ago.",
-    "role": "patient"
-  },
-  {
-    "userQuestion": "what is your medical histroy",
-    "aiResponse": "I have hypertension and hyperlipidemia.",
-    "role": "patient"
-  },
-  {
-    "userQuestion": "what medications do you take",
-    "aiResponse": "I take medication for blood pressure and cholesterol. I also have nitroglycerin that I use as needed for chest pain.",
-    "role": "patient"
-  },
-  {
-    "userQuestion": "what is the blood pressure",
-    "aiResponse": "The patient's blood pressure is 130/86 mmHg.",
+    "userQuestion": "BSI, is the scene safe?",
+    "aiResponse": "The scene appears safe and BSI precautions are taken.",
     "role": "proctor"
   },
   {
-    "userQuestion": "do you have chest pain",
-    "aiResponse": "Yes, I'm having really bad chest pain. It started about 10 minutes ago. It feels like a heavy pressure on my chest.",
+    "userQuestion": "What is my general impression of the patient?",
+    "aiResponse": "You see a 62-year-old male sitting on a park bench, clutching his chest, appearing anxious.",
+    "role": "proctor"
+  },
+  {
+    "userQuestion": "Is the patient responsive?",
+    "aiResponse": "Patient is alert and oriented to person, place, time, and event.",
+    "role": "proctor"
+  },
+  {
+    "userQuestion": "Do you have chest pain?",
+    "aiResponse": "Yes, it's a heavy pressure right here in my chest.",
     "role": "patient"
   },
   {
-    "userQuestion": "on a scale of 1 to 10 how bad is the pain",
-    "aiResponse": "It's about an 8. It's really heavy and uncomfortable.",
+    "userQuestion": "What were you doing when the pain started?",
+    "aiResponse": "I was walking around the park when it hit me.",
     "role": "patient"
+  },
+  {
+    "userQuestion": "Do you have any allergies?",
+    "aiResponse": "No, I don't have any allergies.",
+    "role": "patient"
+  },
+  {
+    "userQuestion": "What medications do you take?",
+    "aiResponse": "I take blood pressure medication and cholesterol pills.",
+    "role": "patient"
+  },
+  {
+    "userQuestion": "Do you have any significant medical history?",
+    "aiResponse": "I had a heart attack two years ago.",
+    "role": "patient"
+  },
+  {
+    "userQuestion": "Have you eaten today?",
+    "aiResponse": "Yes, I had breakfast around 8 AM.",
+    "role": "patient"
+  },
+  {
+    "userQuestion": "Can you describe the quality of your chest pain?",
+    "aiResponse": "It feels like a heavy pressure, like something is sitting on my chest.",
+    "role": "patient"
+  },
+  {
+    "userQuestion": "Does the pain radiate anywhere?",
+    "aiResponse": "Yes, it goes down my left arm and up to my jaw.",
+    "role": "patient"
+  },
+  {
+    "userQuestion": "On a scale of 1 to 10, how bad is the pain?",
+    "aiResponse": "It's about an 8 out of 10.",
+    "role": "patient"
+  },
+  {
+    "userQuestion": "What is the blood pressure?",
+    "aiResponse": "The blood pressure is 130/84 mmHg.",
+    "role": "proctor"
+  },
+  {
+    "userQuestion": "What is the pulse rate?",
+    "aiResponse": "Pulse is 112 beats per minute, weak and rapid.",
+    "role": "proctor"
+  },
+  {
+    "userQuestion": "What is the respiratory rate?",
+    "aiResponse": "Respiratory rate is 24 breaths per minute and labored.",
+    "role": "proctor"
+  },
+  {
+    "userQuestion": "What are the skin signs?",
+    "aiResponse": "Skin is pale, cool, and clammy.",
+    "role": "proctor"
+  },
+  {
+    "userQuestion": "Check pupils.",
+    "aiResponse": "Pupils are equal, round, and reactive to light.",
+    "role": "proctor"
+  },
+  {
+    "userQuestion": "Place the patient on oxygen 15L NRB.",
+    "aiResponse": "Patient placed on 15L/min oxygen via non-rebreather mask.",
+    "role": "proctor"
+  },
+  {
+    "userQuestion": "Administer 324mg aspirin.",
+    "aiResponse": "324mg aspirin given. Patient chewed and swallowed the tablets.",
+    "role": "proctor"
+  },
+  {
+    "userQuestion": "Prepare for rapid transport to hospital.",
+    "aiResponse": "Patient secured for emergent transport to the nearest hospital.",
+    "role": "proctor"
   }
 ]
