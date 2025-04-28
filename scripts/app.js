@@ -2,7 +2,7 @@
 function startScenario() {
   console.log('Scenario started.');
 
-  // Fetch dispatch info from scenarios/chest_pain_002/dispatch.txt
+  // First, load dispatch info
   fetch('./scenarios/chest_pain_002/dispatch.txt')
     .then(response => {
       if (!response.ok) {
@@ -12,11 +12,26 @@ function startScenario() {
     })
     .then(dispatchText => {
       addMessageToChat('system', dispatchText);
+
+      // AFTER dispatch loaded, show scene photo
+      showScenePhoto('./scenarios/chest_pain_002/scene1.png');
     })
     .catch(error => {
       console.error(error);
-      addMessageToChat('system', 'Unable to load dispatch information.');
+      addMessageToChat('system', 'Unable to load scenario information.');
     });
+}
+
+// ========= Show Scene Photo =========
+function showScenePhoto(photoPath) {
+  const chatDisplay = document.getElementById('chat-display');
+  const image = document.createElement('img');
+  image.src = photoPath;
+  image.alt = 'Scene Photo';
+  image.style.maxWidth = '100%';
+  image.style.marginTop = '10px';
+  chatDisplay.appendChild(image);
+  chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
 // ========= End Scenario =========
@@ -65,7 +80,7 @@ function addMessageToChat(sender, message) {
   chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
-// ========= Process User Input (Fixed to send 'content') =========
+// ========= Process User Input (talk to Netlify backend) =========
 function processUserInput(message) {
   console.log(`Sending message to ChatGPT backend: ${message}`);
 
@@ -74,7 +89,7 @@ function processUserInput(message) {
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ content: message })  // <<< FIXED HERE!
+    body: JSON.stringify({ content: message })
   })
   .then(response => {
     if (!response.ok) {
@@ -126,7 +141,7 @@ function handleTriggerAction(action) {
   }
 }
 
-// ========= Expose Functions to Window =========
+// ========= Expose Functions Globally for Buttons =========
 window.startScenario = startScenario;
 window.endScenario = endScenario;
 window.sendMessage = sendMessage;
