@@ -3,33 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <title>EMS Code Sim</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles/style.css">
 </head>
 <body>
+
   <header>
     <h1>EMS Code Sim</h1>
-    <button id="startBtn">Start Scenario</button>
-    <button id="endBtn">End Scenario</button>
-    <button id="adminBtn">Admin</button> <!-- ✅ New Admin Button -->
+    <button onclick="startScenario()">Start Scenario</button>
+    <button onclick="endScenario()">End Scenario</button>
   </header>
 
   <main>
-    <div id="scenarioDisplay" class="display-box">
-      <p>Scenario will appear here...</p>
+    <div id="chat-display" style="border: 1px solid #000; height: 400px; overflow-y: auto; margin: 10px 0; padding: 10px;">
+      <!-- Chat messages will appear here -->
     </div>
 
-    <div id="userInputArea">
-      <input type="text" id="userInput" placeholder="Type your response..." />
-      <button id="sendBtn">Send</button>
+    <div style="display: flex; gap: 5px;">
+      <input type="text" id="user-input" placeholder="Type here..." style="flex-grow: 1;">
+      <button onclick="sendMessage()">Send</button>
     </div>
   </main>
 
-  <script src="scripts/app.js"></script>
-  <script>
-    document.getElementById("adminBtn").addEventListener("click", () => {
-      window.location.href = "/admin.html";  // ✅ Link to Admin Page
-    });
-  </script>
+  <script src="app.js"></script>
+
 </body>
 </html>
