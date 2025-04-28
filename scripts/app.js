@@ -1,52 +1,41 @@
+// ========= Firebase References =========
+const unknownsRef = firebase.database().ref('unknownQuestions');
+const hardcodesRef = firebase.database().ref('hardcodedResponses');
+const triggersRef = firebase.database().ref('triggers');
+
 // ========= Global Variables =========
 let hardcodedResponses = [];
-let unknownQuestions = JSON.parse(localStorage.getItem('unknownQuestions')) || [];
+let unknownQuestions = [];
+let triggers = [];
 
-// ========= Load Hardcoded Responses and Merge =========
-fetch('./scenarios/chest_pain_002/chat_log.json')
-  .then(response => response.json())
-  .then(serverData => {
-    const localData = JSON.parse(localStorage.getItem('hardcodedResponses')) || [];
-    hardcodedResponses = mergeHardcodedResponses(serverData, localData);
-    console.log('Hardcoded responses loaded and merged.');
-  })
-  .catch(error => {
-    console.error('Failed to load hardcoded responses:', error);
+// ========= Load Data from Firebase =========
+function loadFirebaseData() {
+  unknownsRef.on('value', snapshot => {
+    unknownQuestions = snapshot.val() || [];
+    console.log('Unknown Questions Loaded');
   });
 
-// ========= Merge server + local Hardcoded Responses =========
-function mergeHardcodedResponses(serverData, localData) {
-  const merged = [...serverData];
-  localData.forEach(localEntry => {
-    const exists = merged.some(item =>
-      item.userQuestion.trim().toLowerCase() === localEntry.userQuestion.trim().toLowerCase()
-    );
-    if (!exists) {
-      merged.push(localEntry);
-    }
+  hardcodesRef.on('value', snapshot => {
+    hardcodedResponses = snapshot.val() || [];
+    console.log('Hardcoded Responses Loaded');
   });
-  return merged;
+
+  triggersRef.on('value', snapshot => {
+    triggers = snapshot.val() || [];
+    console.log('Triggers Loaded');
+  });
 }
+loadFirebaseData();
 
 // ========= Start Scenario =========
 function startScenario() {
-  console.log('Scenario started.');
-
   fetch('./scenarios/chest_pain_002/dispatch.txt')
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Failed to load dispatch information.');
-      }
-      return response.text();
-    })
+    .then(response => response.text())
     .then(dispatchText => {
       addMessageToChat('system', dispatchText);
       showScenePhoto('./scenarios/chest_pain_002/scene1.png');
     })
-    .catch(error => {
-      console.error(error);
-      addMessageToChat('system', 'Unable to load scenario information.');
-    });
+    .catch(error => console.error('Dispatch load failed', error));
 }
 
 // ========= Show Scene Photo =========
@@ -56,30 +45,28 @@ function showScenePhoto(photoPath) {
   image.src = photoPath;
   image.alt = 'Scene Photo';
   image.style.maxWidth = '100%';
-  image.style.marginTop = '10px';
   chatDisplay.appendChild(image);
   chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
 // ========= End Scenario =========
 function endScenario() {
-  console.log('Scenario ended.');
-  addMessageToChat('system', 'Scenario ended. Please review your actions.');
+  addMessageToChat('system', 'Scenario ended.');
 }
 
 // ========= Send Message =========
 function sendMessage() {
   const userInput = document.getElementById('user-input');
-  const userMessage = userInput.value.trim();
-  if (userMessage === '') return;
+  const message = userInput.value.trim();
+  if (!message) return;
 
-  addMessageToChat('user', userMessage);
-  checkForTrigger(userMessage);  // <<< CHECK TRIGGERS FIRST
-  processUserInput(userMessage);
+  addMessageToChat('user', message);
+  checkForTrigger(message);
+  processUserInput(message);
   userInput.value = '';
 }
 
-// ========= Open Admin Panel =========
+// ========= Open Admin =========
 function openAdmin() {
   window.open('admin.html', '_blank');
 }
@@ -112,75 +99,64 @@ function addMessageToChat(sender, message) {
   chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
-// ========= Process User Input =========
+// ========= Process User Input (MAIN FIX HERE) =========
 function processUserInput(message) {
-  console.log(`User input: ${message}`);
-
   const normalizedMessage = message.trim().toLowerCase();
-  const matchedResponse = hardcodedResponses.find(entry => entry.userQuestion.trim().toLowerCase() === normalizedMessage);
+  const match = hardcodedResponses.find(entry => entry.userQuestion.trim().toLowerCase() === normalizedMessage);
 
-  if (matchedResponse) {
-    console.log('Matched hardcoded response.');
-    addMessageToChat(matchedResponse.role, matchedResponse.aiResponse);
+  if (match) {
+    addMessageToChat(match.role, match.aiResponse);
   } else {
-    console.log('No hardcoded match found. Logging and sending to ChatGPT backend.');
+    console.log('No hardcoded match. Sending to AI...');
 
-    unknownQuestions.push({
+    const newUnknown = {
       userQuestion: message,
       aiResponse: "",
       role: "pending"
-    });
-    localStorage.setItem('unknownQuestions', JSON.stringify(unknownQuestions));
+    };
 
-    const currentIndex = unknownQuestions.length - 1;
+    unknownQuestions.push(newUnknown);
+    unknownsRef.set(unknownQuestions);
 
     fetch('/.netlify/functions/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: message })
     })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Failed to get response from Chat function.');
-      }
-      return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
       if (data) {
-        let aiReply = "";
-        let role = "";
+        let aiReply = '';
+        let role = '';
 
         if (data.patientReply) {
           aiReply = data.patientReply;
-          role = "patient";
+          role = 'patient';
           addMessageToChat('patient', aiReply);
         } else if (data.proctorReply) {
           aiReply = data.proctorReply;
-          role = "proctor";
+          role = 'proctor';
           addMessageToChat('proctor', aiReply);
         } else {
           addMessageToChat('system', 'No valid AI response.');
         }
 
         if (aiReply) {
-          unknownQuestions[currentIndex].aiResponse = aiReply;
-          unknownQuestions[currentIndex].role = role;
-          localStorage.setItem('unknownQuestions', JSON.stringify(unknownQuestions));
+          newUnknown.aiResponse = aiReply;
+          newUnknown.role = role;
+          unknownQuestions[unknownQuestions.length - 1] = newUnknown;
+          unknownsRef.set(unknownQuestions);
         }
       }
     })
     .catch(error => {
-      console.error(error);
+      console.error('Error contacting AI service.', error);
       addMessageToChat('system', 'Error contacting AI service.');
     });
   }
 }
 
-// ========= Triggers =========
-let triggers = JSON.parse(localStorage.getItem('triggers')) || [];
-
+// ========= Check and Handle Triggers =========
 function checkForTrigger(userMessage) {
   for (let trigger of triggers) {
     if (userMessage.toLowerCase().includes(trigger.pattern.toLowerCase())) {
@@ -198,32 +174,26 @@ function handleTriggerAction(trigger) {
     playAudioTrigger(trigger);
   } else if (trigger.type === 'app') {
     launchAppTrigger(trigger);
-  } else {
-    console.log('Unknown trigger type:', trigger.type);
   }
 }
 
-// ========= Show Triggered Photo =========
 function showPhotoTrigger(trigger) {
   const chatDisplay = document.getElementById('chat-display');
   const image = document.createElement('img');
   image.src = trigger.fileData;
   image.alt = 'Triggered Photo';
   image.style.maxWidth = '100%';
-  image.style.marginTop = '10px';
   chatDisplay.appendChild(image);
   chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
-// ========= Play Triggered Audio =========
 function playAudioTrigger(trigger) {
   const audio = new Audio(trigger.fileData);
   audio.play();
 }
 
-// ========= Launch Simulated App =========
 function launchAppTrigger(trigger) {
-  alert('Simulated App Launched! (Future expansion: could open a mini-app window.)');
+  alert('Simulated App Launch');
 }
 
 // ========= Expose Functions Globally =========
