@@ -15,7 +15,7 @@ fetch('./scenarios/chest_pain_002/chat_log.json')
     displayApprovedHardcoded();
   });
 
-// ========= Display Pending Unknowns =========
+// ========= Display Pending Unknown Questions =========
 function displayPendingUnknowns() {
   const pendingDiv = document.getElementById('pending-list');
   pendingDiv.innerHTML = '';
@@ -99,4 +99,23 @@ function displayApprovedHardcoded() {
     `;
     approvedDiv.appendChild(container);
   });
+}
+
+// ========= Download Hardcoded Responses =========
+function downloadHardcoded() {
+  const blob = new Blob([JSON.stringify(hardcodedResponses, null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'chat_log.json';
+  link.click();
+}
+
+// ========= Clear All Pending Unknowns =========
+function clearUnknowns() {
+  if (confirm('Are you sure you want to clear ALL pending unknown questions?')) {
+    unknownQuestions = [];
+    localStorage.setItem('unknownQuestions', JSON.stringify(unknownQuestions));
+    displayPendingUnknowns();
+    alert('Pending unknown questions cleared.');
+  }
 }
