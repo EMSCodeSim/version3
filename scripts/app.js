@@ -8,19 +8,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let patientInfo = "";
   let hardcodedAnswers = [];
-  let currentScenario = "chest_pain_002";  // ✅ Track the currently selected scenario folder
+  let currentScenario = "chest_pain_002";  // ✅ Set your current scenario folder name
 
   startBtn.addEventListener("click", () => {
     fetch(`/scenarios/${currentScenario}/dispatch.txt`)
       .then(response => response.text())
       .then(dispatchData => {
         display.innerHTML = `<strong>Dispatch:</strong> ${dispatchData}`;
+
+        // ✅ After dispatch, add the scene image
+        const sceneImage = document.createElement("img");
+        sceneImage.src = `/scenarios/${currentScenario}/scene1.png`;
+        sceneImage.alt = "Scene Image";
+        sceneImage.style.maxWidth = "100%";
+        sceneImage.style.marginTop = "15px";
+
+        display.appendChild(sceneImage);
+
         return fetch(`/scenarios/${currentScenario}/patient.txt`);
       })
       .then(response => response.text())
       .then(patientData => {
         patientInfo = patientData;
         console.log("Loaded patient info:", patientInfo);
+
         return fetch(`/scenarios/${currentScenario}/chat_log.json`);
       })
       .then(response => response.json())
@@ -112,4 +123,3 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
-
