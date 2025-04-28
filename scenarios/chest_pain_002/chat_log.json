@@ -98,5 +98,65 @@
     "userQuestion": "Prepare for rapid transport to hospital.",
     "aiResponse": "Patient secured for emergent transport to the nearest hospital.",
     "role": "proctor"
+  },
+  {
+    "userQuestion": "hello",
+    "aiResponse": "Hello, I'm feeling some chest pain and tightness right now. It's been going on for about 20 minutes. It feels like a pressure or squeezing sensation in the center of my chest. I also feel a bit short of breath and sweaty. I have a history of high blood pressure and high cholesterol. I'm a little scared right now, can you please help me?",
+    "role": "patient"
+  },
+  {
+    "userQuestion": "my name is David, whats going on today",
+    "aiResponse": "I'm feeling a tightness in my chest, like there's a heavy weight pressing down on it. It started about 20 minutes ago while I was walking in the park. I also feel short of breath and a bit lightheaded. I have a history of high blood pressure and high cholesterol. I'm starting to feel really worried about what's happening.",
+    "role": "patient"
+  },
+  {
+    "userQuestion": "can you tell me your name again",
+    "aiResponse": "My name is John. I'm feeling a sharp pain in my chest and it's making it hard for me to breathe. Can you please call for help?",
+    "role": "patient"
+  },
+  {
+    "userQuestion": "check a blood pressure",
+    "aiResponse": "Blood pressure is 120/80 mmHg.",
+    "role": "proctor"
+  },
+  {
+    "userQuestion": "give 324mg ASA",
+    "aiResponse": "Acknowledged.",
+    "role": "patient"
+  },
+  {
+    "userQuestion": "hello how are you today",
+    "aiResponse": "I'm feeling quite unwell. I'm experiencing chest pain and it's making me feel very anxious. It started about 20 minutes ago and hasn't gone away. I also feel a bit dizzy and short of breath. I'm worried it might be a heart attack. Can you please help me?",
+    "role": "patient"
+  },
+  {
+    "userQuestion": "what is your medical history",
+    "aiResponse": "I have a history of high blood pressure and high cholesterol. I also had a heart attack about 5 years ago.",
+    "role": "patient"
+  },
+  {
+    "userQuestion": "what medications are you currently taking",
+    "aiResponse": "I am not taking any medications at the moment. My chest pain just started suddenly while I was walking in the park. It feels like a heavy pressure in the center of my chest and it's radiating down my left arm. I also feel short of breath. I'm really worried it might be a heart attack. Can you please call an ambulance for me?",
+    "role": "patient"
+  },
+  {
+    "userQuestion": "what seems to be wrong today",
+    "aiResponse": "I'm feeling a sharp pain in my chest and it's radiating down my left arm. I also feel short of breath and dizzy. I'm really worried it might be a heart attack. Can you please call an ambulance for me?",
+    "role": "patient"
+  },
+  {
+    "userQuestion": "are you the one who called 911",
+    "aiResponse": "Yes, I called 911 because I am experiencing chest pain and I am worried it could be a heart attack.",
+    "role": "patient"
+  },
+  {
+    "userQuestion": "check breath sounds",
+    "aiResponse": "You auscultate the patient's breath sounds and hear clear bilateral breath sounds.",
+    "role": "proctor"
+  },
+  {
+    "userQuestion": "check pulse",
+    "aiResponse": "Pulse is 88 beats per minute.",
+    "role": "proctor"
   }
 ]
