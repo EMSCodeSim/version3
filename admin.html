@@ -12,7 +12,7 @@
     h1 {
       color: #333;
     }
-    .pending, .approved {
+    .pending, .approved, .controls {
       background: white;
       padding: 15px;
       margin-bottom: 20px;
@@ -48,6 +48,12 @@
 <div class="approved">
   <h2>Approved Hardcoded Responses</h2>
   <div id="approved-list"></div>
+</div>
+
+<div class="controls">
+  <h2>Admin Controls</h2>
+  <button onclick="downloadHardcoded()">Download Updated Hardcoded Chat Log</button>
+  <button onclick="clearUnknowns()">Clear Pending Unknown Questions</button>
 </div>
 
 <script src="./scripts/admin.js"></script>
