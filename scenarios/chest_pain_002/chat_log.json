@@ -1,1 +1,32 @@
-
+[
+  {
+    "userQuestion": "do you have chest pain",
+    "aiResponse": "Yes, I have this heavy pressure in my chest. It started about 10 minutes ago.",
+    "role": "patient"
+  },
+  {
+    "userQuestion": "what is your medical histroy",
+    "aiResponse": "I have hypertension and hyperlipidemia.",
+    "role": "patient"
+  },
+  {
+    "userQuestion": "what medications do you take",
+    "aiResponse": "I take medication for blood pressure and cholesterol. I also have nitroglycerin that I use as needed for chest pain.",
+    "role": "patient"
+  },
+  {
+    "userQuestion": "what is the blood pressure",
+    "aiResponse": "The patient's blood pressure is 130/86 mmHg.",
+    "role": "proctor"
+  },
+  {
+    "userQuestion": "do you have chest pain",
+    "aiResponse": "Yes, I'm having really bad chest pain. It started about 10 minutes ago. It feels like a heavy pressure on my chest.",
+    "role": "patient"
+  },
+  {
+    "userQuestion": "on a scale of 1 to 10 how bad is the pain",
+    "aiResponse": "It's about an 8. It's really heavy and uncomfortable.",
+    "role": "patient"
+  }
+]
