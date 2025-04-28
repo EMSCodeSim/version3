@@ -1,11 +1,14 @@
 let unknownQuestions = JSON.parse(localStorage.getItem('unknownQuestions')) || [];
-let hardcodedResponses = [];
+let hardcodedResponses = JSON.parse(localStorage.getItem('hardcodedResponses')) || [];
 
-// ========= Load Hardcoded Chat Log =========
+// ========= Load Hardcoded Chat Log at Start =========
 fetch('./scenarios/chest_pain_002/chat_log.json')
   .then(response => response.json())
   .then(data => {
-    hardcodedResponses = data;
+    // Merge existing saved localStorage hardcodes if any
+    if (hardcodedResponses.length === 0) {
+      hardcodedResponses = data;
+    }
     displayPendingUnknowns();
     displayApprovedHardcoded();
   })
@@ -62,23 +65,31 @@ function approveUnknown(index) {
     return;
   }
 
+  // Push approved entry into live hardcodedResponses memory
   hardcodedResponses.push({
     userQuestion: questionInput,
     aiResponse: responseInput,
     role: roleSelect
   });
 
+  // Save live merged hardcodedResponses to localStorage
+  localStorage.setItem('hardcodedResponses', JSON.stringify(hardcodedResponses));
+
+  // Optionally save new trigger
   if (triggerInput) {
     let currentTriggers = JSON.parse(localStorage.getItem('triggers')) || [];
     currentTriggers.push({ pattern: triggerInput, actions: ["play_breath_sounds"] });
     localStorage.setItem('triggers', JSON.stringify(currentTriggers));
   }
 
+  // Remove from pending unknowns
   unknownQuestions.splice(index, 1);
   localStorage.setItem('unknownQuestions', JSON.stringify(unknownQuestions));
 
   displayPendingUnknowns();
   displayApprovedHardcoded();
+
+  alert('Approved and merged into hardcoded memory!');
 }
 
 // ========= Display Approved Hardcoded =========
