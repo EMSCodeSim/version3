@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>EMS Code Sim</title>
   <style>
+    /* Styles stay the same */
     body {
       margin: 0;
       background-color: #e0f0ff;
@@ -75,9 +76,9 @@
 <header>
   <div id="logo">EMS CODE SIM</div>
   <div>
-    <button id="start-btn" onclick="startScenario()">Start Scenario</button>
-    <button id="end-btn" onclick="endScenario()">End Scenario</button>
-    <button id="admin-btn" onclick="openAdmin()">Admin</button>
+    <button id="start-btn">Start Scenario</button>
+    <button id="end-btn">End Scenario</button>
+    <button id="admin-btn">Admin</button>
   </div>
 </header>
 
@@ -87,10 +88,19 @@
 
 <div id="input-area">
   <input type="text" id="user-input" placeholder="Type here...">
-  <button id="send-btn" onclick="sendMessage()">Send</button>
+  <button id="send-btn">Send</button>
 </div>
 
 <script src="app.js"></script>
+<script>
+// Wire up buttons after the page loads
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('start-btn').addEventListener('click', startScenario);
+  document.getElementById('end-btn').addEventListener('click', endScenario);
+  document.getElementById('admin-btn').addEventListener('click', openAdmin);
+  document.getElementById('send-btn').addEventListener('click', sendMessage);
+});
+</script>
 
 </body>
 </html>
