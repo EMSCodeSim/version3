@@ -6,14 +6,19 @@ const openai = new OpenAI({
 
 exports.handler = async (event) => {
   try {
-    const { message } = JSON.parse(event.body);
+    const { message, patientInfo } = JSON.parse(event.body);
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
         {
           role: "system",
-          content: "You are a simulated EMS patient. Respond only as the patient during a medical emergency. Respond briefly and naturally.",
+          content: `You will role-play as a realistic patient in a medical emergency based on the following information: ${patientInfo}. 
+          Only answer questions the user directly asks. 
+          Do not guide, coach, or volunteer information. 
+          Use emotional, physical, and verbal responses appropriate to the patient's condition. 
+          React realistically if the user does not build rapport, misses key assessments, or delays treatment. 
+          Adjust your answers based on the user's assessment and treatment quality.`
         },
         { role: "user", content: message },
       ],
