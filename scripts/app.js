@@ -1,5 +1,3 @@
-// ========= App Logic =========
-
 // Start Scenario
 function startScenario() {
   console.log('Scenario started.');
@@ -84,9 +82,3 @@ function handleTriggerAction(action) {
     alert('Patient photo would display!');
   }
 }
-
-// Expose to global window so buttons can find them
-window.startScenario = startScenario;
-window.endScenario = endScenario;
-window.sendMessage = sendMessage;
-window.openAdmin = openAdmin;
