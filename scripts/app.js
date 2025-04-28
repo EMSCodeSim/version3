@@ -2,16 +2,33 @@
 let hardcodedResponses = [];
 let unknownQuestions = JSON.parse(localStorage.getItem('unknownQuestions')) || [];
 
-// ========= Load Hardcoded Responses at Start =========
+// ========= Load Hardcoded Responses and Merge at Start =========
 fetch('./scenarios/chest_pain_002/chat_log.json')
   .then(response => response.json())
-  .then(data => {
-    hardcodedResponses = data;
-    console.log('Hardcoded responses loaded.');
+  .then(serverData => {
+    const localData = JSON.parse(localStorage.getItem('hardcodedResponses')) || [];
+    hardcodedResponses = mergeHardcodedResponses(serverData, localData);
+    console.log('Hardcoded responses loaded and merged.');
   })
   .catch(error => {
     console.error('Failed to load hardcoded responses:', error);
   });
+
+// ========= Merge server + localStorage Hardcoded Responses =========
+function mergeHardcodedResponses(serverData, localData) {
+  const merged = [...serverData];
+
+  localData.forEach(localEntry => {
+    const exists = merged.some(item => 
+      item.userQuestion.trim().toLowerCase() === localEntry.userQuestion.trim().toLowerCase()
+    );
+    if (!exists) {
+      merged.push(localEntry);
+    }
+  });
+
+  return merged;
+}
 
 // ========= Start Scenario =========
 function startScenario() {
@@ -97,7 +114,7 @@ function addMessageToChat(sender, message) {
   chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
-// ========= Process User Input (Fixed to Save AI Response) =========
+// ========= Process User Input (Auto-expanded Hardcodes) =========
 function processUserInput(message) {
   console.log(`User input: ${message}`);
 
@@ -110,7 +127,6 @@ function processUserInput(message) {
   } else {
     console.log('No hardcoded match found. Logging and sending to ChatGPT backend.');
 
-    // Push a new unknown question
     unknownQuestions.push({
       userQuestion: message,
       aiResponse: "",
@@ -118,7 +134,6 @@ function processUserInput(message) {
     });
     localStorage.setItem('unknownQuestions', JSON.stringify(unknownQuestions));
 
-    // Track where this unknown question is in the list
     const currentIndex = unknownQuestions.length - 1;
 
     fetch('/.netlify/functions/chat', {
@@ -151,7 +166,6 @@ function processUserInput(message) {
           addMessageToChat('system', 'No valid AI response.');
         }
 
-        // ✅ Update the correct unknown entry in memory
         if (aiReply) {
           unknownQuestions[currentIndex].aiResponse = aiReply;
           unknownQuestions[currentIndex].role = role;
@@ -197,7 +211,7 @@ function handleTriggerAction(action) {
   }
 }
 
-// ========= Expose Functions Globally =========
+// ========= Expose Functions =========
 window.startScenario = startScenario;
 window.endScenario = endScenario;
 window.sendMessage = sendMessage;
