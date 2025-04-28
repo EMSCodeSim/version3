@@ -65,7 +65,7 @@ function addMessageToChat(sender, message) {
   chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
-// ========= Process User Input (send to Netlify function) =========
+// ========= Process User Input (Fixed to send 'content') =========
 function processUserInput(message) {
   console.log(`Sending message to ChatGPT backend: ${message}`);
 
@@ -74,7 +74,7 @@ function processUserInput(message) {
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ userMessage: message })
+    body: JSON.stringify({ content: message })  // <<< FIXED HERE!
   })
   .then(response => {
     if (!response.ok) {
@@ -126,7 +126,7 @@ function handleTriggerAction(action) {
   }
 }
 
-// ========= Expose Functions to Window (so buttons can find them) =========
+// ========= Expose Functions to Window =========
 window.startScenario = startScenario;
 window.endScenario = endScenario;
 window.sendMessage = sendMessage;
