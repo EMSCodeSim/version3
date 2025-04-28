@@ -11,19 +11,29 @@ exports.handler = async function(event, context) {
       };
     }
 
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY; // Be sure this is set on Netlify!
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY; // Set this in Netlify environment variables
 
-    // Randomly decide: patient or proctor
-    const responder = Math.random() < 0.8 ? 'patient' : 'proctor'; 
-    // 80% chance patient, 20% chance proctor (feel free to adjust)
+    // Determine who should answer: Patient or Proctor
+    const proctorKeywords = [
+      'scene safe', 'bsi', 'scene', 'blood pressure', 'pulse', 'respiratory rate', 'saO2',
+      'skin color', 'bgl', 'blood sugar', 'breath sounds', 'lung sounds', 'oxygen', 'NRB',
+      'nasal cannula', 'splint', 'transport', 'stretcher', 'spinal immobilization', 'move patient',
+      'position patient', 'load and go', 'procedure', 'place patient', 'emergent transport',
+      'administer', 'give aspirin', 'give nitro', 'asa', 'oral glucose', 'epinephrine', 'splint',
+      'immobilize', 'check pupils', 'response to painful stimuli'
+    ];
 
-    // Set system prompt based on responder
+    const lowerContent = content.toLowerCase();
+    const isProctorQuestion = proctorKeywords.some(keyword => lowerContent.includes(keyword));
+
+    let responder = isProctorQuestion ? 'proctor' : 'patient';
+
     let systemPrompt = '';
 
     if (responder === 'patient') {
-      systemPrompt = "You are playing the role of a 62-year-old male experiencing chest pain. Respond realistically as the patient.";
+      systemPrompt = "You are playing the role of a 62-year-old male experiencing chest pain at a public park. Respond realistically as the patient, based only on symptoms, history, or how you feel.";
     } else {
-      systemPrompt = "You are acting as a Proctor for an EMT exam. Only answer factual information (like vital signs, scene info) if appropriate. Otherwise say 'No additional information.'";
+      systemPrompt = "You are acting as a certified NREMT Proctor for an EMT Basic exam. You are not the patient. Only respond with scene information, vitals, physical findings, or acknowledge procedures. If asked something the patient would know, say 'Refer to the patient.'";
     }
 
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -33,7 +43,7 @@ exports.handler = async function(event, context) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',  // Or gpt-4 if you have access
+        model: 'gpt-3.5-turbo',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: content }
