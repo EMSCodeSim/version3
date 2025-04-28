@@ -23,7 +23,7 @@ fetch('./scenarios/chest_pain_002/chat_log.json')
 function mergeHardcodedResponses(serverData, localData) {
   const merged = [...serverData];
   localData.forEach(localEntry => {
-    const exists = merged.some(item => 
+    const exists = merged.some(item =>
       item.userQuestion.trim().toLowerCase() === localEntry.userQuestion.trim().toLowerCase()
     );
     if (!exists) {
@@ -59,8 +59,17 @@ function displayPendingUnknowns() {
         <option value="patient">Patient</option>
         <option value="proctor">Proctor</option>
       </select>
-      <label>Optional Trigger:</label>
-      <input type="text" id="pending-trigger-${index}" placeholder="Optional trigger...">
+      <label>Trigger Type:</label>
+      <select id="pending-trigger-type-${index}" onchange="showUploadField(${index})">
+        <option value="">None</option>
+        <option value="photo">Photo</option>
+        <option value="audio">Audio</option>
+        <option value="app">App</option>
+      </select>
+      <div id="upload-field-${index}" style="display:none;">
+        <label>Upload File:</label>
+        <input type="file" id="trigger-file-${index}">
+      </div>
       <button onclick="approveUnknown(${index})">Approve and Add</button>
     `;
 
@@ -68,12 +77,24 @@ function displayPendingUnknowns() {
   });
 }
 
+// ========= Show Upload Field if Trigger Selected =========
+function showUploadField(index) {
+  const triggerType = document.getElementById(`pending-trigger-type-${index}`).value;
+  const uploadField = document.getElementById(`upload-field-${index}`);
+  if (triggerType) {
+    uploadField.style.display = 'block';
+  } else {
+    uploadField.style.display = 'none';
+  }
+}
+
 // ========= Approve Unknown =========
 function approveUnknown(index) {
   const questionInput = document.getElementById(`pending-question-${index}`).value.trim();
   const responseInput = document.getElementById(`pending-response-${index}`).value.trim();
   const roleSelect = document.getElementById(`pending-role-${index}`).value;
-  const triggerInput = document.getElementById(`pending-trigger-${index}`).value.trim();
+  const triggerType = document.getElementById(`pending-trigger-type-${index}`).value;
+  const triggerFile = document.getElementById(`trigger-file-${index}`).files[0];
 
   if (!questionInput || !responseInput) {
     alert('Please fill in both the question and the AI response.');
@@ -88,10 +109,19 @@ function approveUnknown(index) {
 
   localStorage.setItem('hardcodedResponses', JSON.stringify(hardcodedResponses));
 
-  if (triggerInput) {
-    let currentTriggers = JSON.parse(localStorage.getItem('triggers')) || [];
-    currentTriggers.push({ pattern: triggerInput, actions: ["play_breath_sounds"] });
-    localStorage.setItem('triggers', JSON.stringify(currentTriggers));
+  if (triggerType && triggerFile) {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const triggerData = JSON.parse(localStorage.getItem('triggers')) || [];
+      triggerData.push({
+        pattern: questionInput,
+        type: triggerType,
+        filename: triggerFile.name,
+        fileData: event.target.result
+      });
+      localStorage.setItem('triggers', JSON.stringify(triggerData));
+    };
+    reader.readAsDataURL(triggerFile);
   }
 
   unknownQuestions.splice(index, 1);
@@ -101,7 +131,7 @@ function approveUnknown(index) {
   displayApprovedHardcoded();
 }
 
-// ========= Display Approved Hardcoded (Editable Version) =========
+// ========= Display Approved Hardcoded =========
 function displayApprovedHardcoded() {
   const approvedDiv = document.getElementById('approved-list');
   approvedDiv.innerHTML = '';
@@ -139,8 +169,6 @@ function editHardcoded(index, field) {
   if (field === 'role') {
     hardcodedResponses[index].role = document.getElementById(`approved-role-${index}`).value;
   }
-
-  // Auto-save updated hardcodedResponses
   localStorage.setItem('hardcodedResponses', JSON.stringify(hardcodedResponses));
 }
 
