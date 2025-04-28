@@ -1,6 +1,6 @@
 // ========= Global Variables =========
 let hardcodedResponses = [];
-let unknownQuestions = [];
+let unknownQuestions = JSON.parse(localStorage.getItem('unknownQuestions')) || [];
 
 // ========= Load Hardcoded Responses at Start =========
 fetch('./scenarios/chest_pain_002/chat_log.json')
@@ -97,7 +97,7 @@ function addMessageToChat(sender, message) {
   chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
-// ========= Process User Input (Hardcoded First, Then AI) =========
+// ========= Process User Input =========
 function processUserInput(message) {
   console.log(`User input: ${message}`);
 
@@ -108,14 +108,14 @@ function processUserInput(message) {
     console.log('Matched hardcoded response.');
     addMessageToChat(matchedResponse.role, matchedResponse.aiResponse);
   } else {
-    console.log('No hardcoded match found. Sending to ChatGPT backend and logging.');
+    console.log('No hardcoded match found. Logging and sending to ChatGPT backend.');
 
-    // Store unknown question immediately
     unknownQuestions.push({
       userQuestion: message,
-      aiResponse: "", // admin will fill this in later
+      aiResponse: "",
       role: "pending"
     });
+    localStorage.setItem('unknownQuestions', JSON.stringify(unknownQuestions));
 
     fetch('/.netlify/functions/chat', {
       method: 'POST',
@@ -179,10 +179,8 @@ function handleTriggerAction(action) {
   }
 }
 
-// ========= Expose Functions Globally =========
+// ========= Expose Functions =========
 window.startScenario = startScenario;
 window.endScenario = endScenario;
 window.sendMessage = sendMessage;
 window.openAdmin = openAdmin;
-window.unknownQuestions = unknownQuestions; // Expose to admin.js
-window.hardcodedResponses = hardcodedResponses; // Expose to admin.js
