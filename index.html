@@ -3,27 +3,94 @@
 <head>
   <meta charset="UTF-8">
   <title>EMS Code Sim</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #e0f0ff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      background-color: white;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #ccc;
+    }
+    #logo {
+      font-weight: bold;
+      font-size: 20px;
+    }
+    #chat-display {
+      flex-grow: 1;
+      background-color: white;
+      margin: 10px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      overflow-y: auto;
+      border-radius: 10px;
+    }
+    #input-area {
+      display: flex;
+      margin: 10px;
+      gap: 5px;
+    }
+    #user-input {
+      flex-grow: 1;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+    }
+    #start-btn {
+      background-color: teal;
+      color: white;
+    }
+    #end-btn {
+      background-color: red;
+      color: white;
+    }
+    #send-btn {
+      background-color: teal;
+      color: white;
+    }
+    #admin-btn {
+      background-color: gray;
+      color: white;
+    }
+  </style>
 </head>
 <body>
 
-  <header>
-    <h1>EMS Code Sim</h1>
-    <button onclick="startScenario()">Start Scenario</button>
-    <button onclick="endScenario()">End Scenario</button>
-  </header>
+<header>
+  <div id="logo">EMS CODE SIM</div>
+  <div>
+    <button id="start-btn" onclick="startScenario()">Start Scenario</button>
+    <button id="end-btn" onclick="endScenario()">End Scenario</button>
+    <button id="admin-btn" onclick="openAdmin()">Admin</button>
+  </div>
+</header>
 
-  <main>
-    <div id="chat-display" style="border: 1px solid #000; height: 400px; overflow-y: auto; margin: 10px 0; padding: 10px;">
-      <!-- Chat messages will appear here -->
-    </div>
+<div id="chat-display">
+  <!-- Chat messages appear here -->
+</div>
 
-    <div style="display: flex; gap: 5px;">
-      <input type="text" id="user-input" placeholder="Type here..." style="flex-grow: 1;">
-      <button onclick="sendMessage()">Send</button>
-    </div>
-  </main>
+<div id="input-area">
+  <input type="text" id="user-input" placeholder="Type here...">
+  <button id="send-btn" onclick="sendMessage()">Send</button>
+</div>
 
-  <script src="app.js"></script>
+<script src="app.js"></script>
 
 </body>
 </html>
