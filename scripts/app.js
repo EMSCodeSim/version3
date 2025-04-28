@@ -13,22 +13,24 @@ function sendMessage() {
 // ========== Start Scenario ==========
 function startScenario() {
   console.log('Scenario started.');
-  addMessageToChat('system', 'Dispatch information appears here.'); 
-  // You can expand this to load specific dispatch info later
+  addMessageToChat('system', 'Dispatch information appears here.');
 }
 
 // ========== End Scenario ==========
 function endScenario() {
   console.log('Scenario ended.');
   addMessageToChat('system', 'Scenario ended. Please review your actions.');
-  // You can expand to include scoring and feedback
+}
+
+// ========== Open Admin ==========
+function openAdmin() {
+  window.open('admin.html', '_blank');
 }
 
 // ========== Display Chat Message ==========
 function addMessageToChat(sender, message) {
   const chatDisplay = document.getElementById('chat-display');
   const messageDiv = document.createElement('div');
-  messageDiv.className = sender;
   messageDiv.style.marginBottom = "10px";
 
   if (sender === 'user') {
@@ -42,13 +44,13 @@ function addMessageToChat(sender, message) {
   }
 
   chatDisplay.appendChild(messageDiv);
-  chatDisplay.scrollTop = chatDisplay.scrollHeight; // Auto scroll
+  chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
 // ========== Process User Input (Placeholder) ==========
 function processUserInput(message) {
   console.log(`Processing user input: ${message}`);
-  // This is where your AI or GPT call would go
+  // GPT AI handling goes here
 }
 
 // ========== Trigger Checking ==========
@@ -61,7 +63,7 @@ function checkForTrigger(userMessage) {
       for (let action of trigger.actions) {
         handleTriggerAction(action);
       }
-      break; // First matching trigger fires only
+      break;
     }
   }
 }
@@ -69,7 +71,7 @@ function checkForTrigger(userMessage) {
 function handleTriggerAction(action) {
   if (action === 'play_breath_sounds') {
     console.log('Playing breath sounds...');
-    alert('Breath sounds would play here!');
+    alert('Breath sounds would play!');
   } else if (action === 'show_scene_photo') {
     console.log('Showing scene photo...');
     alert('Scene photo would display!');
@@ -80,5 +82,4 @@ function handleTriggerAction(action) {
     console.log('Showing patient photo...');
     alert('Patient photo would display!');
   }
-  // Add more actions here
 }
