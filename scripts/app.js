@@ -2,7 +2,7 @@
 let hardcodedResponses = [];
 let unknownQuestions = JSON.parse(localStorage.getItem('unknownQuestions')) || [];
 
-// ========= Load Hardcoded Responses and Merge at Start =========
+// ========= Load Hardcoded Responses and Merge =========
 fetch('./scenarios/chest_pain_002/chat_log.json')
   .then(response => response.json())
   .then(serverData => {
@@ -14,19 +14,17 @@ fetch('./scenarios/chest_pain_002/chat_log.json')
     console.error('Failed to load hardcoded responses:', error);
   });
 
-// ========= Merge server + localStorage Hardcoded Responses =========
+// ========= Merge server + local Hardcoded Responses =========
 function mergeHardcodedResponses(serverData, localData) {
   const merged = [...serverData];
-
   localData.forEach(localEntry => {
-    const exists = merged.some(item => 
+    const exists = merged.some(item =>
       item.userQuestion.trim().toLowerCase() === localEntry.userQuestion.trim().toLowerCase()
     );
     if (!exists) {
       merged.push(localEntry);
     }
   });
-
   return merged;
 }
 
@@ -76,7 +74,7 @@ function sendMessage() {
   if (userMessage === '') return;
 
   addMessageToChat('user', userMessage);
-  checkForTrigger(userMessage);
+  checkForTrigger(userMessage);  // <<< CHECK TRIGGERS FIRST
   processUserInput(userMessage);
   userInput.value = '';
 }
@@ -114,7 +112,7 @@ function addMessageToChat(sender, message) {
   chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
-// ========= Process User Input (Auto-expanded Hardcodes) =========
+// ========= Process User Input =========
 function processUserInput(message) {
   console.log(`User input: ${message}`);
 
@@ -186,32 +184,49 @@ let triggers = JSON.parse(localStorage.getItem('triggers')) || [];
 function checkForTrigger(userMessage) {
   for (let trigger of triggers) {
     if (userMessage.toLowerCase().includes(trigger.pattern.toLowerCase())) {
-      console.log(`Trigger found: ${trigger.pattern}`);
-      for (let action of trigger.actions) {
-        handleTriggerAction(action);
-      }
+      console.log(`Trigger matched: ${trigger.pattern}`);
+      handleTriggerAction(trigger);
       break;
     }
   }
 }
 
-function handleTriggerAction(action) {
-  if (action === 'play_breath_sounds') {
-    console.log('Playing breath sounds...');
-    alert('Breath sounds would play!');
-  } else if (action === 'show_scene_photo') {
-    console.log('Showing scene photo...');
-    alert('Scene photo would display!');
-  } else if (action === 'play_bp_cuff_sound') {
-    console.log('Playing BP cuff sound...');
-    alert('BP cuff sound would play!');
-  } else if (action === 'show_patient_photo') {
-    console.log('Showing patient photo...');
-    alert('Patient photo would display!');
+function handleTriggerAction(trigger) {
+  if (trigger.type === 'photo') {
+    showPhotoTrigger(trigger);
+  } else if (trigger.type === 'audio') {
+    playAudioTrigger(trigger);
+  } else if (trigger.type === 'app') {
+    launchAppTrigger(trigger);
+  } else {
+    console.log('Unknown trigger type:', trigger.type);
   }
 }
 
-// ========= Expose Functions =========
+// ========= Show Triggered Photo =========
+function showPhotoTrigger(trigger) {
+  const chatDisplay = document.getElementById('chat-display');
+  const image = document.createElement('img');
+  image.src = trigger.fileData;
+  image.alt = 'Triggered Photo';
+  image.style.maxWidth = '100%';
+  image.style.marginTop = '10px';
+  chatDisplay.appendChild(image);
+  chatDisplay.scrollTop = chatDisplay.scrollHeight;
+}
+
+// ========= Play Triggered Audio =========
+function playAudioTrigger(trigger) {
+  const audio = new Audio(trigger.fileData);
+  audio.play();
+}
+
+// ========= Launch Simulated App =========
+function launchAppTrigger(trigger) {
+  alert('Simulated App Launched! (Future expansion: could open a mini-app window.)');
+}
+
+// ========= Expose Functions Globally =========
 window.startScenario = startScenario;
 window.endScenario = endScenario;
 window.sendMessage = sendMessage;
