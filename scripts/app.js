@@ -97,7 +97,7 @@ function addMessageToChat(sender, message) {
   chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
-// ========= Process User Input (Fixed Version) =========
+// ========= Process User Input (Fixed to Save AI Response) =========
 function processUserInput(message) {
   console.log(`User input: ${message}`);
 
@@ -110,14 +110,16 @@ function processUserInput(message) {
   } else {
     console.log('No hardcoded match found. Logging and sending to ChatGPT backend.');
 
-    // Create and temporarily store the unknown
-    const unknownEntry = {
+    // Push a new unknown question
+    unknownQuestions.push({
       userQuestion: message,
       aiResponse: "",
       role: "pending"
-    };
-    unknownQuestions.push(unknownEntry);
+    });
     localStorage.setItem('unknownQuestions', JSON.stringify(unknownQuestions));
+
+    // Track where this unknown question is in the list
+    const currentIndex = unknownQuestions.length - 1;
 
     fetch('/.netlify/functions/chat', {
       method: 'POST',
@@ -149,10 +151,10 @@ function processUserInput(message) {
           addMessageToChat('system', 'No valid AI response.');
         }
 
-        // Update last unknownQuestion with real AI reply and role
+        // ✅ Update the correct unknown entry in memory
         if (aiReply) {
-          unknownEntry.aiResponse = aiReply;
-          unknownEntry.role = role;
+          unknownQuestions[currentIndex].aiResponse = aiReply;
+          unknownQuestions[currentIndex].role = role;
           localStorage.setItem('unknownQuestions', JSON.stringify(unknownQuestions));
         }
       }
@@ -195,7 +197,7 @@ function handleTriggerAction(action) {
   }
 }
 
-// ========= Expose Functions =========
+// ========= Expose Functions Globally =========
 window.startScenario = startScenario;
 window.endScenario = endScenario;
 window.sendMessage = sendMessage;
