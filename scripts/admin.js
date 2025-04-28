@@ -4,10 +4,11 @@ let hardcodedResponses = JSON.parse(localStorage.getItem('hardcodedResponses')) 
 // ========= Load Hardcoded Chat Log at Start =========
 fetch('./scenarios/chest_pain_002/chat_log.json')
   .then(response => response.json())
-  .then(data => {
-    // Merge existing saved localStorage hardcodes if any
+  .then(serverData => {
     if (hardcodedResponses.length === 0) {
-      hardcodedResponses = data;
+      hardcodedResponses = serverData;
+    } else {
+      hardcodedResponses = mergeHardcodedResponses(serverData, hardcodedResponses);
     }
     displayPendingUnknowns();
     displayApprovedHardcoded();
@@ -17,6 +18,20 @@ fetch('./scenarios/chest_pain_002/chat_log.json')
     displayPendingUnknowns();
     displayApprovedHardcoded();
   });
+
+// ========= Merge server + local Hardcoded =========
+function mergeHardcodedResponses(serverData, localData) {
+  const merged = [...serverData];
+  localData.forEach(localEntry => {
+    const exists = merged.some(item => 
+      item.userQuestion.trim().toLowerCase() === localEntry.userQuestion.trim().toLowerCase()
+    );
+    if (!exists) {
+      merged.push(localEntry);
+    }
+  });
+  return merged;
+}
 
 // ========= Display Pending Unknown Questions =========
 function displayPendingUnknowns() {
@@ -36,16 +51,16 @@ function displayPendingUnknowns() {
 
     container.innerHTML = `
       <label>Question:</label>
-      <input type="text" value="${item.userQuestion}" id="question-${index}">
+      <input type="text" value="${item.userQuestion}" id="pending-question-${index}">
       <label>AI Response:</label>
-      <textarea id="response-${index}" placeholder="Enter AI response here...">${item.aiResponse}</textarea>
+      <textarea id="pending-response-${index}" placeholder="Enter AI response...">${item.aiResponse}</textarea>
       <label>Role:</label>
-      <select id="role-${index}">
+      <select id="pending-role-${index}">
         <option value="patient">Patient</option>
         <option value="proctor">Proctor</option>
       </select>
-      <label>Optional Trigger Keyword:</label>
-      <input type="text" id="trigger-${index}" placeholder="e.g., breath sounds, BP check">
+      <label>Optional Trigger:</label>
+      <input type="text" id="pending-trigger-${index}" placeholder="Optional trigger...">
       <button onclick="approveUnknown(${index})">Approve and Add</button>
     `;
 
@@ -55,44 +70,38 @@ function displayPendingUnknowns() {
 
 // ========= Approve Unknown =========
 function approveUnknown(index) {
-  const questionInput = document.getElementById(`question-${index}`).value.trim();
-  const responseInput = document.getElementById(`response-${index}`).value.trim();
-  const roleSelect = document.getElementById(`role-${index}`).value;
-  const triggerInput = document.getElementById(`trigger-${index}`).value.trim();
+  const questionInput = document.getElementById(`pending-question-${index}`).value.trim();
+  const responseInput = document.getElementById(`pending-response-${index}`).value.trim();
+  const roleSelect = document.getElementById(`pending-role-${index}`).value;
+  const triggerInput = document.getElementById(`pending-trigger-${index}`).value.trim();
 
   if (!questionInput || !responseInput) {
     alert('Please fill in both the question and the AI response.');
     return;
   }
 
-  // Push approved entry into live hardcodedResponses memory
   hardcodedResponses.push({
     userQuestion: questionInput,
     aiResponse: responseInput,
     role: roleSelect
   });
 
-  // Save live merged hardcodedResponses to localStorage
   localStorage.setItem('hardcodedResponses', JSON.stringify(hardcodedResponses));
 
-  // Optionally save new trigger
   if (triggerInput) {
     let currentTriggers = JSON.parse(localStorage.getItem('triggers')) || [];
     currentTriggers.push({ pattern: triggerInput, actions: ["play_breath_sounds"] });
     localStorage.setItem('triggers', JSON.stringify(currentTriggers));
   }
 
-  // Remove from pending unknowns
   unknownQuestions.splice(index, 1);
   localStorage.setItem('unknownQuestions', JSON.stringify(unknownQuestions));
 
   displayPendingUnknowns();
   displayApprovedHardcoded();
-
-  alert('Approved and merged into hardcoded memory!');
 }
 
-// ========= Display Approved Hardcoded =========
+// ========= Display Approved Hardcoded (Editable Version) =========
 function displayApprovedHardcoded() {
   const approvedDiv = document.getElementById('approved-list');
   approvedDiv.innerHTML = '';
@@ -100,16 +109,39 @@ function displayApprovedHardcoded() {
   hardcodedResponses.forEach((item, index) => {
     const container = document.createElement('div');
     container.style.borderBottom = "1px solid #ccc";
-    container.style.paddingBottom = "5px";
-    container.style.marginBottom = "5px";
+    container.style.paddingBottom = "10px";
+    container.style.marginBottom = "10px";
 
     container.innerHTML = `
-      <strong>Q:</strong> ${item.userQuestion}<br>
-      <strong>A:</strong> ${item.aiResponse}<br>
-      <strong>Role:</strong> ${item.role}
+      <label>Question:</label>
+      <input type="text" value="${item.userQuestion}" id="approved-question-${index}" onchange="editHardcoded(${index}, 'userQuestion')">
+      <label>AI Response:</label>
+      <textarea id="approved-response-${index}" onchange="editHardcoded(${index}, 'aiResponse')">${item.aiResponse}</textarea>
+      <label>Role:</label>
+      <select id="approved-role-${index}" onchange="editHardcoded(${index}, 'role')">
+        <option value="patient" ${item.role === 'patient' ? 'selected' : ''}>Patient</option>
+        <option value="proctor" ${item.role === 'proctor' ? 'selected' : ''}>Proctor</option>
+      </select>
     `;
+
     approvedDiv.appendChild(container);
   });
+}
+
+// ========= Edit Approved Hardcoded Live =========
+function editHardcoded(index, field) {
+  if (field === 'userQuestion') {
+    hardcodedResponses[index].userQuestion = document.getElementById(`approved-question-${index}`).value.trim();
+  }
+  if (field === 'aiResponse') {
+    hardcodedResponses[index].aiResponse = document.getElementById(`approved-response-${index}`).value.trim();
+  }
+  if (field === 'role') {
+    hardcodedResponses[index].role = document.getElementById(`approved-role-${index}`).value;
+  }
+
+  // Auto-save updated hardcodedResponses
+  localStorage.setItem('hardcodedResponses', JSON.stringify(hardcodedResponses));
 }
 
 // ========= Download Hardcoded Responses =========
