@@ -1,16 +1,31 @@
-// Start Scenario
+// ========= Start Scenario =========
 function startScenario() {
   console.log('Scenario started.');
-  addMessageToChat('system', 'Dispatch information appears here.');
+
+  // Fetch dispatch info from scenarios/chest_pain_002/dispatch.txt
+  fetch('./scenarios/chest_pain_002/dispatch.txt')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to load dispatch information.');
+      }
+      return response.text();
+    })
+    .then(dispatchText => {
+      addMessageToChat('system', dispatchText);
+    })
+    .catch(error => {
+      console.error(error);
+      addMessageToChat('system', 'Unable to load dispatch information.');
+    });
 }
 
-// End Scenario
+// ========= End Scenario =========
 function endScenario() {
   console.log('Scenario ended.');
   addMessageToChat('system', 'Scenario ended. Please review your actions.');
 }
 
-// Send Message
+// ========= Send Message =========
 function sendMessage() {
   const userInput = document.getElementById('user-input');
   const userMessage = userInput.value.trim();
@@ -22,12 +37,12 @@ function sendMessage() {
   userInput.value = '';
 }
 
-// Open Admin
+// ========= Open Admin Panel =========
 function openAdmin() {
   window.open('admin.html', '_blank');
 }
 
-// Add Message to Chat
+// ========= Add Message to Chat =========
 function addMessageToChat(sender, message) {
   const chatDisplay = document.getElementById('chat-display');
   const messageDiv = document.createElement('div');
@@ -47,12 +62,13 @@ function addMessageToChat(sender, message) {
   chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
-// Placeholder for AI input
+// ========= Placeholder for Processing User Input (GPT or logic) =========
 function processUserInput(message) {
-  console.log(`Processing input: ${message}`);
+  console.log(`Processing user input: ${message}`);
+  // Your AI call or simulation processing goes here
 }
 
-// Triggers
+// ========= Triggers =========
 let triggers = JSON.parse(localStorage.getItem('triggers')) || [];
 
 function checkForTrigger(userMessage) {
@@ -82,3 +98,9 @@ function handleTriggerAction(action) {
     alert('Patient photo would display!');
   }
 }
+
+// ========= Expose Functions to Window (for buttons) =========
+window.startScenario = startScenario;
+window.endScenario = endScenario;
+window.sendMessage = sendMessage;
+window.openAdmin = openAdmin;
