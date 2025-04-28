@@ -17,6 +17,13 @@
 <body>
   <h1>Admin - Hardcode Manager</h1>
 
+  <label for="scenarioSelect">Select Scenario:</label>
+  <select id="scenarioSelect">
+    <option value="chest_pain_002">Chest Pain 002</option>
+    <option value="stroke_003">Stroke 003</option>
+    <!-- Add more scenarios here -->
+  </select>
+
   <button id="downloadJson">Download Updated Hardcoded Answers</button>
 
   <table id="hardcodedTable">
@@ -34,17 +41,23 @@
 
   <script>
     let hardcodedData = [];
+    let currentScenario = "chest_pain_002";
+
+    document.getElementById("scenarioSelect").addEventListener("change", function() {
+      currentScenario = this.value;
+      loadChatLog();
+    });
 
     function loadChatLog() {
-      fetch("/chat_log.json")
+      fetch(`/scenarios/${currentScenario}/chat_log.json`)
         .then(response => response.json())
         .then(data => {
-          hardcodedData = data.map(entry => ({ ...entry, approved: entry.source === "hardcoded" ? true : false }));
+          hardcodedData = data.map(entry => ({ ...entry, approved: true }));
           renderTable();
         })
         .catch(error => {
           console.error("Error loading chat log:", error);
-          alert("Error loading chat_log.json");
+          alert("Error loading chat_log.json for selected scenario");
         });
     }
 
@@ -98,13 +111,13 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "updated_chat_log.json";
+      a.download = `${currentScenario}_chat_log.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
     });
 
-    loadChatLog();  // ✅ Auto-load on page open
+    loadChatLog();  // Initial load
   </script>
 </body>
 </html>
