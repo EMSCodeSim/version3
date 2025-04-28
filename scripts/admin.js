@@ -1,38 +1,30 @@
-let unknownQuestions = JSON.parse(localStorage.getItem('unknownQuestions')) || [];
-let hardcodedResponses = JSON.parse(localStorage.getItem('hardcodedResponses')) || [];
-let triggers = JSON.parse(localStorage.getItem('triggers')) || [];
+// ========= Firebase References =========
+const unknownsRef = firebase.database().ref('unknownQuestions');
+const hardcodesRef = firebase.database().ref('hardcodedResponses');
+const triggersRef = firebase.database().ref('triggers');
 
-// ========= Load Hardcoded Chat Log at Start =========
-fetch('./scenarios/chest_pain_002/chat_log.json')
-  .then(response => response.json())
-  .then(serverData => {
-    if (hardcodedResponses.length === 0) {
-      hardcodedResponses = serverData;
-    } else {
-      hardcodedResponses = mergeHardcodedResponses(serverData, hardcodedResponses);
-    }
+// ========= Global Variables =========
+let unknownQuestions = [];
+let hardcodedResponses = [];
+let triggers = [];
+
+// ========= Load Data from Firebase =========
+function loadFirebaseData() {
+  unknownsRef.on('value', snapshot => {
+    unknownQuestions = snapshot.val() || [];
     displayPendingUnknowns();
-    displayApprovedHardcoded();
-  })
-  .catch(error => {
-    console.error('Failed to load hardcoded chat log.');
-    displayPendingUnknowns();
+  });
+
+  hardcodesRef.on('value', snapshot => {
+    hardcodedResponses = snapshot.val() || [];
     displayApprovedHardcoded();
   });
 
-// ========= Merge server + local Hardcoded =========
-function mergeHardcodedResponses(serverData, localData) {
-  const merged = [...serverData];
-  localData.forEach(localEntry => {
-    const exists = merged.some(item =>
-      item.userQuestion.trim().toLowerCase() === localEntry.userQuestion.trim().toLowerCase()
-    );
-    if (!exists) {
-      merged.push(localEntry);
-    }
+  triggersRef.on('value', snapshot => {
+    triggers = snapshot.val() || [];
   });
-  return merged;
 }
+loadFirebaseData();
 
 // ========= Display Pending Unknown Questions =========
 function displayPendingUnknowns() {
@@ -54,11 +46,11 @@ function displayPendingUnknowns() {
       <label>Question:</label>
       <input type="text" value="${item.userQuestion}" id="pending-question-${index}">
       <label>AI Response:</label>
-      <textarea id="pending-response-${index}" placeholder="Enter AI response...">${item.aiResponse}</textarea>
+      <textarea id="pending-response-${index}">${item.aiResponse}</textarea>
       <label>Role:</label>
       <select id="pending-role-${index}">
-        <option value="patient">Patient</option>
-        <option value="proctor">Proctor</option>
+        <option value="patient" ${item.role === 'patient' ? 'selected' : ''}>Patient</option>
+        <option value="proctor" ${item.role === 'proctor' ? 'selected' : ''}>Proctor</option>
       </select>
       <label>Trigger Type:</label>
       <select id="pending-trigger-type-${index}" onchange="showUploadField(${index}, 'pending')">
@@ -78,14 +70,14 @@ function displayPendingUnknowns() {
   });
 }
 
-// ========= Show Upload Field for Pending or Approved =========
+// ========= Show Upload Field =========
 function showUploadField(index, mode) {
   const triggerType = document.getElementById(`${mode}-trigger-type-${index}`).value;
-  const uploadField = document.getElementById(`upload-field-${mode}-${index}`);
+  const uploadDiv = document.getElementById(`upload-field-${mode}-${index}`);
   if (triggerType) {
-    uploadField.style.display = 'block';
+    uploadDiv.style.display = 'block';
   } else {
-    uploadField.style.display = 'none';
+    uploadDiv.style.display = 'none';
   }
 }
 
@@ -93,23 +85,24 @@ function showUploadField(index, mode) {
 function approveUnknown(index) {
   const questionInput = document.getElementById(`pending-question-${index}`).value.trim();
   const responseInput = document.getElementById(`pending-response-${index}`).value.trim();
-  const roleSelect = document.getElementById(`pending-role-${index}`).value;
+  const roleInput = document.getElementById(`pending-role-${index}`).value;
   const triggerType = document.getElementById(`pending-trigger-type-${index}`).value;
   const triggerFile = document.getElementById(`trigger-file-pending-${index}`).files[0];
 
   if (!questionInput || !responseInput) {
-    alert('Please fill in both the question and the AI response.');
+    alert('Please fill out question and AI response.');
     return;
   }
 
+  // Add to hardcodedResponses
   hardcodedResponses.push({
     userQuestion: questionInput,
     aiResponse: responseInput,
-    role: roleSelect
+    role: roleInput
   });
+  hardcodesRef.set(hardcodedResponses);
 
-  localStorage.setItem('hardcodedResponses', JSON.stringify(hardcodedResponses));
-
+  // Handle trigger if exists
   if (triggerType && triggerFile) {
     const reader = new FileReader();
     reader.onload = function(event) {
@@ -119,19 +112,20 @@ function approveUnknown(index) {
         filename: triggerFile.name,
         fileData: event.target.result
       });
-      localStorage.setItem('triggers', JSON.stringify(triggers));
+      triggersRef.set(triggers);
     };
     reader.readAsDataURL(triggerFile);
   }
 
+  // Remove from unknownQuestions
   unknownQuestions.splice(index, 1);
-  localStorage.setItem('unknownQuestions', JSON.stringify(unknownQuestions));
+  unknownsRef.set(unknownQuestions);
 
   displayPendingUnknowns();
   displayApprovedHardcoded();
 }
 
-// ========= Display Approved Hardcoded (Editable + Trigger Control) =========
+// ========= Display Approved Hardcoded =========
 function displayApprovedHardcoded() {
   const approvedDiv = document.getElementById('approved-list');
   approvedDiv.innerHTML = '';
@@ -169,7 +163,7 @@ function displayApprovedHardcoded() {
   });
 }
 
-// ========= Edit Approved Hardcoded Text Fields =========
+// ========= Edit Approved Hardcoded =========
 function editHardcoded(index, field) {
   if (field === 'userQuestion') {
     hardcodedResponses[index].userQuestion = document.getElementById(`approved-question-${index}`).value.trim();
@@ -180,10 +174,10 @@ function editHardcoded(index, field) {
   if (field === 'role') {
     hardcodedResponses[index].role = document.getElementById(`approved-role-${index}`).value;
   }
-  localStorage.setItem('hardcodedResponses', JSON.stringify(hardcodedResponses));
+  hardcodesRef.set(hardcodedResponses);
 }
 
-// ========= Save New Trigger for Approved =========
+// ========= Save Trigger for Approved =========
 function saveApprovedTrigger(index) {
   const triggerType = document.getElementById(`approved-trigger-type-${index}`).value;
   const triggerFile = document.getElementById(`trigger-file-approved-${index}`).files[0];
@@ -198,8 +192,8 @@ function saveApprovedTrigger(index) {
         filename: triggerFile.name,
         fileData: event.target.result
       });
-      localStorage.setItem('triggers', JSON.stringify(triggers));
-      alert('Trigger updated successfully!');
+      triggersRef.set(triggers);
+      alert('Trigger attached successfully!');
     };
     reader.readAsDataURL(triggerFile);
   }
@@ -216,10 +210,10 @@ function downloadHardcoded() {
 
 // ========= Clear All Pending Unknowns =========
 function clearUnknowns() {
-  if (confirm('Are you sure you want to clear ALL pending unknown questions?')) {
+  if (confirm('Clear ALL pending unknown questions?')) {
     unknownQuestions = [];
-    localStorage.setItem('unknownQuestions', JSON.stringify(unknownQuestions));
+    unknownsRef.set([]);
     displayPendingUnknowns();
-    alert('Pending unknown questions cleared.');
+    alert('Pending unknowns cleared.');
   }
 }
