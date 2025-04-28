@@ -3,96 +3,137 @@
 <head>
   <meta charset="UTF-8">
   <title>EMS Code Sim</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
+    /* RESET */
+    * {
       margin: 0;
-      background-color: #e0f0ff;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body, html {
+      height: 100%;
       font-family: Arial, sans-serif;
+      background-color: #f0f4f8;
       display: flex;
       flex-direction: column;
-      height: 100vh;
     }
-    header {
-      background-color: white;
+
+    /* HEADER */
+    .header {
+      background-color: #ffffff;
       padding: 10px;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
       border-bottom: 2px solid #ccc;
     }
-    #logo {
+    .header button {
+      padding: 10px 20px;
+      border: none;
+      background-color: teal;
+      color: white;
       font-weight: bold;
-      font-size: 20px;
+      border-radius: 5px;
+      cursor: pointer;
     }
-    #chat-display {
-      flex-grow: 1;
-      background-color: white;
-      margin: 10px;
-      padding: 10px;
-      border: 1px solid #ccc;
+    .header button:hover {
+      background-color: darkslategray;
+    }
+
+    /* MAIN CHAT AREA */
+    .chat-area {
+      flex: 1;
       overflow-y: auto;
-      border-radius: 10px;
+      padding: 10px;
+      background-color: #ffffff;
     }
-    #input-area {
+    .chat-area img {
+      max-width: 100%;
+      margin-top: 10px;
+    }
+
+    /* USER INPUT AREA */
+    .input-area {
       display: flex;
-      margin: 10px;
-      gap: 5px;
+      padding: 10px;
+      background-color: #ffffff;
+      border-top: 2px solid #ccc;
     }
-    #user-input {
-      flex-grow: 1;
+    .input-area input[type="text"] {
+      flex: 1;
       padding: 10px;
       font-size: 16px;
-      border-radius: 5px;
       border: 1px solid #ccc;
+      border-radius: 5px;
     }
-    button {
+    .input-area button {
+      margin-left: 10px;
+      padding: 10px 15px;
+      font-size: 16px;
+      background-color: teal;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .input-area button:hover {
+      background-color: darkslategray;
+    }
+    .mic-button {
+      margin-left: 5px;
       padding: 10px;
       font-size: 16px;
-      border-radius: 5px;
+      border-radius: 50%;
+      background-color: #007bff;
+      color: white;
       border: none;
       cursor: pointer;
     }
-    #start-btn {
-      background-color: teal;
-      color: white;
+    .mic-button:hover {
+      background-color: #0056b3;
     }
-    #end-btn {
-      background-color: red;
-      color: white;
-    }
-    #send-btn {
-      background-color: teal;
-      color: white;
-    }
-    #admin-btn {
-      background-color: gray;
-      color: white;
+
+    /* RESPONSIVE - stack buttons on smaller screens */
+    @media (max-width: 600px) {
+      .header {
+        flex-direction: column;
+        align-items: center;
+      }
+      .input-area {
+        flex-direction: column;
+      }
+      .input-area input[type="text"] {
+        width: 100%;
+        margin-bottom: 5px;
+      }
+      .input-area button, .mic-button {
+        width: 100%;
+      }
     }
   </style>
 </head>
 
 <body>
 
-<header>
-  <div id="logo">EMS CODE SIM</div>
-  <div>
-    <button id="start-btn" onclick="startScenario()">Start Scenario</button>
-    <button id="end-btn" onclick="endScenario()">End Scenario</button>
-    <button id="admin-btn" onclick="openAdmin()">Admin</button>
+  <div class="header">
+    <button onclick="startScenario()">Start Scenario</button>
+    <button onclick="endScenario()">End Scenario</button>
+    <button onclick="openAdmin()">Admin</button>
   </div>
-</header>
 
-<div id="chat-display">
-  <!-- Chat messages will appear here -->
-</div>
+  <div id="chat-display" class="chat-area">
+    <!-- Chat messages will appear here -->
+  </div>
 
-<div id="input-area">
-  <input type="text" id="user-input" placeholder="Type here...">
-  <button id="send-btn" onclick="sendMessage()">Send</button>
-</div>
+  <div class="input-area">
+    <input type="text" id="user-input" placeholder="Type your message here...">
+    <button onclick="sendMessage()">Send</button>
+    <button class="mic-button">🎤</button> <!-- Mic button placeholder -->
+  </div>
 
-<!-- FIXED: Now points to scripts/app.js -->
-<script src="./scripts/app.js" defer></script>
+  <script src="./scripts/app.js"></script>
 
 </body>
 </html>
