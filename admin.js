@@ -10,11 +10,9 @@ function addOrUpdateTrigger() {
 
   if (pattern && actions.length > 0) {
     if (editingTriggerIndex > -1) {
-      // Update existing trigger
       triggers[editingTriggerIndex] = { pattern, actions };
       editingTriggerIndex = -1;
     } else {
-      // Add new trigger
       triggers.push({ pattern, actions });
     }
     localStorage.setItem('triggers', JSON.stringify(triggers));
@@ -54,7 +52,7 @@ function deleteTrigger(index) {
   renderTriggers();
 }
 
-// Render on admin page load
+// Render on page load
 if (document.getElementById('trigger-manager')) {
   renderTriggers();
 }
