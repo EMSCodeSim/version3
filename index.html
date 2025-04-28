@@ -76,22 +76,21 @@
 <header>
   <div id="logo">EMS CODE SIM</div>
   <div>
-    <button id="start-btn">Start Scenario</button>
-    <button id="end-btn">End Scenario</button>
-    <button id="admin-btn">Admin</button>
+    <button id="start-btn" onclick="startScenario()">Start Scenario</button>
+    <button id="end-btn" onclick="endScenario()">End Scenario</button>
+    <button id="admin-btn" onclick="openAdmin()">Admin</button>
   </div>
 </header>
 
 <div id="chat-display">
-  <!-- Chat messages will appear here -->
+  <!-- Chat messages appear here -->
 </div>
 
 <div id="input-area">
   <input type="text" id="user-input" placeholder="Type here...">
-  <button id="send-btn">Send</button>
+  <button id="send-btn" onclick="sendMessage()">Send</button>
 </div>
 
-<!-- Load your app.js after everything is built -->
 <script src="app.js"></script>
 
 </body>
