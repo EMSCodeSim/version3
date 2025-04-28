@@ -1,125 +1,45 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const startBtn = document.getElementById("startBtn");
-  const endBtn = document.getElementById("endBtn");
-  const display = document.getElementById("scenarioDisplay");
-  const userInput = document.getElementById("userInput");
-  const sendBtn = document.getElementById("sendBtn");
-  const adminBtn = document.getElementById("adminBtn");
+// ========== User Send Message ==========
+function sendMessage() {
+  const userMessage = document.getElementById('user-input').value;
+  if (userMessage.trim() === '') return;
+  
+  addMessageToChat('user', userMessage);
+  checkForTrigger(userMessage);
+  
+  processUserInput(userMessage); // Your existing AI/chat logic
+  document.getElementById('user-input').value = '';
+}
 
-  let patientInfo = "";
-  let hardcodedAnswers = [];
-  let currentScenario = "chest_pain_002";  // ✅ Set your current scenario folder name
+// ========== Trigger Check & Action Handling ==========
+let triggers = JSON.parse(localStorage.getItem('triggers')) || [];
 
-  startBtn.addEventListener("click", () => {
-    fetch(`/scenarios/${currentScenario}/dispatch.txt`)
-      .then(response => response.text())
-      .then(dispatchData => {
-        display.innerHTML = `<strong>Dispatch:</strong> ${dispatchData}`;
-
-        // ✅ After dispatch, add the scene image
-        const sceneImage = document.createElement("img");
-        sceneImage.src = `/scenarios/${currentScenario}/scene1.png`;
-        sceneImage.alt = "Scene Image";
-        sceneImage.style.maxWidth = "100%";
-        sceneImage.style.marginTop = "15px";
-
-        display.appendChild(sceneImage);
-
-        return fetch(`/scenarios/${currentScenario}/patient.txt`);
-      })
-      .then(response => response.text())
-      .then(patientData => {
-        patientInfo = patientData;
-        console.log("Loaded patient info:", patientInfo);
-
-        return fetch(`/scenarios/${currentScenario}/chat_log.json`);
-      })
-      .then(response => response.json())
-      .then(chatLogData => {
-        hardcodedAnswers = chatLogData;
-        console.log("Loaded scenario-specific hardcoded answers:", hardcodedAnswers);
-      })
-      .catch(error => {
-        console.error("Loading error:", error);
-        display.innerHTML = `<span style='color:red;'>Error loading scenario: ${error.message}</span>`;
-      });
-  });
-
-  endBtn.addEventListener("click", () => {
-    display.innerHTML = "<p>Scenario ended. Thank you for participating.</p>";
-  });
-
-  sendBtn.addEventListener("click", handleUserInput);
-
-  adminBtn.addEventListener("click", () => {
-    window.location.href = "/admin.html"; // ✅ Go to admin panel
-  });
-
-  userInput.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") handleUserInput();
-  });
-
-  function isProctorQuestion(text) {
-    const proctorKeywords = [
-      "blood pressure", "pulse", "respiratory rate", "lung sounds", "saO2", "blood sugar", "skin appearance",
-      "scene safety", "number of patients", "pill bottles", "time of day", "outside temperature",
-      "painful stimuli", "giving asa", "administer aspirin", "give oxygen", "place on monitor",
-      "scene", "environment", "pill", "vial", "response to pain"
-    ];
-    return proctorKeywords.some(keyword => text.toLowerCase().includes(keyword));
-  }
-
-  function findHardcodedAnswer(text, role) {
-    text = text.toLowerCase();
-    const match = hardcodedAnswers.find(entry => 
-      entry.userQuestion.toLowerCase() === text && entry.role === role
-    );
-    return match ? match.aiResponse : null;
-  }
-
-  function handleUserInput() {
-    const text = userInput.value.trim();
-    if (!text) return;
-
-    const userBubble = document.createElement("p");
-    userBubble.textContent = `You: ${text}`;
-    display.appendChild(userBubble);
-    userInput.value = "";
-
-    const role = isProctorQuestion(text) ? "proctor" : "patient";
-
-    const hardcodedResponse = findHardcodedAnswer(text, role);
-
-    if (hardcodedResponse) {
-      console.log("Hardcoded response found:", hardcodedResponse);
-      const responseBubble = document.createElement("p");
-      responseBubble.textContent = `${role === "proctor" ? "Proctor" : "Patient"}: ${hardcodedResponse}`;
-      display.appendChild(responseBubble);
-    } else {
-      console.log("No hardcoded response. Sending to GPT-4 Turbo...");
-      const payload = {
-        message: text,
-        patientInfo: patientInfo,
-        role: role
-      };
-
-      fetch("/.netlify/functions/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      })
-        .then(res => res.json())
-        .then(data => {
-          const responseBubble = document.createElement("p");
-          responseBubble.textContent = `${role === "proctor" ? "Proctor" : "Patient"}: ${data.reply}`;
-          display.appendChild(responseBubble);
-        })
-        .catch(err => {
-          console.error("Fetch error:", err);
-          const errorBubble = document.createElement("p");
-          errorBubble.textContent = "Error getting response.";
-          display.appendChild(errorBubble);
-        });
+function checkForTrigger(userMessage) {
+  for (let trigger of triggers) {
+    if (userMessage.toLowerCase().includes(trigger.pattern.toLowerCase())) {
+      console.log(`Trigger found for: "${trigger.pattern}"`);
+      for (let action of trigger.actions) {
+        handleTriggerAction(action);
+      }
+      break; // Only fire the first matching trigger
     }
   }
-});
+}
+
+function handleTriggerAction(action) {
+  if (action === 'play_breath_sounds') {
+    console.log('Playing breath sounds...');
+    alert('Breath sounds would play here!');
+    // Example: document.getElementById('breath-sounds-audio').play();
+  } else if (action === 'show_scene_photo') {
+    console.log('Showing scene photo...');
+    alert('Scene photo would display!');
+    // Example: document.getElementById('scene-photo').style.display = 'block';
+  } else if (action === 'play_bp_cuff_sound') {
+    console.log('Playing BP cuff sound...');
+    alert('BP cuff sound would play!');
+  } else if (action === 'show_patient_photo') {
+    console.log('Showing patient photo...');
+    alert('Patient photo would display!');
+  }
+  // Expand with more actions later!
+}
