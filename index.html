@@ -11,6 +11,7 @@
     <h1>EMS Code Sim</h1>
     <button id="startBtn">Start Scenario</button>
     <button id="endBtn">End Scenario</button>
+    <button id="adminBtn">Admin</button> <!-- ✅ New Admin Button -->
   </header>
 
   <main>
@@ -22,13 +23,13 @@
       <input type="text" id="userInput" placeholder="Type your response..." />
       <button id="sendBtn">Send</button>
     </div>
-
-    <div id="downloadArea">
-      <button id="downloadLogBtn">Download Chat Log</button>
-    </div>
   </main>
 
   <script src="scripts/app.js"></script>
+  <script>
+    document.getElementById("adminBtn").addEventListener("click", () => {
+      window.location.href = "/admin.html";  // ✅ Link to Admin Page
+    });
+  </script>
 </body>
 </html>
-
