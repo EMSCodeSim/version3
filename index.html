@@ -4,6 +4,31 @@
   <meta charset="UTF-8">
   <title>EMS Code Sim</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+
+  <script>
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
+      authDomain: "ems-code-sim.firebaseapp.com",
+      databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+      projectId: "ems-code-sim",
+      storageBucket: "ems-code-sim.appspot.com",
+      messagingSenderId: "190498607578",
+      appId: "1:190498607578:web:4cf6c8e999b027956070e3",
+      measurementId: "G-2Q3ZT01YT1"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    firebase.analytics();
+    const database = firebase.database();
+  </script>
+
   <style>
     /* RESET */
     * {
@@ -95,7 +120,7 @@
       background-color: #0056b3;
     }
 
-    /* RESPONSIVE - stack buttons on smaller screens */
+    /* RESPONSIVE */
     @media (max-width: 600px) {
       .header {
         flex-direction: column;
@@ -117,22 +142,26 @@
 
 <body>
 
+  <!-- HEADER with Buttons -->
   <div class="header">
     <button onclick="startScenario()">Start Scenario</button>
     <button onclick="endScenario()">End Scenario</button>
     <button onclick="openAdmin()">Admin</button>
   </div>
 
+  <!-- CHAT DISPLAY -->
   <div id="chat-display" class="chat-area">
-    <!-- Chat messages will appear here -->
+    <!-- Chat messages appear here -->
   </div>
 
+  <!-- USER INPUT -->
   <div class="input-area">
     <input type="text" id="user-input" placeholder="Type your message here...">
     <button onclick="sendMessage()">Send</button>
-    <button class="mic-button">🎤</button> <!-- Mic button placeholder -->
+    <button class="mic-button">🎤</button> <!-- Mic Button Placeholder -->
   </div>
 
+  <!-- Load Your App JS -->
   <script src="./scripts/app.js"></script>
 
 </body>
