@@ -2,7 +2,6 @@
 function startScenario() {
   console.log('Scenario started.');
 
-  // First, load dispatch info
   fetch('./scenarios/chest_pain_002/dispatch.txt')
     .then(response => {
       if (!response.ok) {
@@ -12,8 +11,6 @@ function startScenario() {
     })
     .then(dispatchText => {
       addMessageToChat('system', dispatchText);
-
-      // AFTER dispatch loaded, show scene photo
       showScenePhoto('./scenarios/chest_pain_002/scene1.png');
     })
     .catch(error => {
@@ -69,9 +66,14 @@ function addMessageToChat(sender, message) {
   } else if (sender === 'system') {
     messageDiv.style.textAlign = "center";
     messageDiv.innerHTML = `<em>${message}</em>`;
-  } else if (sender === 'bot') {
+  } else if (sender === 'patient') {
     messageDiv.style.textAlign = "left";
-    messageDiv.innerHTML = `<strong>Bot:</strong> ${message}`;
+    messageDiv.style.color = "blue";
+    messageDiv.innerHTML = `<strong>Patient:</strong> ${message}`;
+  } else if (sender === 'proctor') {
+    messageDiv.style.textAlign = "left";
+    messageDiv.style.color = "gray";
+    messageDiv.innerHTML = `<strong>Proctor:</strong> ${message}`;
   } else {
     messageDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
   }
@@ -80,7 +82,7 @@ function addMessageToChat(sender, message) {
   chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
-// ========= Process User Input (talk to Netlify backend) =========
+// ========= Process User Input (Fixed) =========
 function processUserInput(message) {
   console.log(`Sending message to ChatGPT backend: ${message}`);
 
@@ -98,10 +100,14 @@ function processUserInput(message) {
     return response.json();
   })
   .then(data => {
-    if (data && data.botReply) {
-      addMessageToChat('bot', data.botReply);
-    } else {
-      addMessageToChat('system', 'No valid response from AI.');
+    if (data) {
+      if (data.patientReply) {
+        addMessageToChat('patient', data.patientReply);
+      } else if (data.proctorReply) {
+        addMessageToChat('proctor', data.proctorReply);
+      } else {
+        addMessageToChat('system', 'No valid response from AI.');
+      }
     }
   })
   .catch(error => {
@@ -141,7 +147,7 @@ function handleTriggerAction(action) {
   }
 }
 
-// ========= Expose Functions Globally for Buttons =========
+// ========= Expose Functions Globally =========
 window.startScenario = startScenario;
 window.endScenario = endScenario;
 window.sendMessage = sendMessage;
