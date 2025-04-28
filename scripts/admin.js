@@ -1,58 +1,96 @@
-// ========== Admin Trigger Management ==========
-let triggers = JSON.parse(localStorage.getItem('triggers')) || [];
-let editingTriggerIndex = -1;
+// ========= Admin Panel =========
 
-function addOrUpdateTrigger() {
-  const patternInput = document.getElementById('trigger-pattern');
-  const actionsInput = document.getElementById('trigger-actions');
-  const pattern = patternInput.value.trim();
-  const actions = actionsInput.value.split(',').map(a => a.trim()).filter(a => a !== '');
+// Wait for DOM to load
+document.addEventListener('DOMContentLoaded', function() {
+  displayPendingUnknowns();
+  displayApprovedHardcoded();
+});
 
-  if (pattern && actions.length > 0) {
-    if (editingTriggerIndex > -1) {
-      triggers[editingTriggerIndex] = { pattern, actions };
-      editingTriggerIndex = -1;
-    } else {
-      triggers.push({ pattern, actions });
-    }
-    localStorage.setItem('triggers', JSON.stringify(triggers));
-    patternInput.value = '';
-    actionsInput.value = '';
-    renderTriggers();
+// ========= Display Pending Unknown Questions =========
+function displayPendingUnknowns() {
+  const pendingDiv = document.getElementById('pending-list');
+  pendingDiv.innerHTML = '';
+
+  if (window.unknownQuestions.length === 0) {
+    pendingDiv.innerHTML = '<p>No unknown questions pending approval.</p>';
+    return;
   }
-}
 
-function renderTriggers() {
-  const triggerList = document.getElementById('trigger-list');
-  triggerList.innerHTML = '<h3>Current Triggers:</h3>';
-  triggers.forEach((trigger, index) => {
-    const div = document.createElement('div');
-    div.innerHTML = `
-      <div style="margin-bottom: 10px;">
-        <strong>When user says:</strong> "${trigger.pattern}"<br>
-        <strong>Trigger actions:</strong> ${trigger.actions.join(', ')}<br>
-        <button onclick="editTrigger(${index})">Edit</button>
-        <button onclick="deleteTrigger(${index})">Delete</button>
-      </div>
+  window.unknownQuestions.forEach((item, index) => {
+    const container = document.createElement('div');
+    container.style.borderBottom = "1px solid #ccc";
+    container.style.paddingBottom = "10px";
+    container.style.marginBottom = "10px";
+
+    container.innerHTML = `
+      <label>Question:</label>
+      <input type="text" value="${item.userQuestion}" id="question-${index}">
+      <label>AI Response:</label>
+      <textarea id="response-${index}" placeholder="Enter AI response here...">${item.aiResponse}</textarea>
+      <label>Role:</label>
+      <select id="role-${index}">
+        <option value="patient">Patient</option>
+        <option value="proctor">Proctor</option>
+      </select>
+      <label>Optional Trigger Keyword:</label>
+      <input type="text" id="trigger-${index}" placeholder="e.g., breath sounds, BP check">
+      <button onclick="approveUnknown(${index})">Approve and Add</button>
     `;
-    triggerList.appendChild(div);
+
+    pendingDiv.appendChild(container);
   });
 }
 
-function editTrigger(index) {
-  const trigger = triggers[index];
-  document.getElementById('trigger-pattern').value = trigger.pattern;
-  document.getElementById('trigger-actions').value = trigger.actions.join(', ');
-  editingTriggerIndex = index;
+// ========= Approve Unknown Question =========
+function approveUnknown(index) {
+  const questionInput = document.getElementById(`question-${index}`).value.trim();
+  const responseInput = document.getElementById(`response-${index}`).value.trim();
+  const roleSelect = document.getElementById(`role-${index}`).value;
+  const triggerInput = document.getElementById(`trigger-${index}`).value.trim();
+
+  if (!questionInput || !responseInput) {
+    alert('Please fill in both the question and the AI response.');
+    return;
+  }
+
+  // Add to hardcoded memory
+  window.hardcodedResponses.push({
+    userQuestion: questionInput,
+    aiResponse: responseInput,
+    role: roleSelect
+  });
+
+  // Optionally add trigger
+  if (triggerInput) {
+    let currentTriggers = JSON.parse(localStorage.getItem('triggers')) || [];
+    currentTriggers.push({ pattern: triggerInput, actions: ["play_breath_sounds"] }); // You can customize actions
+    localStorage.setItem('triggers', JSON.stringify(currentTriggers));
+    console.log('Trigger added:', triggerInput);
+  }
+
+  // Remove from unknowns
+  window.unknownQuestions.splice(index, 1);
+
+  displayPendingUnknowns();
+  displayApprovedHardcoded();
 }
 
-function deleteTrigger(index) {
-  triggers.splice(index, 1);
-  localStorage.setItem('triggers', JSON.stringify(triggers));
-  renderTriggers();
-}
+// ========= Display Approved Hardcoded Responses =========
+function displayApprovedHardcoded() {
+  const approvedDiv = document.getElementById('approved-list');
+  approvedDiv.innerHTML = '';
 
-// Render on page load
-if (document.getElementById('trigger-manager')) {
-  renderTriggers();
+  window.hardcodedResponses.forEach((item, index) => {
+    const container = document.createElement('div');
+    container.style.borderBottom = "1px solid #ccc";
+    container.style.paddingBottom = "5px";
+    container.style.marginBottom = "5px";
+
+    container.innerHTML = `
+      <strong>Q:</strong> ${item.userQuestion}<br>
+      <strong>A:</strong> ${item.aiResponse}<br>
+      <strong>Role:</strong> ${item.role}
+    `;
+    approvedDiv.appendChild(container);
+  });
 }
