@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel - Hardcode Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    textarea { width: 100%; height: 100px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 10px; border: 1px solid #ccc; vertical-align: top; }
+    button { margin-right: 10px; }
+    .approved { background-color: #d4edda; }
+    .needs-edit { background-color: #f8d7da; }
+  </style>
+</head>
+<body>
+  <h1>Admin - Hardcode Manager</h1>
+
+  <button id="downloadJson">Download Updated Hardcoded Answers</button>
+
+  <table id="hardcodedTable">
+    <thead>
+      <tr>
+        <th>User Question</th>
+        <th>AI Response</th>
+        <th>Role</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    let hardcodedData = [];
+
+    function loadChatLog() {
+      fetch("/chat_log.json")
+        .then(response => response.json())
+        .then(data => {
+          hardcodedData = data.map(entry => ({ ...entry, approved: entry.source === "hardcoded" ? true : false }));
+          renderTable();
+        })
+        .catch(error => {
+          console.error("Error loading chat log:", error);
+          alert("Error loading chat_log.json");
+        });
+    }
+
+    function renderTable() {
+      const tbody = document.querySelector("#hardcodedTable tbody");
+      tbody.innerHTML = "";
+
+      hardcodedData.forEach((entry, index) => {
+        const tr = document.createElement("tr");
+        tr.className = entry.approved ? "approved" : "needs-edit";
+
+        tr.innerHTML = `
+          <td><textarea onchange="updateField(${index}, 'userQuestion', this.value)">${entry.userQuestion}</textarea></td>
+          <td><textarea onchange="updateField(${index}, 'aiResponse', this.value)">${entry.aiResponse}</textarea></td>
+          <td>
+            <select onchange="updateField(${index}, 'role', this.value)">
+              <option value="patient" ${entry.role === "patient" ? "selected" : ""}>Patient</option>
+              <option value="proctor" ${entry.role === "proctor" ? "selected" : ""}>Proctor</option>
+            </select>
+          </td>
+          <td>
+            <button onclick="toggleApproval(${index})">
+              ${entry.approved ? "Approved" : "Needs Edit"}
+            </button>
+          </td>
+          <td>
+            <button onclick="deleteEntry(${index})">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateField(index, field, value) {
+      hardcodedData[index][field] = value;
+    }
+
+    function toggleApproval(index) {
+      hardcodedData[index].approved = !hardcodedData[index].approved;
+      renderTable();
+    }
+
+    function deleteEntry(index) {
+      hardcodedData.splice(index, 1);
+      renderTable();
+    }
+
+    document.getElementById("downloadJson").addEventListener("click", () => {
+      const approvedOnly = hardcodedData.filter(entry => entry.approved);
+      const blob = new Blob([JSON.stringify(approvedOnly, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "updated_chat_log.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+
+    loadChatLog();  // ✅ Auto-load on page open
+  </script>
+</body>
+</html>
