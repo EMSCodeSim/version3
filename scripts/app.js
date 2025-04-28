@@ -50,11 +50,6 @@ function showScenePhoto(photoPath) {
 function endScenario() {
   console.log('Scenario ended.');
   addMessageToChat('system', 'Scenario ended. Please review your actions.');
-
-  // Save unknown questions if any
-  if (unknownQuestions.length > 0) {
-    downloadUnknownQuestions();
-  }
 }
 
 // ========= Send Message =========
@@ -113,12 +108,13 @@ function processUserInput(message) {
     console.log('Matched hardcoded response.');
     addMessageToChat(matchedResponse.role, matchedResponse.aiResponse);
   } else {
-    console.log('No hardcoded match found. Logging and sending to ChatGPT backend.');
+    console.log('No hardcoded match found. Sending to ChatGPT backend and logging.');
 
-    // Log unknown question
+    // Store unknown question immediately
     unknownQuestions.push({
       userQuestion: message,
-      timestamp: new Date().toISOString()
+      aiResponse: "", // admin will fill this in later
+      role: "pending"
     });
 
     fetch('/.netlify/functions/chat', {
@@ -150,15 +146,6 @@ function processUserInput(message) {
       addMessageToChat('system', 'Error contacting AI service.');
     });
   }
-}
-
-// ========= Download Unknown Questions =========
-function downloadUnknownQuestions() {
-  const blob = new Blob([JSON.stringify(unknownQuestions, null, 2)], { type: 'application/json' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = 'unknown_questions.json';
-  link.click();
 }
 
 // ========= Triggers =========
@@ -197,3 +184,5 @@ window.startScenario = startScenario;
 window.endScenario = endScenario;
 window.sendMessage = sendMessage;
 window.openAdmin = openAdmin;
+window.unknownQuestions = unknownQuestions; // Expose to admin.js
+window.hardcodedResponses = hardcodedResponses; // Expose to admin.js
