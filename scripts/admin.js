@@ -1,22 +1,31 @@
-// ========= Admin Panel =========
+let unknownQuestions = JSON.parse(localStorage.getItem('unknownQuestions')) || [];
+let hardcodedResponses = [];
 
-// Wait for DOM to load
-document.addEventListener('DOMContentLoaded', function() {
-  displayPendingUnknowns();
-  displayApprovedHardcoded();
-});
+// ========= Load Hardcoded Chat Log =========
+fetch('./scenarios/chest_pain_002/chat_log.json')
+  .then(response => response.json())
+  .then(data => {
+    hardcodedResponses = data;
+    displayPendingUnknowns();
+    displayApprovedHardcoded();
+  })
+  .catch(error => {
+    console.error('Failed to load hardcoded chat log.');
+    displayPendingUnknowns();
+    displayApprovedHardcoded();
+  });
 
-// ========= Display Pending Unknown Questions =========
+// ========= Display Pending Unknowns =========
 function displayPendingUnknowns() {
   const pendingDiv = document.getElementById('pending-list');
   pendingDiv.innerHTML = '';
 
-  if (window.unknownQuestions.length === 0) {
+  if (unknownQuestions.length === 0) {
     pendingDiv.innerHTML = '<p>No unknown questions pending approval.</p>';
     return;
   }
 
-  window.unknownQuestions.forEach((item, index) => {
+  unknownQuestions.forEach((item, index) => {
     const container = document.createElement('div');
     container.style.borderBottom = "1px solid #ccc";
     container.style.paddingBottom = "10px";
@@ -41,7 +50,7 @@ function displayPendingUnknowns() {
   });
 }
 
-// ========= Approve Unknown Question =========
+// ========= Approve Unknown =========
 function approveUnknown(index) {
   const questionInput = document.getElementById(`question-${index}`).value.trim();
   const responseInput = document.getElementById(`response-${index}`).value.trim();
@@ -53,34 +62,31 @@ function approveUnknown(index) {
     return;
   }
 
-  // Add to hardcoded memory
-  window.hardcodedResponses.push({
+  hardcodedResponses.push({
     userQuestion: questionInput,
     aiResponse: responseInput,
     role: roleSelect
   });
 
-  // Optionally add trigger
   if (triggerInput) {
     let currentTriggers = JSON.parse(localStorage.getItem('triggers')) || [];
-    currentTriggers.push({ pattern: triggerInput, actions: ["play_breath_sounds"] }); // You can customize actions
+    currentTriggers.push({ pattern: triggerInput, actions: ["play_breath_sounds"] });
     localStorage.setItem('triggers', JSON.stringify(currentTriggers));
-    console.log('Trigger added:', triggerInput);
   }
 
-  // Remove from unknowns
-  window.unknownQuestions.splice(index, 1);
+  unknownQuestions.splice(index, 1);
+  localStorage.setItem('unknownQuestions', JSON.stringify(unknownQuestions));
 
   displayPendingUnknowns();
   displayApprovedHardcoded();
 }
 
-// ========= Display Approved Hardcoded Responses =========
+// ========= Display Approved Hardcoded =========
 function displayApprovedHardcoded() {
   const approvedDiv = document.getElementById('approved-list');
   approvedDiv.innerHTML = '';
 
-  window.hardcodedResponses.forEach((item, index) => {
+  hardcodedResponses.forEach((item, index) => {
     const container = document.createElement('div');
     container.style.borderBottom = "1px solid #ccc";
     container.style.paddingBottom = "5px";
