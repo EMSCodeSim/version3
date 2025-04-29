@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Create New Scenario - EMS Code Sim</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #eef2f5;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #003366;
+    }
+
+    .form-section {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .save-button {
+      background-color: #0077cc;
+      color: white;
+      padding: 15px;
+      border: none;
+      font-size: 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 20px;
+    }
+
+    .save-button:hover {
+      background-color: #005fa3;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Create New Scenario</h1>
+
+<div class="form-section">
+  <label>Scenario Name:</label>
+  <input type="text" id="scenarioName" placeholder="Example: Chest Pain 001">
+
+  <label>Dispatch Info:</label>
+  <textarea id="dispatchInfo" placeholder="Dispatch text goes here..."></textarea>
+
+  <label>Scene Description:</label>
+  <textarea id="sceneDescription" placeholder="Scene appearance description..."></textarea>
+
+  <label>Patient Appearance Photo:</label>
+  <input type="file" id="patientPhoto">
+
+  <label>Initial Vitals:</label>
+  <input type="text" id="bp" placeholder="Blood Pressure (e.g., 130/86)">
+  <input type="text" id="pulse" placeholder="Pulse Rate (e.g., 88)">
+  <input type="text" id="respRate" placeholder="Respiratory Rate (e.g., 18)">
+  <input type="text" id="skin" placeholder="Skin Condition (e.g., pale, cool, clammy)">
+  <input type="text" id="sao2" placeholder="Oxygen Saturation (e.g., 96%)">
+
+  <label>SAMPLE History:</label>
+  <input type="text" id="signsSymptoms" placeholder="Signs and Symptoms">
+  <input type="text" id="allergies" placeholder="Allergies">
+  <input type="text" id="medications" placeholder="Medications">
+  <input type="text" id="pastHistory" placeholder="Past Medical History">
+  <input type="text" id="lastOralIntake" placeholder="Last Oral Intake">
+  <input type="text" id="eventsLeading" placeholder="Events Leading Up To Illness">
+
+  <label>Optional Triggers:</label>
+  <input type="text" id="triggerQuestion" placeholder="Trigger Question (optional)">
+  <select id="triggerType">
+    <option value="">None</option>
+    <option value="photo">Photo</option>
+    <option value="audio">Audio</option>
+    <option value="app">App</option>
+  </select>
+  <input type="file" id="triggerFile">
+</div>
+
+<button class="save-button" onclick="saveScenario()">Save Scenario</button>
+
+<script>
+  function saveScenario() {
+    const scenarioName = document.getElementById('scenarioName').value.trim();
+    const dispatchInfo = document.getElementById('dispatchInfo').value.trim();
+    const sceneDescription = document.getElementById('sceneDescription').value.trim();
+    const patientPhoto = document.getElementById('patientPhoto').files[0];
+
+    const vitals = {
+      bp: document.getElementById('bp').value.trim(),
+      pulse: document.getElementById('pulse').value.trim(),
+      respRate: document.getElementById('respRate').value.trim(),
+      skin: document.getElementById('skin').value.trim(),
+      sao2: document.getElementById('sao2').value.trim()
+    };
+
+    const sampleHistory = {
+      signsSymptoms: document.getElementById('signsSymptoms').value.trim(),
+      allergies: document.getElementById('allergies').value.trim(),
+      medications: document.getElementById('medications').value.trim(),
+      pastHistory: document.getElementById('pastHistory').value.trim(),
+      lastOralIntake: document.getElementById('lastOralIntake').value.trim(),
+      eventsLeading: document.getElementById('eventsLeading').value.trim()
+    };
+
+    const triggerQuestion = document.getElementById('triggerQuestion').value.trim();
+    const triggerType = document.getElementById('triggerType').value;
+    const triggerFile = document.getElementById('triggerFile').files[0];
+
+    if (!scenarioName || !dispatchInfo || !sceneDescription) {
+      alert('Please complete Scenario Name, Dispatch Info, and Scene Description.');
+      return;
+    }
+
+    // Now you would package this data
+    console.log({
+      scenarioName,
+      dispatchInfo,
+      sceneDescription,
+      vitals,
+      sampleHistory,
+      triggerQuestion,
+      triggerType,
+      triggerFileName: triggerFile ? triggerFile.name : null
+    });
+
+    alert('Scenario saved! (For now this prints to console. We can wire it to Firebase or download JSON next.)');
+  }
+</script>
+
+</body>
+</html>
