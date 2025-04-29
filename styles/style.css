@@ -1,54 +1,90 @@
-body {
-  font-family: Arial, sans-serif;
-  background-color: #e0f0ff;
+/* Global Reset */
+* {
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
+/* Body Styling */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f0f8ff;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Header */
 header {
-  background-color: white;
-  padding: 10px;
-  text-align: center;
+  background-color: #ffffff;
+  padding: 15px;
   display: flex;
   justify-content: center;
   gap: 20px;
-  flex-wrap: wrap;
-  border-bottom: 2px solid #ccc;
+  border-bottom: 1px solid #ddd;
 }
 
+/* Buttons */
 button {
+  background-color: #0077cc;
+  color: white;
+  border: none;
   padding: 10px 20px;
   font-size: 16px;
-  cursor: pointer;
-}
-
-main {
-  padding: 20px;
-}
-
-.display-box {
-  background: white;
-  padding: 20px;
+  font-weight: bold;
   border-radius: 8px;
-  min-height: 200px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  margin-bottom: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #005fa3;
+}
+
+/* Chat Box */
+#chat-box {
+  flex: 1;
+  background-color: #ffffff;
+  margin: 20px;
+  padding: 15px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
   overflow-y: auto;
   max-height: 400px;
 }
 
-#userInputArea {
-  display: flex;
-  gap: 10px;
-}
-
-#userInput {
-  flex: 1;
+/* Chat Messages */
+.response {
+  background-color: #e6f0ff;
   padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 6px;
   font-size: 16px;
 }
 
-#sendBtn {
-  padding: 10px 20px;
+/* Input Section */
+#user-input {
+  flex: 1;
+  padding: 12px;
   font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  outline: none;
+}
+
+#user-input:focus {
+  border-color: #0077cc;
+}
+
+#send-button, #mic-button {
+  margin-left: 10px;
+}
+
+/* Layout for input and buttons */
+input, button {
+  margin-top: 10px;
+}
+
+div[style*=\"display: flex\"] {
+  padding: 10px 20px;
 }
