@@ -1,5 +1,3 @@
-// Updated app.js - Full Working Version with Buttons, Hardcode, Vector, GPT-4 Turbo
-
 // Main message processor
 async function processUserMessage(message) {
     console.log("Checking hardcoded responses...");
@@ -35,7 +33,7 @@ async function processUserMessage(message) {
 
 // Hardcoded response checker
 function checkHardcodedResponse(message) {
-    return hardcodedResponses[message] || null;
+    return hardcodedResponses?.[message.toLowerCase()] || null;
 }
 
 // Vector search fallback
@@ -43,10 +41,9 @@ async function getVectorResponse(message) {
     try {
         const response = await fetch('/api/vector-search', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query: message })
         });
-
         const data = await response.json();
         return data.match || null;
     } catch (error) {
@@ -60,10 +57,9 @@ async function getAIResponseGPT4Turbo(message) {
     try {
         const response = await fetch('/api/gpt4-turbo', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt: message })
         });
-
         const data = await response.json();
         return data.reply || null;
     } catch (error) {
@@ -72,7 +68,7 @@ async function getAIResponseGPT4Turbo(message) {
     }
 }
 
-// Log AI responses for future hardcoding
+// Log AI responses to Firebase
 function logAIResponseToDatabase(userMessage, aiResponse) {
     firebase.database().ref('ai_responses_log').push({
         userMessage,
@@ -81,25 +77,23 @@ function logAIResponseToDatabase(userMessage, aiResponse) {
     });
 }
 
-// Display chat response
+// Display response in chat
 function displayChatResponse(response) {
     const chatBox = document.getElementById("chat-box");
     chatBox.innerHTML += `<div class="response">${response}</div>`;
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Button and event listener setup
-
-document.addEventListener('DOMContentLoaded', function() {
+// Event Listeners
+document.addEventListener('DOMContentLoaded', function () {
     const sendButton = document.getElementById('send-button');
     const userInput = document.getElementById('user-input');
     const startButton = document.getElementById('start-button');
     const endButton = document.getElementById('end-button');
     const micButton = document.getElementById('mic-button');
 
-    // Send Button click
     if (sendButton) {
-        sendButton.addEventListener('click', function() {
+        sendButton.addEventListener('click', function () {
             const message = userInput.value.trim();
             if (message) {
                 processUserMessage(message);
@@ -108,9 +102,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Enter key press
     if (userInput) {
-        userInput.addEventListener('keypress', function(event) {
+        userInput.addEventListener('keypress', function (event) {
             if (event.key === 'Enter') {
                 event.preventDefault();
                 sendButton.click();
@@ -118,24 +111,21 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Start Button click
     if (startButton) {
-        startButton.addEventListener('click', function() {
-            startScenario();
+        startButton.addEventListener('click', function () {
+            startScenario?.(); // Optional chaining in case function not yet defined
         });
     }
 
-    // End Button click
     if (endButton) {
-        endButton.addEventListener('click', function() {
-            endScenario();
+        endButton.addEventListener('click', function () {
+            endScenario?.();
         });
     }
 
-    // Mic Button click
     if (micButton) {
-        micButton.addEventListener('click', function() {
-            startVoiceRecognition();
+        micButton.addEventListener('click', function () {
+            startVoiceRecognition?.();
         });
     }
 });
