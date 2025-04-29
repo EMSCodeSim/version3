@@ -24,33 +24,35 @@ async function loadPatientInfo() {
 
 // === MAIN CHAT FLOW ===
 async function processUserMessage(message) {
+  console.log("User message received:", message);
+
   console.log("Checking hardcoded responses...");
   let hardcodeResponse = checkHardcodedResponse(message);
 
   if (hardcodeResponse) {
-    console.log("Hardcode match found!");
+    console.log("✅ Hardcoded response found:", hardcodeResponse);
     displayChatResponse(hardcodeResponse);
     return;
   }
 
-  console.log("No hardcode match, checking vector similarity...");
+  console.log("No hardcoded match. Checking vector similarity...");
   let vectorResponse = await getVectorResponse(message);
 
   if (vectorResponse) {
-    console.log("Vector match found!");
+    console.log("✅ Vector match found:", vectorResponse);
     displayChatResponse(vectorResponse);
     return;
   }
 
-  console.log("No vector match, falling back to GPT-4 Turbo AI...");
+  console.log("No vector match. Falling back to GPT-4 Turbo...");
   let aiResponse = await getAIResponseGPT4Turbo(message);
 
   if (aiResponse) {
-    console.log("Received AI response.");
+    console.log("✅ GPT-4 Turbo response received:", aiResponse);
     logAIResponseToDatabase(message, aiResponse);
     displayChatResponse(aiResponse);
   } else {
-    console.error("No response received from AI.");
+    console.error("❌ No AI response received.");
     displayChatResponse("Sorry, I encountered an error processing your request.");
   }
 }
@@ -68,6 +70,7 @@ async function getVectorResponse(message) {
       body: JSON.stringify({ query: message })
     });
     const data = await response.json();
+    console.log("Vector search raw response:", data);
     return data.match || null;
   } catch (error) {
     console.error("Vector search error:", error);
@@ -86,14 +89,16 @@ async function getAIResponseGPT4Turbo(message) {
     });
 
     const data = await response.json();
+    console.log("GPT-4 Turbo raw response:", data);
     return data.reply || null;
   } catch (error) {
-    console.error("AI request error:", error);
+    console.error("GPT-4 Turbo API error:", error);
     return null;
   }
 }
 
 function logAIResponseToDatabase(userMessage, aiResponse) {
+  console.log("Logging AI response to Firebase...");
   firebase.database().ref('ai_responses_log').push({
     userMessage,
     aiResponse,
@@ -110,6 +115,7 @@ function displayChatResponse(response) {
 
 // === SCENARIO START ===
 startScenario = async function () {
+  console.log("Starting scenario: loading dispatch and patient info...");
   const dispatch = await loadDispatchInfo();
   patientContext = await loadPatientInfo(); // Store for AI prompt
 
@@ -120,15 +126,18 @@ startScenario = async function () {
 };
 
 endScenario = function () {
+  console.log("Scenario ended by user.");
   displayChatResponse("📦 Scenario ended. Please complete your handoff report.");
 };
 
 startVoiceRecognition = function () {
+  console.log("Voice recognition (simulated) started.");
   displayChatResponse("🎤 Voice recognition activated. (Simulated)");
 };
 
 // === BUTTON LOGIC ===
 document.addEventListener('DOMContentLoaded', function () {
+  console.log("Setting up button listeners...");
   const sendButton = document.getElementById('send-button');
   const userInput = document.getElementById('user-input');
   const startButton = document.getElementById('start-button');
