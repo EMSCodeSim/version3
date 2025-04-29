@@ -1,107 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>EMS Code Sim</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f0f2f5;
-      margin: 0;
-      padding: 0;
-    }
-
-    header {
-      background-color: #ffffff;
-      padding: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #ccc;
-    }
-
-    #chat-display {
-      padding: 20px;
-      max-height: 70vh;
-      overflow-y: auto;
-    }
-
-    .input-area {
-      display: flex;
-      padding: 10px;
-      background: #fff;
-      border-top: 1px solid #ccc;
-    }
-
-    .input-area input {
-      flex: 1;
-      padding: 10px;
-      font-size: 16px;
-    }
-
-    .input-area button {
-      padding: 10px 20px;
-      margin-left: 10px;
-      font-size: 16px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EMS Simulator</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-  <header>
-    <div>
-      <button onclick="startScenario()">Start Scenario</button>
-      <button onclick="endScenario()">End Scenario</button>
-      <button onclick="openAdmin()">Admin</button>
+
+    <!-- Header with Logo and Buttons -->
+    <header style="padding: 10px; display: flex; justify-content: center; gap: 10px;">
+        <button id="start-button">Start Scenario</button>
+        <button id="end-button">End Scenario</button>
+    </header>
+
+    <!-- Main Chat Display -->
+    <div id="chat-box" style="height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin: 20px;">
+        <!-- Chat messages appear here -->
     </div>
-  </header>
 
-  <main>
-    <div id="chat-display"></div>
-    <div class="input-area">
-      <input id="user-input" type="text" placeholder="Type your message here..." />
-      <button onclick="sendMessage()">Send</button>
+    <!-- User Input Section -->
+    <div style="display: flex; align-items: center; margin: 20px;">
+        <input type="text" id="user-input" placeholder="Type your message..." style="flex: 1; padding: 10px; font-size: 16px;">
+        <button id="send-button" style="margin-left: 10px;">Send</button>
+        <button id="mic-button" style="margin-left: 10px;">Mic</button>
     </div>
-  </main>
 
-  <!-- Firebase Config + Load hardcodedResponses -->
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
-      authDomain: "ems-code-sim.firebaseapp.com",
-      databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
-      projectId: "ems-code-sim",
-      storageBucket: "ems-code-sim.appspot.com",
-      messagingSenderId: "190498607578",
-      appId: "1:190498607578:web:4cf6c8e999b027956070e3",
-      measurementId: "G-2Q3ZT01YT1"
-    };
+    <!-- Firebase Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
-    firebase.initializeApp(firebaseConfig);
-    firebase.analytics();
+    <script>
+      // TODO: Replace with your Firebase project configuration
+      const firebaseConfig = {
+        apiKey: "YOUR_API_KEY_HERE",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
+      };
 
-    // Load chat_log from Firebase into global variable
-    window.hardcodedResponses = [];
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+    </script>
 
-    firebase.database().ref('chat_log').once('value')
-      .then(snapshot => {
-        const data = snapshot.val();
-        window.hardcodedResponses = Object.values(data || {});
-        console.log("Loaded hardcodedResponses from Firebase", window.hardcodedResponses);
-      })
-      .catch(err => {
-        console.error("Firebase load failed:", err);
-      });
-  </script>
+    <!-- Your App Logic -->
+    <script src="app.js"></script>
 
-  <!-- Load Chat Logic AFTER Firebase loads -->
-  <script src="scripts/app.js" defer></script>
 </body>
 </html>
