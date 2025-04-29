@@ -12,17 +12,14 @@ let triggers = [];
 function loadFirebaseData() {
   unknownsRef.on('value', snapshot => {
     unknownQuestions = snapshot.val() || [];
-    console.log('Unknown Questions Loaded');
   });
 
   hardcodesRef.on('value', snapshot => {
     hardcodedResponses = snapshot.val() || [];
-    console.log('Hardcoded Responses Loaded');
   });
 
   triggersRef.on('value', snapshot => {
     triggers = snapshot.val() || [];
-    console.log('Triggers Loaded');
   });
 }
 loadFirebaseData();
@@ -66,13 +63,17 @@ function sendMessage() {
   userInput.value = '';
 }
 
-// ========= Open Admin =========
+// ========= Admin Navigation =========
 function openAdmin() {
+  window.open('admin_home.html', '_blank');
+}
+
+function openApproveResponses() {
   window.open('admin.html', '_blank');
 }
 
 // ========= Add Message to Chat =========
-function addMessageToChat(sender, message, voice = null) {
+function addMessageToChat(sender, message) {
   const chatDisplay = document.getElementById('chat-display');
   const messageDiv = document.createElement('div');
   messageDiv.style.marginBottom = "10px";
@@ -87,12 +88,10 @@ function addMessageToChat(sender, message, voice = null) {
     messageDiv.style.textAlign = "left";
     messageDiv.style.color = "blue";
     messageDiv.innerHTML = `<strong>Patient:</strong> ${message}`;
-    speakTextTTS(message, 'patient', voice);
   } else if (sender === 'proctor') {
     messageDiv.style.textAlign = "left";
     messageDiv.style.color = "gray";
     messageDiv.innerHTML = `<strong>Proctor:</strong> ${message}`;
-    speakTextTTS(message, 'proctor', voice);
   } else {
     messageDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
   }
@@ -101,60 +100,15 @@ function addMessageToChat(sender, message, voice = null) {
   chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
-// ========= Process User Input =========
+// ========= Process User Input (basic version) =========
 function processUserInput(message) {
   const normalizedMessage = message.trim().toLowerCase();
   const match = hardcodedResponses.find(entry => entry.userQuestion.trim().toLowerCase() === normalizedMessage);
 
   if (match) {
-    addMessageToChat(match.role, match.aiResponse, match.voice || null);
+    addMessageToChat(match.role, match.aiResponse);
   } else {
-    console.log('No hardcoded match. Sending to AI...');
-
-    const newUnknown = {
-      userQuestion: message,
-      aiResponse: "",
-      role: "pending"
-    };
-
-    unknownQuestions.push(newUnknown);
-    unknownsRef.set(unknownQuestions);
-
-    fetch('/.netlify/functions/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: message })
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data) {
-        let aiReply = '';
-        let role = '';
-
-        if (data.patientReply) {
-          aiReply = data.patientReply;
-          role = 'patient';
-          addMessageToChat('patient', aiReply);
-        } else if (data.proctorReply) {
-          aiReply = data.proctorReply;
-          role = 'proctor';
-          addMessageToChat('proctor', aiReply);
-        } else {
-          addMessageToChat('system', 'No valid AI response.');
-        }
-
-        if (aiReply) {
-          newUnknown.aiResponse = aiReply;
-          newUnknown.role = role;
-          unknownQuestions[unknownQuestions.length - 1] = newUnknown;
-          unknownsRef.set(unknownQuestions);
-        }
-      }
-    })
-    .catch(error => {
-      console.error('Error contacting AI service.', error);
-      addMessageToChat('system', 'Error contacting AI service.');
-    });
+    addMessageToChat('system', 'No hardcoded match found.');
   }
 }
 
@@ -195,42 +149,12 @@ function playAudioTrigger(trigger) {
 }
 
 function launchAppTrigger(trigger) {
-  alert('Simulated App Launch');
+  alert('Simulated App Launch Triggered');
 }
 
-// ========= Speak Text with Real TTS-1 Voices =========
-async function speakTextTTS(text, role, customVoice = null) {
-  const voice = customVoice || (role === 'patient' ? 'fable' : 'shimmer');
-
-  const response = await fetch('/.netlify/functions/tts', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: text, voice: voice })
-  });
-
-  if (!response.ok) {
-    console.error('TTS API Error');
-    return;
-  }
-
-  const arrayBuffer = await response.arrayBuffer();
-  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-  const source = audioContext.createBufferSource();
-  source.buffer = audioBuffer;
-
-  if (role === 'patient') {
-    source.playbackRate.value = Math.random() * (1.05 - 0.95) + 0.95;
-  } else {
-    source.playbackRate.value = 1.0;
-  }
-
-  source.connect(audioContext.destination);
-  source.start(0);
-}
-
-// ========= Expose Functions to Global Window =========
+// ========= Expose to Window =========
 window.startScenario = startScenario;
 window.endScenario = endScenario;
 window.sendMessage = sendMessage;
 window.openAdmin = openAdmin;
+window.openApproveResponses = openApproveResponses;
