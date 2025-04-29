@@ -2,51 +2,38 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Admin Home - EMS Code Sim</title>
+  <title>EMS Code Sim - Admin Home</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
-      background-color: #f0f4f8;
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-    }
-
-    h1 {
-      margin-bottom: 30px;
-      color: #003366;
-    }
-
-    .admin-button {
-      display: block;
-      width: 250px;
-      padding: 15px;
+    body { font-family: Arial, sans-serif; padding: 40px; background: #f0f8ff; text-align: center; }
+    h1 { margin-bottom: 30px; }
+    .admin-link {
+      display: inline-block;
       margin: 10px;
+      padding: 15px 25px;
       font-size: 18px;
-      text-align: center;
+      text-decoration: none;
       color: white;
       background-color: #0077cc;
-      border: none;
       border-radius: 8px;
-      cursor: pointer;
       transition: background-color 0.3s;
-      text-decoration: none;
     }
-
-    .admin-button:hover {
+    .admin-link:hover {
       background-color: #005fa3;
     }
   </style>
 </head>
 <body>
 
-  <h1>Admin Dashboard</h1>
+<h1>EMS Simulator Admin Home</h1>
 
-  <a href="create_scenario.html" class="admin-button">Create Scenario</a>
-  <a href="admin.html" class="admin-button">Approve Responses</a>
+<a href="hardcode_manager.html" class="admin-link">Manage Hardcoded Responses</a><br>
+
+<a href="create_scenario.html" class="admin-link">Create New Scenario</a><br>
+
+<a href="admin_errors.html" class="admin-link">View Error Logs</a><br>
+
+<a href="index.html" class="admin-link">Return to Simulator</a>
 
 </body>
 </html>
