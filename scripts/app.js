@@ -1,9 +1,10 @@
-// Updated app.js - Corrected Message Flow: Hardcode -> Vector -> GPT-4 Turbo fallback
+// Updated app.js - Full Working Version with Buttons, Hardcode, Vector, GPT-4 Turbo
 
+// Main message processor
 async function processUserMessage(message) {
     console.log("Checking hardcoded responses...");
     let hardcodeResponse = checkHardcodedResponse(message);
-    
+
     if (hardcodeResponse) {
         console.log("Hardcode match found!");
         displayChatResponse(hardcodeResponse);
@@ -32,15 +33,13 @@ async function processUserMessage(message) {
     }
 }
 
-// Ensure these functions are correctly implemented:
-
+// Hardcoded response checker
 function checkHardcodedResponse(message) {
-    // Your exact match logic here, returning response or null
     return hardcodedResponses[message] || null;
 }
 
+// Vector search fallback
 async function getVectorResponse(message) {
-    // Your vector similarity search logic, returning best response or null
     try {
         const response = await fetch('/api/vector-search', {
             method: 'POST',
@@ -56,6 +55,7 @@ async function getVectorResponse(message) {
     }
 }
 
+// GPT-4 Turbo fallback
 async function getAIResponseGPT4Turbo(message) {
     try {
         const response = await fetch('/api/gpt4-turbo', {
@@ -72,8 +72,8 @@ async function getAIResponseGPT4Turbo(message) {
     }
 }
 
+// Log AI responses for future hardcoding
 function logAIResponseToDatabase(userMessage, aiResponse) {
-    // Your Firebase logging logic
     firebase.database().ref('ai_responses_log').push({
         userMessage,
         aiResponse,
@@ -81,9 +81,61 @@ function logAIResponseToDatabase(userMessage, aiResponse) {
     });
 }
 
+// Display chat response
 function displayChatResponse(response) {
-    // Your UI display logic
     const chatBox = document.getElementById("chat-box");
     chatBox.innerHTML += `<div class="response">${response}</div>`;
     chatBox.scrollTop = chatBox.scrollHeight;
 }
+
+// Button and event listener setup
+
+document.addEventListener('DOMContentLoaded', function() {
+    const sendButton = document.getElementById('send-button');
+    const userInput = document.getElementById('user-input');
+    const startButton = document.getElementById('start-button');
+    const endButton = document.getElementById('end-button');
+    const micButton = document.getElementById('mic-button');
+
+    // Send Button click
+    if (sendButton) {
+        sendButton.addEventListener('click', function() {
+            const message = userInput.value.trim();
+            if (message) {
+                processUserMessage(message);
+                userInput.value = '';
+            }
+        });
+    }
+
+    // Enter key press
+    if (userInput) {
+        userInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendButton.click();
+            }
+        });
+    }
+
+    // Start Button click
+    if (startButton) {
+        startButton.addEventListener('click', function() {
+            startScenario();
+        });
+    }
+
+    // End Button click
+    if (endButton) {
+        endButton.addEventListener('click', function() {
+            endScenario();
+        });
+    }
+
+    // Mic Button click
+    if (micButton) {
+        micButton.addEventListener('click', function() {
+            startVoiceRecognition();
+        });
+    }
+});
