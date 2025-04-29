@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EMS Code Sim - Error Logs</title>
+  <link rel="stylesheet" href="styles/style.css">
+  <style>
+    body { padding: 20px; background-color: #f7f7f7; font-family: Arial, sans-serif; }
+    h1 { margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; background-color: white; }
+    th, td { padding: 10px; border: 1px solid #ccc; text-align: left; }
+    th { background-color: #0077cc; color: white; }
+    tr:nth-child(even) { background-color: #f2f2f2; }
+  </style>
+</head>
+<body>
+
+<h1>EMS Simulator - Error Logs</h1>
+
+<table id="error-table">
+  <thead>
+    <tr>
+      <th>Timestamp</th>
+      <th>Error</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Errors will be injected here -->
+  </tbody>
+</table>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
+    authDomain: "ems-code-sim.firebaseapp.com",
+    databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+    projectId: "ems-code-sim",
+    storageBucket: "ems-code-sim.firebasestorage.app",
+    messagingSenderId: "190498607578",
+    appId: "1:190498607578:web:4cf6c8e999b027956070e3",
+    measurementId: "G-2Q3ZT01YT1"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+
+  const db = firebase.database().ref('error_logs');
+  const errorTableBody = document.querySelector('#error-table tbody');
+
+  db.on('child_added', snapshot => {
+    const errorData = snapshot.val();
+    const row = document.createElement('tr');
+
+    const date = new Date(errorData.timestamp).toLocaleString();
+    row.innerHTML = `
+      <td>${date}</td>
+      <td>${errorData.error}</td>
+    `;
+    errorTableBody.prepend(row); // Show newest errors at the top
+  });
+</script>
+
+</body>
+</html>
