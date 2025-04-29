@@ -1,5 +1,9 @@
-[functions]
-  node_bundler = "esbuild"
+[[redirects]]
+  from = "/api/gpt4-turbo"
+  to = "/.netlify/functions/gpt4-turbo"
+  status = 200
 
-[build.environment]
-  NODE_VERSION = "18"
+[[redirects]]
+  from = "/api/vector-search"
+  to = "/.netlify/functions/vector-search"
+  status = 200
