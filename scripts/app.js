@@ -1,160 +1,113 @@
-// ========= Firebase References =========
-const unknownsRef = firebase.database().ref('unknownQuestions');
-const hardcodesRef = firebase.database().ref('hardcodedResponses');
-const triggersRef = firebase.database().ref('triggers');
-
-// ========= Global Variables =========
-let hardcodedResponses = [];
-let unknownQuestions = [];
-let triggers = [];
-
-// ========= Load Data from Firebase =========
-function loadFirebaseData() {
-  unknownsRef.on('value', snapshot => {
-    unknownQuestions = snapshot.val() || [];
-  });
-
-  hardcodesRef.on('value', snapshot => {
-    hardcodedResponses = snapshot.val() || [];
-  });
-
-  triggersRef.on('value', snapshot => {
-    triggers = snapshot.val() || [];
-  });
-}
-loadFirebaseData();
-
-// ========= Start Scenario =========
-function startScenario() {
-  fetch('./scenarios/chest_pain_002/dispatch.txt')
-    .then(response => response.text())
-    .then(dispatchText => {
-      addMessageToChat('system', dispatchText);
-      showScenePhoto('./scenarios/chest_pain_002/scene1.png');
-    })
-    .catch(error => console.error('Dispatch load failed', error));
+// ========= Normalize Function =========
+function normalize(text) {
+  return text.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
 }
 
-// ========= Show Scene Photo =========
-function showScenePhoto(photoPath) {
-  const chatDisplay = document.getElementById('chat-display');
-  const image = document.createElement('img');
-  image.src = photoPath;
-  image.alt = 'Scene Photo';
-  image.style.maxWidth = '100%';
-  chatDisplay.appendChild(image);
-  chatDisplay.scrollTop = chatDisplay.scrollHeight;
+// ========= Cosine Similarity =========
+function cosineSimilarity(a, b) {
+  const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
+  const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
+  const magB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
+  return dot / (magA * magB);
 }
 
-// ========= End Scenario =========
-function endScenario() {
-  addMessageToChat('system', 'Scenario ended.');
-}
+// ========= Exact Match Search =========
+function findHardcodedMatch(userInput) {
+  const cleanedInput = normalize(userInput);
 
-// ========= Send Message =========
-function sendMessage() {
-  const userInput = document.getElementById('user-input');
-  const message = userInput.value.trim();
-  if (!message) return;
-
-  addMessageToChat('user', message);
-  checkForTrigger(message);
-  processUserInput(message);
-  userInput.value = '';
-}
-
-// ========= Admin Navigation =========
-function openAdmin() {
-  window.open('admin_home.html', '_blank');
-}
-
-function openApproveResponses() {
-  window.open('admin.html', '_blank');
-}
-
-// ========= Add Message to Chat =========
-function addMessageToChat(sender, message) {
-  const chatDisplay = document.getElementById('chat-display');
-  const messageDiv = document.createElement('div');
-  messageDiv.style.marginBottom = "10px";
-
-  if (sender === 'user') {
-    messageDiv.style.textAlign = "right";
-    messageDiv.innerHTML = `<strong>You:</strong> ${message}`;
-  } else if (sender === 'system') {
-    messageDiv.style.textAlign = "center";
-    messageDiv.innerHTML = `<em>${message}</em>`;
-  } else if (sender === 'patient') {
-    messageDiv.style.textAlign = "left";
-    messageDiv.style.color = "blue";
-    messageDiv.innerHTML = `<strong>Patient:</strong> ${message}`;
-  } else if (sender === 'proctor') {
-    messageDiv.style.textAlign = "left";
-    messageDiv.style.color = "gray";
-    messageDiv.innerHTML = `<strong>Proctor:</strong> ${message}`;
-  } else {
-    messageDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
-  }
-
-  chatDisplay.appendChild(messageDiv);
-  chatDisplay.scrollTop = chatDisplay.scrollHeight;
-}
-
-// ========= Process User Input (basic version) =========
-function processUserInput(message) {
-  const normalizedMessage = message.trim().toLowerCase();
-  const match = hardcodedResponses.find(entry => entry.userQuestion.trim().toLowerCase() === normalizedMessage);
-
-  if (match) {
-    addMessageToChat(match.role, match.aiResponse);
-  } else {
-    addMessageToChat('system', 'No hardcoded match found.');
-  }
-}
-
-// ========= Check and Handle Triggers =========
-function checkForTrigger(userMessage) {
-  for (let trigger of triggers) {
-    if (userMessage.toLowerCase().includes(trigger.pattern.toLowerCase())) {
-      console.log(`Trigger matched: ${trigger.pattern}`);
-      handleTriggerAction(trigger);
-      break;
+  for (const entry of hardcodedResponses) {
+    const variations = Array.isArray(entry.userQuestions) ? entry.userQuestions : [entry.userQuestion];
+    for (const phrase of variations) {
+      if (normalize(phrase) === cleanedInput) {
+        return entry;
+      }
     }
   }
+  return null;
 }
 
-function handleTriggerAction(trigger) {
-  if (trigger.type === 'photo') {
-    showPhotoTrigger(trigger);
-  } else if (trigger.type === 'audio') {
-    playAudioTrigger(trigger);
-  } else if (trigger.type === 'app') {
-    launchAppTrigger(trigger);
+// ========= Vector Search (fallback) =========
+async function vectorSearch(userInput) {
+  try {
+    const response = await fetch("/.netlify/functions/embed", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: userInput })
+    });
+
+    const { embedding: inputVector } = await response.json();
+
+    let bestMatch = null;
+    let bestScore = 0;
+
+    for (const entry of hardcodedResponses) {
+      if (!entry.embedding) continue;
+      const score = cosineSimilarity(inputVector, entry.embedding);
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = entry;
+      }
+    }
+
+    return bestScore > 0.85 ? bestMatch : null;
+
+  } catch (err) {
+    console.error("Vector search failed:", err);
+    return null;
   }
 }
 
-function showPhotoTrigger(trigger) {
-  const chatDisplay = document.getElementById('chat-display');
-  const image = document.createElement('img');
-  image.src = trigger.fileData;
-  image.alt = 'Triggered Photo';
-  image.style.maxWidth = '100%';
-  chatDisplay.appendChild(image);
-  chatDisplay.scrollTop = chatDisplay.scrollHeight;
+// ========= Process User Input =========
+async function processUserInput(message) {
+  const userInput = message.trim();
+
+  const exactMatch = findHardcodedMatch(userInput);
+  if (exactMatch) {
+    addMessageToChat(exactMatch.role, exactMatch.aiResponse);
+    if (exactMatch.audioFile) playTTS(exactMatch.audioFile);
+    return;
+  }
+
+  const vectorMatch = await vectorSearch(userInput);
+  if (vectorMatch) {
+    addMessageToChat(vectorMatch.role, vectorMatch.aiResponse);
+    if (vectorMatch.audioFile) playTTS(vectorMatch.audioFile);
+    return;
+  }
+
+  // Fallback to GPT
+  addMessageToChat("system", "No match found. Forwarding to AI...");
+  sendToGPT(message);
 }
 
-function playAudioTrigger(trigger) {
-  const audio = new Audio(trigger.fileData);
+// ========= TTS Playback =========
+function playTTS(audioFile) {
+  const audio = new Audio(audioFile);
   audio.play();
 }
 
-function launchAppTrigger(trigger) {
-  alert('Simulated App Launch Triggered');
+// ========= Chat Display =========
+function addMessageToChat(role, text) {
+  const chat = document.getElementById("chat-display");
+  const msg = document.createElement("div");
+  msg.textContent = `${role.toUpperCase()}: ${text}`;
+  chat.appendChild(msg);
+  chat.scrollTop = chat.scrollHeight;
 }
 
-// ========= Expose to Window =========
-window.startScenario = startScenario;
-window.endScenario = endScenario;
-window.sendMessage = sendMessage;
-window.openAdmin = openAdmin;
-window.openApproveResponses = openApproveResponses;
+// ========= GPT Fallback =========
+function sendToGPT(message) {
+  fetch("/.netlify/functions/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message })
+  })
+  .then(res => res.json())
+  .then(data => {
+    addMessageToChat("patient", data.reply);
+  })
+  .catch(err => {
+    console.error("GPT error", err);
+    addMessageToChat("system", "Error getting AI response.");
+  });
+}
