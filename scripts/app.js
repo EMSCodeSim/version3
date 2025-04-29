@@ -1,4 +1,27 @@
-// Main message processor
+// === SCENARIO CONFIG ===
+const scenarioPath = 'scenarios/chest_pain_002/';
+
+async function loadDispatchInfo() {
+  try {
+    const res = await fetch(`${scenarioPath}dispatch.txt`);
+    return await res.text();
+  } catch (e) {
+    console.error("Error loading dispatch.txt", e);
+    return "Dispatch information unavailable.";
+  }
+}
+
+async function loadPatientInfo() {
+  try {
+    const res = await fetch(`${scenarioPath}patient.txt`);
+    return await res.text();
+  } catch (e) {
+    console.error("Error loading patient.txt", e);
+    return "Patient introduction unavailable.";
+  }
+}
+
+// === MAIN CHAT FLOW ===
 async function processUserMessage(message) {
     console.log("Checking hardcoded responses...");
     let hardcodeResponse = checkHardcodedResponse(message);
@@ -31,12 +54,11 @@ async function processUserMessage(message) {
     }
 }
 
-// Hardcoded response checker
+// === LOOKUP FUNCTIONS ===
 function checkHardcodedResponse(message) {
     return hardcodedResponses?.[message.toLowerCase()] || null;
 }
 
-// Vector search fallback
 async function getVectorResponse(message) {
     try {
         const response = await fetch('/api/vector-search', {
@@ -52,7 +74,6 @@ async function getVectorResponse(message) {
     }
 }
 
-// GPT-4 Turbo fallback
 async function getAIResponseGPT4Turbo(message) {
     try {
         const response = await fetch('/api/gpt4-turbo', {
@@ -68,7 +89,6 @@ async function getAIResponseGPT4Turbo(message) {
     }
 }
 
-// Log AI responses to Firebase
 function logAIResponseToDatabase(userMessage, aiResponse) {
     firebase.database().ref('ai_responses_log').push({
         userMessage,
@@ -77,14 +97,33 @@ function logAIResponseToDatabase(userMessage, aiResponse) {
     });
 }
 
-// Display response in chat
+// === UI FUNCTIONS ===
 function displayChatResponse(response) {
     const chatBox = document.getElementById("chat-box");
     chatBox.innerHTML += `<div class="response">${response}</div>`;
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Event Listeners
+// === SCENARIO START ===
+startScenario = async function () {
+    const dispatch = await loadDispatchInfo();
+    const patientIntro = await loadPatientInfo();
+
+    displayChatResponse(`🚑 Dispatch: ${dispatch}`);
+    setTimeout(() => {
+        displayChatResponse(`👤 Patient: ${patientIntro}`);
+    }, 1000);
+};
+
+endScenario = function () {
+    displayChatResponse("📦 Scenario ended. Please complete your handoff report.");
+};
+
+startVoiceRecognition = function () {
+    displayChatResponse("🎤 Voice recognition activated. (Simulated)");
+};
+
+// === BUTTON LOGIC ===
 document.addEventListener('DOMContentLoaded', function () {
     const sendButton = document.getElementById('send-button');
     const userInput = document.getElementById('user-input');
@@ -113,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (startButton) {
         startButton.addEventListener('click', function () {
-            startScenario?.(); // Optional chaining in case function not yet defined
+            startScenario?.();
         });
     }
 
