@@ -9,12 +9,10 @@
       background-color: #eef2f5;
       padding: 20px;
     }
-
     h1 {
       text-align: center;
       color: #003366;
     }
-
     .form-section {
       background: white;
       padding: 20px;
@@ -22,13 +20,11 @@
       margin-bottom: 20px;
       box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
     }
-
     label {
       font-weight: bold;
       display: block;
       margin-top: 10px;
     }
-
     input, textarea, select {
       width: 100%;
       padding: 8px;
@@ -36,14 +32,12 @@
       border-radius: 5px;
       border: 1px solid #ccc;
     }
-
     .flex-row {
       display: flex;
       align-items: center;
       gap: 10px;
       margin-bottom: 15px;
     }
-
     .save-button {
       background-color: #0077cc;
       color: white;
@@ -55,9 +49,12 @@
       width: 100%;
       margin-top: 20px;
     }
-
     .save-button:hover {
       background-color: #005fa3;
+    }
+    #scene2 {
+      display: none;
+      margin-top: 40px;
     }
   </style>
 </head>
@@ -127,12 +124,12 @@
   </select>
 
   <h2>OPQRST:</h2>
-  <input type="text" id="onset" placeholder="Onset (e.g., sudden)">
-  <input type="text" id="provocation" placeholder="Provocation (e.g., worse with movement)">
-  <input type="text" id="quality" placeholder="Quality (e.g., crushing, stabbing)">
-  <input type="text" id="radiation" placeholder="Radiation (e.g., to left arm)">
+  <input type="text" id="onset" placeholder="Onset">
+  <input type="text" id="provocation" placeholder="Provocation">
+  <input type="text" id="quality" placeholder="Quality">
+  <input type="text" id="radiation" placeholder="Radiation">
   <input type="text" id="severity" placeholder="Severity (1-10)">
-  <input type="text" id="time" placeholder="Time (duration of symptoms)">
+  <input type="text" id="time" placeholder="Time (duration)">
 
   <h2>SAMPLE History:</h2>
   <input type="text" id="signsSymptoms" placeholder="Signs and Symptoms">
@@ -142,20 +139,59 @@
   <input type="text" id="lastOralIntake" placeholder="Last Oral Intake">
   <input type="text" id="eventsLeading" placeholder="Events Leading Up">
 
-  <h2>Link Scenario (Trigger Next Scene):</h2>
+  <h2>Link Scenario:</h2>
   <label>Trigger Type:</label>
-  <select id="linkTriggerType">
+  <select id="linkTriggerType" onchange="showScene2()">
     <option value="">None</option>
-    <option value="timer">Timer (automatic after time)</option>
+    <option value="timer">Timer</option>
     <option value="incorrectTreatment">Incorrect Treatment</option>
-    <option value="sceneProblem">Scene Safety Problem</option>
+    <option value="sceneProblem">Scene Problem</option>
   </select>
 
-  <label>Scene 2 Dispatch Info:</label>
-  <textarea id="scene2Dispatch"></textarea>
+  <div id="scene2">
+    <h1>Scene 2 Details</h1>
 
-  <label>Scene 2 Description:</label>
-  <textarea id="scene2Description"></textarea>
+    <label>Scene 2 Dispatch Info:</label>
+    <textarea id="scene2Dispatch"></textarea>
+
+    <label>Scene 2 Description:</label>
+    <textarea id="scene2Description"></textarea>
+
+    <h2>Scene 2 Vitals:</h2>
+    <input type="text" id="bp2" placeholder="Blood Pressure">
+    <input type="text" id="pulse2" placeholder="Pulse">
+    <input type="text" id="respRate2" placeholder="Respirations">
+    <input type="text" id="skin2" placeholder="Skin">
+    <input type="text" id="sao22" placeholder="SaO2">
+
+    <h2>Scene 2 Mental Status:</h2>
+    <select id="mentalStatus2">
+      <option value="AAOx4">AAOx4</option>
+      <option value="AAOx3">AAOx3</option>
+      <option value="AAOx2">AAOx2</option>
+      <option value="AAOx1">AAOx1</option>
+      <option value="Alert">Alert</option>
+      <option value="Verbal">Responds to Verbal</option>
+      <option value="Pain">Responds to Pain</option>
+      <option value="Unresponsive">Unresponsive</option>
+    </select>
+
+    <h2>Scene 2 OPQRST:</h2>
+    <input type="text" id="onset2" placeholder="Onset">
+    <input type="text" id="provocation2" placeholder="Provocation">
+    <input type="text" id="quality2" placeholder="Quality">
+    <input type="text" id="radiation2" placeholder="Radiation">
+    <input type="text" id="severity2" placeholder="Severity (1-10)">
+    <input type="text" id="time2" placeholder="Time (duration)">
+
+    <h2>Scene 2 SAMPLE History:</h2>
+    <input type="text" id="signsSymptoms2" placeholder="Signs and Symptoms">
+    <input type="text" id="allergies2" placeholder="Allergies">
+    <input type="text" id="medications2" placeholder="Medications">
+    <input type="text" id="pastHistory2" placeholder="Past Medical History">
+    <input type="text" id="lastOralIntake2" placeholder="Last Oral Intake">
+    <input type="text" id="eventsLeading2" placeholder="Events Leading Up">
+  </div>
 
   <button class="save-button" onclick="saveScenario()">Save Scenario</button>
 </div>
@@ -165,8 +201,8 @@
     const type = document.getElementById('scenarioType').value;
 
     if (type === 'Chest Pain') {
-      document.getElementById('dispatchInfo').value = "You are dispatched to a 62-year-old male with chest pain at a public park.";
-      document.getElementById('sceneDescription').value = "The patient is seated on a bench, clutching his chest.";
+      document.getElementById('dispatchInfo').value = "Dispatched to a 62-year-old male with chest pain.";
+      document.getElementById('sceneDescription').value = "Patient seated on a park bench, clutching chest.";
       document.getElementById('bp').value = "140/88";
       document.getElementById('pulse').value = "96";
       document.getElementById('respRate').value = "20";
@@ -174,24 +210,54 @@
       document.getElementById('sao2').value = "94%";
       document.getElementById('mentalStatus').value = "AAOx4";
       document.getElementById('onset').value = "Sudden";
-      document.getElementById('provocation').value = "Worse with exertion";
+      document.getElementById('provocation').value = "Worse with movement";
       document.getElementById('quality').value = "Pressure";
       document.getElementById('radiation').value = "Left arm";
       document.getElementById('severity').value = "8";
       document.getElementById('time').value = "10 minutes";
-      document.getElementById('signsSymptoms').value = "Chest pain and shortness of breath";
+      document.getElementById('signsSymptoms').value = "Chest pressure, shortness of breath.";
       document.getElementById('allergies').value = "None";
       document.getElementById('medications').value = "Lisinopril, atorvastatin";
       document.getElementById('pastHistory').value = "Hypertension, hyperlipidemia";
       document.getElementById('lastOralIntake').value = "Breakfast at 8 AM";
-      document.getElementById('eventsLeading').value = "Started while walking his dog.";
+      document.getElementById('eventsLeading').value = "Started walking dog.";
+
+      if (document.getElementById('linkTriggerType').value) {
+        document.getElementById('scene2Dispatch').value = "Patient worsening: more chest pain and confusion.";
+        document.getElementById('scene2Description').value = "Patient now slumped forward, pale, confused.";
+        document.getElementById('bp2').value = "90/60";
+        document.getElementById('pulse2').value = "120";
+        document.getElementById('respRate2').value = "30";
+        document.getElementById('skin2').value = "ashen, cold, sweaty";
+        document.getElementById('sao22').value = "88%";
+        document.getElementById('mentalStatus2').value = "Verbal";
+        document.getElementById('onset2').value = "Sudden";
+        document.getElementById('provocation2').value = "Movement worsens pain";
+        document.getElementById('quality2').value = "Severe crushing pressure";
+        document.getElementById('radiation2').value = "Neck and jaw";
+        document.getElementById('severity2').value = "10";
+        document.getElementById('time2').value = "15 minutes";
+        document.getElementById('signsSymptoms2').value = "Confusion, heavy breathing, cyanosis.";
+        document.getElementById('allergies2').value = "None";
+        document.getElementById('medications2').value = "Lisinopril, atorvastatin";
+        document.getElementById('pastHistory2').value = "Hypertension, hyperlipidemia";
+        document.getElementById('lastOralIntake2').value = "Breakfast at 8 AM";
+        document.getElementById('eventsLeading2').value = "Collapsed walking.";
+      }
     }
-    // Add more auto-generations for other types later
+  }
+
+  function showScene2() {
+    const trigger = document.getElementById('linkTriggerType').value;
+    if (trigger) {
+      document.getElementById('scene2').style.display = 'block';
+    } else {
+      document.getElementById('scene2').style.display = 'none';
+    }
   }
 
   function saveScenario() {
-    alert('Scenario data collected! (Saving feature next)');
-    // Later here you would push the scenario to Firebase or download as JSON
+    alert('Scenario data collected! (Saving coming soon)');
   }
 </script>
 
