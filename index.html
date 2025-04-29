@@ -1,54 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EMS Simulator</title>
-    <link rel="stylesheet" href="styles/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EMS Simulator</title>
+  <link rel="stylesheet" href="styles/style.css" />
 </head>
 <body>
 
-    <!-- Header with Logo and Buttons -->
-    <header style="padding: 10px; display: flex; justify-content: center; gap: 10px;">
-        <button id="start-button">Start Scenario</button>
-        <button id="end-button">End Scenario</button>
-    </header>
+  <!-- Header -->
+  <header style="padding: 10px; display: flex; justify-content: center; gap: 10px;">
+    <button id="start-button">Start Scenario</button>
+    <button id="end-button">End Scenario</button>
+  </header>
 
-    <!-- Main Chat Display -->
-    <div id="chat-box" style="height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin: 20px;">
-        <!-- Chat messages appear here -->
-    </div>
+  <!-- Chat Display -->
+  <div id="chat-box" style="height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin: 20px;"></div>
 
-    <!-- User Input Section -->
-    <div style="display: flex; align-items: center; margin: 20px;">
-        <input type="text" id="user-input" placeholder="Type your message..." style="flex: 1; padding: 10px; font-size: 16px;">
-        <button id="send-button" style="margin-left: 10px;">Send</button>
-        <button id="mic-button" style="margin-left: 10px;">Mic</button>
-    </div>
+  <!-- Input & Controls -->
+  <div style="display: flex; align-items: center; margin: 20px;">
+    <input type="text" id="user-input" placeholder="Type your message..." style="flex: 1; padding: 10px; font-size: 16px;">
+    <button id="send-button" style="margin-left: 10px;">Send</button>
+    <button id="mic-button" style="margin-left: 10px;">Mic</button>
+  </div>
 
-    <!-- Firebase Scripts -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
+      authDomain: "ems-code-sim.firebaseapp.com",
+      databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+      projectId: "ems-code-sim",
+      storageBucket: "ems-code-sim.firebasestorage.app",
+      messagingSenderId: "190498607578",
+      appId: "1:190498607578:web:4cf6c8e999b027956070e3",
+      measurementId: "G-2Q3ZT01YT1"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
 
-    <script>
-      // Firebase configuration for EMS Code Sim
-      const firebaseConfig = {
-        apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
-        authDomain: "ems-code-sim.firebaseapp.com",
-        databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
-        projectId: "ems-code-sim",
-        storageBucket: "ems-code-sim.firebasestorage.app",
-        messagingSenderId: "190498607578",
-        appId: "1:190498607578:web:4cf6c8e999b027956070e3",
-        measurementId: "G-2Q3ZT01YT1"
-      };
-
-      // Initialize Firebase
-      firebase.initializeApp(firebaseConfig);
-    </script>
-
-    <!-- Your App Logic -->
-    <script src="scripts/app.js"></script>
+  <!-- App Logic -->
+  <script src="scripts/app.js"></script>
 
 </body>
 </html>
