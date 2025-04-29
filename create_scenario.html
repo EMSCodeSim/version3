@@ -37,6 +37,13 @@
       border: 1px solid #ccc;
     }
 
+    .flex-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
     .save-button {
       background-color: #0077cc;
       color: white;
@@ -59,92 +66,132 @@
 <h1>Create New Scenario</h1>
 
 <div class="form-section">
-  <label>Scenario Name:</label>
-  <input type="text" id="scenarioName" placeholder="Example: Chest Pain 001">
+
+  <div class="flex-row">
+    <div style="flex:2;">
+      <label>Scenario Type:</label>
+      <select id="scenarioType">
+        <option value="Chest Pain">Chest Pain</option>
+        <option value="Shortness of Breath">Shortness of Breath</option>
+        <option value="Stroke">Stroke</option>
+        <option value="Trauma (Blunt)">Trauma (Blunt)</option>
+        <option value="Trauma (Penetrating)">Trauma (Penetrating)</option>
+        <option value="Altered Mental Status">Altered Mental Status</option>
+        <option value="Diabetic Emergency">Diabetic Emergency</option>
+        <option value="Seizure">Seizure</option>
+        <option value="Custom">Custom</option>
+      </select>
+    </div>
+    <div style="flex:1;">
+      <button onclick="autoGenerate()" style="margin-top:28px;">Auto-Generate</button>
+    </div>
+  </div>
+
+  <label>Protocol Used:</label>
+  <select id="protocolUsed">
+    <option value="NREMT Basic">NREMT Basic</option>
+    <option value="NREMT Paramedic">NREMT Paramedic</option>
+    <option value="Denver Metro Protocol">Denver Metro Protocol</option>
+    <option value="Custom Protocol">Custom Protocol</option>
+  </select>
+
+  <label>Upload Waiver (optional):</label>
+  <input type="file" id="waiverFile">
 
   <label>Dispatch Info:</label>
-  <textarea id="dispatchInfo" placeholder="Dispatch text goes here..."></textarea>
+  <textarea id="dispatchInfo"></textarea>
 
   <label>Scene Description:</label>
-  <textarea id="sceneDescription" placeholder="Scene appearance description..."></textarea>
+  <textarea id="sceneDescription"></textarea>
 
-  <label>Patient Appearance Photo:</label>
-  <input type="file" id="patientPhoto">
+  <label>Scene Photo:</label>
+  <input type="file" id="scenePhoto">
 
-  <label>Initial Vitals:</label>
+  <h2>Vitals:</h2>
   <input type="text" id="bp" placeholder="Blood Pressure (e.g., 130/86)">
   <input type="text" id="pulse" placeholder="Pulse Rate (e.g., 88)">
   <input type="text" id="respRate" placeholder="Respiratory Rate (e.g., 18)">
-  <input type="text" id="skin" placeholder="Skin Condition (e.g., pale, cool, clammy)">
-  <input type="text" id="sao2" placeholder="Oxygen Saturation (e.g., 96%)">
+  <input type="text" id="skin" placeholder="Skin (e.g., pale, cool, clammy)">
+  <input type="text" id="sao2" placeholder="SaO2 (e.g., 96%)">
 
-  <label>SAMPLE History:</label>
+  <h2>Mental Status:</h2>
+  <select id="mentalStatus">
+    <option value="AAOx4">AAOx4</option>
+    <option value="AAOx3">AAOx3</option>
+    <option value="AAOx2">AAOx2</option>
+    <option value="AAOx1">AAOx1</option>
+    <option value="Alert">Alert</option>
+    <option value="Verbal">Responds to Verbal</option>
+    <option value="Pain">Responds to Pain</option>
+    <option value="Unresponsive">Unresponsive</option>
+  </select>
+
+  <h2>OPQRST:</h2>
+  <input type="text" id="onset" placeholder="Onset (e.g., sudden)">
+  <input type="text" id="provocation" placeholder="Provocation (e.g., worse with movement)">
+  <input type="text" id="quality" placeholder="Quality (e.g., crushing, stabbing)">
+  <input type="text" id="radiation" placeholder="Radiation (e.g., to left arm)">
+  <input type="text" id="severity" placeholder="Severity (1-10)">
+  <input type="text" id="time" placeholder="Time (duration of symptoms)">
+
+  <h2>SAMPLE History:</h2>
   <input type="text" id="signsSymptoms" placeholder="Signs and Symptoms">
   <input type="text" id="allergies" placeholder="Allergies">
   <input type="text" id="medications" placeholder="Medications">
   <input type="text" id="pastHistory" placeholder="Past Medical History">
   <input type="text" id="lastOralIntake" placeholder="Last Oral Intake">
-  <input type="text" id="eventsLeading" placeholder="Events Leading Up To Illness">
+  <input type="text" id="eventsLeading" placeholder="Events Leading Up">
 
-  <label>Optional Triggers:</label>
-  <input type="text" id="triggerQuestion" placeholder="Trigger Question (optional)">
-  <select id="triggerType">
+  <h2>Link Scenario (Trigger Next Scene):</h2>
+  <label>Trigger Type:</label>
+  <select id="linkTriggerType">
     <option value="">None</option>
-    <option value="photo">Photo</option>
-    <option value="audio">Audio</option>
-    <option value="app">App</option>
+    <option value="timer">Timer (automatic after time)</option>
+    <option value="incorrectTreatment">Incorrect Treatment</option>
+    <option value="sceneProblem">Scene Safety Problem</option>
   </select>
-  <input type="file" id="triggerFile">
+
+  <label>Scene 2 Dispatch Info:</label>
+  <textarea id="scene2Dispatch"></textarea>
+
+  <label>Scene 2 Description:</label>
+  <textarea id="scene2Description"></textarea>
+
+  <button class="save-button" onclick="saveScenario()">Save Scenario</button>
 </div>
 
-<button class="save-button" onclick="saveScenario()">Save Scenario</button>
-
 <script>
-  function saveScenario() {
-    const scenarioName = document.getElementById('scenarioName').value.trim();
-    const dispatchInfo = document.getElementById('dispatchInfo').value.trim();
-    const sceneDescription = document.getElementById('sceneDescription').value.trim();
-    const patientPhoto = document.getElementById('patientPhoto').files[0];
+  function autoGenerate() {
+    const type = document.getElementById('scenarioType').value;
 
-    const vitals = {
-      bp: document.getElementById('bp').value.trim(),
-      pulse: document.getElementById('pulse').value.trim(),
-      respRate: document.getElementById('respRate').value.trim(),
-      skin: document.getElementById('skin').value.trim(),
-      sao2: document.getElementById('sao2').value.trim()
-    };
-
-    const sampleHistory = {
-      signsSymptoms: document.getElementById('signsSymptoms').value.trim(),
-      allergies: document.getElementById('allergies').value.trim(),
-      medications: document.getElementById('medications').value.trim(),
-      pastHistory: document.getElementById('pastHistory').value.trim(),
-      lastOralIntake: document.getElementById('lastOralIntake').value.trim(),
-      eventsLeading: document.getElementById('eventsLeading').value.trim()
-    };
-
-    const triggerQuestion = document.getElementById('triggerQuestion').value.trim();
-    const triggerType = document.getElementById('triggerType').value;
-    const triggerFile = document.getElementById('triggerFile').files[0];
-
-    if (!scenarioName || !dispatchInfo || !sceneDescription) {
-      alert('Please complete Scenario Name, Dispatch Info, and Scene Description.');
-      return;
+    if (type === 'Chest Pain') {
+      document.getElementById('dispatchInfo').value = "You are dispatched to a 62-year-old male with chest pain at a public park.";
+      document.getElementById('sceneDescription').value = "The patient is seated on a bench, clutching his chest.";
+      document.getElementById('bp').value = "140/88";
+      document.getElementById('pulse').value = "96";
+      document.getElementById('respRate').value = "20";
+      document.getElementById('skin').value = "pale, cool, diaphoretic";
+      document.getElementById('sao2').value = "94%";
+      document.getElementById('mentalStatus').value = "AAOx4";
+      document.getElementById('onset').value = "Sudden";
+      document.getElementById('provocation').value = "Worse with exertion";
+      document.getElementById('quality').value = "Pressure";
+      document.getElementById('radiation').value = "Left arm";
+      document.getElementById('severity').value = "8";
+      document.getElementById('time').value = "10 minutes";
+      document.getElementById('signsSymptoms').value = "Chest pain and shortness of breath";
+      document.getElementById('allergies').value = "None";
+      document.getElementById('medications').value = "Lisinopril, atorvastatin";
+      document.getElementById('pastHistory').value = "Hypertension, hyperlipidemia";
+      document.getElementById('lastOralIntake').value = "Breakfast at 8 AM";
+      document.getElementById('eventsLeading').value = "Started while walking his dog.";
     }
+    // Add more auto-generations for other types later
+  }
 
-    // Now you would package this data
-    console.log({
-      scenarioName,
-      dispatchInfo,
-      sceneDescription,
-      vitals,
-      sampleHistory,
-      triggerQuestion,
-      triggerType,
-      triggerFileName: triggerFile ? triggerFile.name : null
-    });
-
-    alert('Scenario saved! (For now this prints to console. We can wire it to Firebase or download JSON next.)');
+  function saveScenario() {
+    alert('Scenario data collected! (Saving feature next)');
+    // Later here you would push the scenario to Firebase or download as JSON
   }
 </script>
 
