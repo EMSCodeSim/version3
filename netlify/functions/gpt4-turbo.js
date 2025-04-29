@@ -1,26 +1,37 @@
+const { Configuration, OpenAIApi } = require("openai");
+
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+const openai = new OpenAIApi(configuration);
+
 exports.handler = async function(event, context) {
   try {
     const body = JSON.parse(event.body || '{}');
     const prompt = body.prompt || "";
 
-    let reply = "I'm sorry, I didn't quite catch that. Could you rephrase?";
+    const gptResponse = await openai.createChatCompletion({
+      model: "gpt-4",
+      messages: [
+        { role: "system", content: "You are simulating an EMS patient. Respond briefly and realistically based on provided patient info." },
+        { role: "user", content: prompt }
+      ],
+      max_tokens: 200,
+      temperature: 0.7
+    });
 
-    if (prompt.toLowerCase().includes("chest pain")) {
-      reply = "The patient describes the chest pain as heavy pressure and rates it 8 out of 10.";
-    } else if (prompt.toLowerCase().includes("nitro")) {
-      reply = "Yes, I have nitro and sometimes take it when I feel chest pressure.";
-    } else if (prompt.toLowerCase().includes("shortness of breath")) {
-      reply = "Yes, I feel a little short of breath, especially when I try to move.";
-    }
-
+    const reply = gptResponse.data.choices[0].message.content;
     return {
       statusCode: 200,
       body: JSON.stringify({ reply })
     };
+
   } catch (err) {
+    console.error("GPT Error:", err.message);
     return {
       statusCode: 500,
-      body: JSON.stringify({ reply: "Error processing request." })
+      body: JSON.stringify({ reply: "GPT error: " + err.message })
     };
   }
 };
