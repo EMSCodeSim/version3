@@ -1,5 +1,12 @@
 const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
+let hardcodedResponses = {};
+
+// Load hardcoded Q&A from Firebase
+firebase.database().ref('hardcodedResponses').once('value').then(snapshot => {
+  hardcodedResponses = snapshot.val() || {};
+  console.log("✅ Loaded hardcodedResponses:", hardcodedResponses);
+});
 
 // Load dispatch
 async function loadDispatchInfo() {
@@ -43,7 +50,8 @@ function displayChatResponse(response) {
 
 // Hardcoded match
 function checkHardcodedResponse(message) {
-  return hardcodedResponses?.[message.toLowerCase()] || null;
+  if (!hardcodedResponses) return null;
+  return hardcodedResponses[message.toLowerCase()] || null;
 }
 
 // Vector fallback
@@ -136,6 +144,7 @@ startVoiceRecognition = function () {
 
 // UI bindings
 document.addEventListener('DOMContentLoaded', function () {
+  console.log("Page loaded: setting up buttons.");
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
   const startBtn = document.getElementById('start-button');
@@ -162,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function () {
   micBtn?.addEventListener('click', () => startVoiceRecognition?.());
 });
 
-// Global catch-all error handlers
+// Global error catchers
 window.onerror = function(message, source, lineno, colno, error) {
   logErrorToDatabase(`Uncaught Error: ${message} at ${source}:${lineno}:${colno}`);
 };
