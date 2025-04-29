@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EMS Simulator Admin Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f8ff; padding: 20px; text-align: center; }
+    h1 { margin-bottom: 30px; }
+    .card {
+      display: inline-block;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin: 15px;
+      width: 250px;
+      vertical-align: top;
+    }
+    .card h2 {
+      margin-top: 0;
+      color: #0077cc;
+    }
+  </style>
+</head>
+<body>
+
+<h1>EMS Simulator Admin Dashboard</h1>
+
+<div class="card">
+  <h2 id="unknown-count">Unknown Questions: ...</h2>
+</div>
+
+<div class="card">
+  <h2 id="hardcoded-count">Hardcoded Approved: ...</h2>
+</div>
+
+<div class="card">
+  <h2 id="triggers-count">Triggers Configured: ...</h2>
+</div>
+
+<div class="card">
+  <h2 id="last-error">Last Error: ...</h2>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
+    authDomain: "ems-code-sim.firebaseapp.com",
+    databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+    projectId: "ems-code-sim",
+    storageBucket: "ems-code-sim.firebasestorage.app",
+    messagingSenderId: "190498607578",
+    appId: "1:190498607578:web:4cf6c8e999b027956070e3",
+    measurementId: "G-2Q3ZT01YT1"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  function updateDashboard() {
+    db.ref('unknownQuestions').once('value', snap => {
+      document.getElementById('unknown-count').innerText = "Unknown Questions: " + (snap.numChildren() || 0);
+    });
+
+    db.ref('hardcodedResponses').once('value', snap => {
+      document.getElementById('hardcoded-count').innerText = "Hardcoded Approved: " + (snap.numChildren() || 0);
+    });
+
+    db.ref('triggers').once('value', snap => {
+      document.getElementById('triggers-count').innerText = "Triggers Configured: " + (snap.numChildren() || 0);
+    });
+
+    db.ref('error_logs').orderByChild('timestamp').limitToLast(1).once('value', snap => {
+      let lastError = "None";
+      snap.forEach(child => {
+        lastError = new Date(child.val().timestamp).toLocaleString() + ": " + child.val().error;
+      });
+      document.getElementById('last-error').innerText = "Last Error: " + lastError;
+    });
+  }
+
+  updateDashboard();
+</script>
+
+</body>
+</html>
