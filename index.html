@@ -1,17 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>EMS Code Sim</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Firebase SDK -->
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
 
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f2f5;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #ffffff;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #ccc;
+    }
+
+    #chat-display {
+      padding: 20px;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .input-area {
+      display: flex;
+      padding: 10px;
+      background: #fff;
+      border-top: 1px solid #ccc;
+    }
+
+    .input-area input {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    .input-area button {
+      padding: 10px 20px;
+      margin-left: 10px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div>
+      <button onclick="startScenario()">Start Scenario</button>
+      <button onclick="endScenario()">End Scenario</button>
+      <button onclick="openAdmin()">Admin</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="chat-display"></div>
+    <div class="input-area">
+      <input id="user-input" type="text" placeholder="Type your message here..." />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </main>
+
+  <!-- Firebase Config + Load hardcodedResponses -->
   <script>
-    // Your web app's Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
       authDomain: "ems-code-sim.firebaseapp.com",
@@ -23,146 +84,24 @@
       measurementId: "G-2Q3ZT01YT1"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     firebase.analytics();
-    const database = firebase.database();
+
+    // Load chat_log from Firebase into global variable
+    window.hardcodedResponses = [];
+
+    firebase.database().ref('chat_log').once('value')
+      .then(snapshot => {
+        const data = snapshot.val();
+        window.hardcodedResponses = Object.values(data || {});
+        console.log("Loaded hardcodedResponses from Firebase", window.hardcodedResponses);
+      })
+      .catch(err => {
+        console.error("Firebase load failed:", err);
+      });
   </script>
 
-  <style>
-    /* RESET */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body, html {
-      height: 100%;
-      font-family: Arial, sans-serif;
-      background-color: #f0f4f8;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* HEADER */
-    .header {
-      background-color: #ffffff;
-      padding: 10px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      border-bottom: 2px solid #ccc;
-    }
-    .header button {
-      padding: 10px 20px;
-      border: none;
-      background-color: teal;
-      color: white;
-      font-weight: bold;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .header button:hover {
-      background-color: darkslategray;
-    }
-
-    /* MAIN CHAT AREA */
-    .chat-area {
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px;
-      background-color: #ffffff;
-    }
-    .chat-area img {
-      max-width: 100%;
-      margin-top: 10px;
-    }
-
-    /* USER INPUT AREA */
-    .input-area {
-      display: flex;
-      padding: 10px;
-      background-color: #ffffff;
-      border-top: 2px solid #ccc;
-    }
-    .input-area input[type="text"] {
-      flex: 1;
-      padding: 10px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    .input-area button {
-      margin-left: 10px;
-      padding: 10px 15px;
-      font-size: 16px;
-      background-color: teal;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .input-area button:hover {
-      background-color: darkslategray;
-    }
-    .mic-button {
-      margin-left: 5px;
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 50%;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    .mic-button:hover {
-      background-color: #0056b3;
-    }
-
-    /* RESPONSIVE */
-    @media (max-width: 600px) {
-      .header {
-        flex-direction: column;
-        align-items: center;
-      }
-      .input-area {
-        flex-direction: column;
-      }
-      .input-area input[type="text"] {
-        width: 100%;
-        margin-bottom: 5px;
-      }
-      .input-area button, .mic-button {
-        width: 100%;
-      }
-    }
-  </style>
-</head>
-
-<body>
-
-  <!-- HEADER with Buttons -->
-  <div class="header">
-    <button onclick="startScenario()">Start Scenario</button>
-    <button onclick="endScenario()">End Scenario</button>
-    <button onclick="openAdmin()">Admin</button>
-  </div>
-
-  <!-- CHAT DISPLAY -->
-  <div id="chat-display" class="chat-area">
-    <!-- Chat messages appear here -->
-  </div>
-
-  <!-- USER INPUT -->
-  <div class="input-area">
-    <input type="text" id="user-input" placeholder="Type your message here...">
-    <button onclick="sendMessage()">Send</button>
-    <button class="mic-button">🎤</button> <!-- Mic Button Placeholder -->
-  </div>
-
-  <!-- Load Your App JS -->
-  <script src="./scripts/app.js"></script>
-
+  <!-- Load Chat Logic AFTER Firebase loads -->
+  <script src="scripts/app.js" defer></script>
 </body>
 </html>
