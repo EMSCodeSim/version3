@@ -1,26 +1,44 @@
 import openai
 import json
-import time
+import os
 
-openai.api_key = "your-openai-api-key"
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-def get_embedding(text):
+entries = [
+    {
+        "question": "when did the chest pain start",
+        "match": "About 10 minutes ago while sitting at the park."
+    },
+    {
+        "question": "do you take nitro",
+        "match": "Yes, I have nitro and take it if I feel pressure in my chest."
+    },
+    {
+        "question": "do you feel shortness of breath",
+        "match": "Yes, a little, especially if I try to walk."
+    },
+    {
+        "question": "are you allergic to anything",
+        "match": "No, I have no known allergies."
+    }
+]
+
+output = []
+
+for entry in entries:
+    print(f"Embedding: {entry['question']}")
     response = openai.Embedding.create(
-        model="text-embedding-ada-002",
-        input=text
+        input=entry["question"],
+        model="text-embedding-3-small"
     )
-    return response['data'][0]['embedding']
+    embedding = response['data'][0]['embedding']
+    output.append({
+        "question": entry["question"],
+        "embedding": embedding,
+        "match": entry["match"]
+    })
 
-with open('chat_log.json', 'r') as f:
-    chat_data = json.load(f)
+with open("embeddings.json", "w") as f:
+    json.dump(output, f, indent=2)
 
-for entry in chat_data:
-    first_question = entry['userQuestions'][0] if isinstance(entry['userQuestions'], list) else entry['userQuestion']
-    print(f"Embedding for: {first_question}")
-    entry['embedding'] = get_embedding(first_question)
-    time.sleep(1.1)  # respect OpenAI rate limits
-
-with open('chat_log_with_embeddings.json', 'w') as f:
-    json.dump(chat_data, f, indent=2)
-
-print("Updated chat log saved to chat_log_with_embeddings.json")
+print("✅ embeddings.json generated.")
