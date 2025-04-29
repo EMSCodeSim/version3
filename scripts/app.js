@@ -30,7 +30,7 @@ async function loadPatientInfo() {
   }
 }
 
-// Log errors to Firebase
+// Error logger
 function logErrorToDatabase(errorInfo) {
   console.error("🔴 Error:", errorInfo);
   if (firebase?.database) {
@@ -41,20 +41,40 @@ function logErrorToDatabase(errorInfo) {
   }
 }
 
-// Display chat response
+// Display chat
 function displayChatResponse(response) {
   const chatBox = document.getElementById("chat-box");
   chatBox.innerHTML += `<div class="response">${response}</div>`;
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Check hardcoded responses
+// Hardcoded match (array or object + fuzzy)
 function checkHardcodedResponse(message) {
   if (!hardcodedResponses) return null;
-  return hardcodedResponses[message.toLowerCase()] || null;
+  const normalized = message.trim().toLowerCase();
+
+  if (Array.isArray(hardcodedResponses)) {
+    for (let entry of hardcodedResponses) {
+      const stored = entry.userQuestion?.trim().toLowerCase();
+      if (stored && (stored.includes(normalized) || normalized.includes(stored))) {
+        return entry.aiResponse;
+      }
+    }
+  }
+
+  if (typeof hardcodedResponses === 'object') {
+    for (const stored in hardcodedResponses) {
+      const storedNorm = stored.toLowerCase().trim();
+      if (storedNorm.includes(normalized) || normalized.includes(storedNorm)) {
+        return hardcodedResponses[stored];
+      }
+    }
+  }
+
+  return null;
 }
 
-// Search vector fallback
+// Vector fallback
 async function getVectorResponse(message) {
   try {
     const res = await fetch('/api/vector-search', {
@@ -71,7 +91,7 @@ async function getVectorResponse(message) {
   }
 }
 
-// GPT-4 Turbo fallback
+// GPT fallback
 async function getAIResponseGPT4Turbo(message) {
   try {
     const fullPrompt = `Patient Info:\n${patientContext}\n\nUser asked: ${message}`;
@@ -89,7 +109,7 @@ async function getAIResponseGPT4Turbo(message) {
   }
 }
 
-// Handle user message input
+// Main handler
 async function processUserMessage(message) {
   console.log("User sent:", message);
 
@@ -142,9 +162,8 @@ startVoiceRecognition = function () {
   displayChatResponse("🎤 Voice recognition activated. (Simulated)");
 };
 
-// Setup event listeners
+// Event bindings
 document.addEventListener('DOMContentLoaded', function () {
-  console.log("Page loaded, setting up buttons...");
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
   const startBtn = document.getElementById('start-button');
@@ -171,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function () {
   micBtn?.addEventListener('click', () => startVoiceRecognition?.());
 });
 
-// Global error catchers
+// Global error capture
 window.onerror = function(message, source, lineno, colno, error) {
   logErrorToDatabase(`Uncaught Error: ${message} at ${source}:${lineno}:${colno}`);
 };
