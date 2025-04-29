@@ -8,7 +8,7 @@ firebase.database().ref('hardcodedResponses').once('value').then(snapshot => {
   console.log("✅ Loaded hardcodedResponses:", hardcodedResponses);
 });
 
-// Load dispatch
+// Load dispatch info
 async function loadDispatchInfo() {
   try {
     const res = await fetch(`${scenarioPath}dispatch.txt`);
@@ -19,7 +19,7 @@ async function loadDispatchInfo() {
   }
 }
 
-// Load patient
+// Load patient info
 async function loadPatientInfo() {
   try {
     const res = await fetch(`${scenarioPath}patient.txt`);
@@ -30,7 +30,7 @@ async function loadPatientInfo() {
   }
 }
 
-// Error logger
+// Log errors to Firebase
 function logErrorToDatabase(errorInfo) {
   console.error("🔴 Error:", errorInfo);
   if (firebase?.database) {
@@ -41,14 +41,141 @@ function logErrorToDatabase(errorInfo) {
   }
 }
 
-// Display response in chat
+// Display chat response
 function displayChatResponse(response) {
   const chatBox = document.getElementById("chat-box");
   chatBox.innerHTML += `<div class="response">${response}</div>`;
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Check hardcoded response
+// Check hardcoded responses
 function checkHardcodedResponse(message) {
   if (!hardcodedResponses) return null;
-  return hardcodedResponses[message.toLower
+  return hardcodedResponses[message.toLowerCase()] || null;
+}
+
+// Search vector fallback
+async function getVectorResponse(message) {
+  try {
+    const res = await fetch('/api/vector-search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: message })
+    });
+    const data = await res.json();
+    console.log("Vector response:", data);
+    return data.match || null;
+  } catch (e) {
+    logErrorToDatabase("Vector search failed: " + e.message);
+    return null;
+  }
+}
+
+// GPT-4 Turbo fallback
+async function getAIResponseGPT4Turbo(message) {
+  try {
+    const fullPrompt = `Patient Info:\n${patientContext}\n\nUser asked: ${message}`;
+    const res = await fetch('/api/gpt4-turbo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: fullPrompt })
+    });
+    const data = await res.json();
+    console.log("GPT-4 Turbo response:", data);
+    return data.reply || null;
+  } catch (e) {
+    logErrorToDatabase("GPT fallback failed: " + e.message);
+    return null;
+  }
+}
+
+// Handle user message input
+async function processUserMessage(message) {
+  console.log("User sent:", message);
+
+  const hardcoded = checkHardcodedResponse(message);
+  if (hardcoded) {
+    console.log("✅ Matched hardcoded.");
+    return displayChatResponse(hardcoded);
+  }
+
+  const vector = await getVectorResponse(message);
+  if (vector) {
+    console.log("✅ Matched vector.");
+    return displayChatResponse(vector);
+  }
+
+  const gpt = await getAIResponseGPT4Turbo(message);
+  if (gpt) {
+    console.log("✅ GPT-4 Turbo response:", gpt);
+    firebase.database().ref('ai_responses_log').push({
+      userMessage: message,
+      aiResponse: gpt,
+      timestamp: Date.now()
+    });
+    return displayChatResponse(gpt);
+  }
+
+  console.warn("⚠️ No response generated.");
+  displayChatResponse("I'm not sure how to answer that right now.");
+}
+
+// Start scenario
+startScenario = async function () {
+  console.log("Scenario started.");
+  const dispatch = await loadDispatchInfo();
+  patientContext = await loadPatientInfo();
+
+  displayChatResponse(`🚑 Dispatch: ${dispatch}`);
+  setTimeout(() => {
+    displayChatResponse(`👤 Patient: ${patientContext}`);
+  }, 1000);
+};
+
+// End scenario
+endScenario = function () {
+  console.log("Scenario ended.");
+  displayChatResponse("📦 Scenario ended. Please complete your handoff report.");
+};
+
+startVoiceRecognition = function () {
+  displayChatResponse("🎤 Voice recognition activated. (Simulated)");
+};
+
+// Setup event listeners
+document.addEventListener('DOMContentLoaded', function () {
+  console.log("Page loaded, setting up buttons...");
+  const sendBtn = document.getElementById('send-button');
+  const input = document.getElementById('user-input');
+  const startBtn = document.getElementById('start-button');
+  const endBtn = document.getElementById('end-button');
+  const micBtn = document.getElementById('mic-button');
+
+  sendBtn?.addEventListener('click', () => {
+    const message = input.value.trim();
+    if (message) {
+      processUserMessage(message);
+      input.value = '';
+    }
+  });
+
+  input?.addEventListener('keypress', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendBtn.click();
+    }
+  });
+
+  startBtn?.addEventListener('click', () => startScenario?.());
+  endBtn?.addEventListener('click', () => endScenario?.());
+  micBtn?.addEventListener('click', () => startVoiceRecognition?.());
+});
+
+// Global error catchers
+window.onerror = function(message, source, lineno, colno, error) {
+  logErrorToDatabase(`Uncaught Error: ${message} at ${source}:${lineno}:${colno}`);
+};
+
+window.addEventListener('unhandledrejection', function(event) {
+  logErrorToDatabase(`Unhandled Promise Rejection: ${event.reason}`);
+});
