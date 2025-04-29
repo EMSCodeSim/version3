@@ -1,9 +1,9 @@
-// ========= Normalize Function =========
+// ========= Normalize Input =========
 function normalize(text) {
   return text.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
 }
 
-// ========= Cosine Similarity =========
+// ========= Cosine Similarity for Vector Search =========
 function cosineSimilarity(a, b) {
   const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
   const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
@@ -26,7 +26,7 @@ function findHardcodedMatch(userInput) {
   return null;
 }
 
-// ========= Vector Search (fallback) =========
+// ========= Vector Search Fallback =========
 async function vectorSearch(userInput) {
   try {
     const response = await fetch("/.netlify/functions/embed", {
@@ -75,27 +75,44 @@ async function processUserInput(message) {
     return;
   }
 
-  // Fallback to GPT
+  // Fallback to GPT-4 Turbo
   addMessageToChat("system", "No match found. Forwarding to AI...");
   sendToGPT(message);
 }
 
-// ========= TTS Playback =========
+// ========= Play Pre-Generated TTS Audio =========
 function playTTS(audioFile) {
   const audio = new Audio(audioFile);
   audio.play();
 }
 
-// ========= Chat Display =========
+// ========= Add Messages to Chat Display =========
 function addMessageToChat(role, text) {
-  const chat = document.getElementById("chat-display");
-  const msg = document.createElement("div");
-  msg.textContent = `${role.toUpperCase()}: ${text}`;
-  chat.appendChild(msg);
-  chat.scrollTop = chat.scrollHeight;
+  const chatDisplay = document.getElementById("chat-display");
+  const messageDiv = document.createElement("div");
+  messageDiv.style.marginBottom = "10px";
+
+  if (role === 'patient') {
+    messageDiv.style.color = "blue";
+    messageDiv.innerHTML = `<strong>Patient:</strong> ${text}`;
+  } else if (role === 'proctor') {
+    messageDiv.style.color = "gray";
+    messageDiv.innerHTML = `<strong>Proctor:</strong> ${text}`;
+  } else if (role === 'user') {
+    messageDiv.style.textAlign = "right";
+    messageDiv.innerHTML = `<strong>You:</strong> ${text}`;
+  } else if (role === 'system') {
+    messageDiv.style.textAlign = "center";
+    messageDiv.innerHTML = `<em>${text}</em>`;
+  } else {
+    messageDiv.innerHTML = `<strong>${role}:</strong> ${text}`;
+  }
+
+  chatDisplay.appendChild(messageDiv);
+  chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
-// ========= GPT Fallback =========
+// ========= Send to GPT-4 Turbo API =========
 function sendToGPT(message) {
   fetch("/.netlify/functions/chat", {
     method: "POST",
@@ -111,3 +128,52 @@ function sendToGPT(message) {
     addMessageToChat("system", "Error getting AI response.");
   });
 }
+
+// ========= Scenario Control Functions =========
+function startScenario() {
+  fetch('./scenarios/chest_pain_002/dispatch.txt')
+    .then(response => response.text())
+    .then(dispatchText => {
+      addMessageToChat('system', dispatchText);
+      showScenePhoto('./scenarios/chest_pain_002/scene1.png');
+    })
+    .catch(error => console.error('Dispatch load failed', error));
+}
+
+function endScenario() {
+  addMessageToChat('system', 'Scenario ended.');
+}
+
+function sendMessage() {
+  const userInput = document.getElementById('user-input');
+  const message = userInput.value.trim();
+  if (!message) return;
+  addMessageToChat('user', message);
+  processUserInput(message);
+  userInput.value = '';
+}
+
+function openAdmin() {
+  window.open('admin_home.html', '_blank');
+}
+
+function openApproveResponses() {
+  window.open('admin.html', '_blank');
+}
+
+function showScenePhoto(photoPath) {
+  const chatDisplay = document.getElementById('chat-display');
+  const image = document.createElement('img');
+  image.src = photoPath;
+  image.alt = 'Scene Photo';
+  image.style.maxWidth = '100%';
+  chatDisplay.appendChild(image);
+  chatDisplay.scrollTop = chatDisplay.scrollHeight;
+}
+
+// ========= Expose Button Functions Globally =========
+window.startScenario = startScenario;
+window.endScenario = endScenario;
+window.sendMessage = sendMessage;
+window.openAdmin = openAdmin;
+window.openApproveResponses = openApproveResponses;
