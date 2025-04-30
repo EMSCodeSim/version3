@@ -28,10 +28,10 @@ exports.handler = async (event, context) => {
   return {
     statusCode: 200,
     headers: {
-      'Content-Type': 'audio/mpeg',
+      'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*'
     },
-    body: Buffer.from(audioStream).toString('base64'),
-    isBase64Encoded: true
-  };
+    body: JSON.stringify({
+      audio: Buffer.from(audioStream).toString('base64')
+  },  
 };
