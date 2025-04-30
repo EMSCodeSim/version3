@@ -3,103 +3,100 @@
 <head>
   <meta charset="UTF-8">
   <title>Hardcode Manager</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f8f8f8; }
-    textarea { width: 100%; height: 80px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-    th, td { padding: 10px; border: 1px solid #ccc; }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    textarea { width: 100%; height: 60px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; }
     th { background-color: #0077cc; color: white; }
-    button { margin-right: 10px; margin-top: 10px; }
   </style>
 </head>
 <body>
-
 <h1>Hardcode Manager</h1>
 
-<button onclick="addNewRow()">Add New</button>
-<button onclick="saveToFirebase()">Save to Firebase</button>
+<button onclick="loadUnreviewed()">Load Unreviewed GPT Responses</button>
+<button onclick="saveToFirebase()">Save All to Hardcoded</button>
 
 <table id="hardcodedTable">
   <thead>
     <tr>
       <th>User Question</th>
       <th>AI Response</th>
+      <th>Role</th>
       <th>Actions</th>
     </tr>
   </thead>
   <tbody></tbody>
 </table>
 
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
     authDomain: "ems-code-sim.firebaseapp.com",
     databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
     projectId: "ems-code-sim",
-    storageBucket: "ems-code-sim.firebasestorage.app",
+    storageBucket: "ems-code-sim.appspot.com",
     messagingSenderId: "190498607578",
     appId: "1:190498607578:web:4cf6c8e999b027956070e3",
     measurementId: "G-2Q3ZT01YT1"
   };
 
   firebase.initializeApp(firebaseConfig);
-  const dbRef = firebase.database().ref('hardcodedResponses');
-  const tableBody = document.querySelector("#hardcodedTable tbody");
+  const db = firebase.database();
 
-  function addNewRow(q = "", a = "") {
+  function addNewRow(q, a, role = "", key = "") {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td><textarea placeholder="User Question">${q}</textarea></td>
-      <td><textarea placeholder="AI Response">${a}</textarea></td>
-      <td><button onclick="this.closest('tr').remove()">Delete</button></td>
+      <td><textarea>${q}</textarea></td>
+      <td><textarea>${a}</textarea></td>
+      <td>${role}</td>
+      <td>
+        <button onclick="approveRow(this, '${key}')">Approve</button>
+        <button onclick="this.closest('tr').remove()">Delete</button>
+      </td>
     `;
-    tableBody.appendChild(row);
+    document.querySelector("#hardcodedTable tbody").appendChild(row);
+  }
+
+  function loadUnreviewed() {
+    db.ref("unknownQuestions").once("value", snapshot => {
+      const data = snapshot.val() || {};
+      for (const key in data) {
+        const entry = data[key];
+        if (!entry.reviewed) {
+          addNewRow(entry.userMessage, entry.aiResponse, entry.responder, key);
+        }
+      }
+    });
+  }
+
+  function approveRow(btn, key) {
+    const row = btn.closest("tr");
+    const q = row.cells[0].querySelector("textarea").value.trim().toLowerCase();
+    const a = row.cells[1].querySelector("textarea").value.trim();
+
+    if (q && a) {
+      db.ref("hardcodedResponses/" + q).set(a);
+      db.ref("unknownQuestions/" + key + "/reviewed").set(true);
+      alert("✅ Approved and added.");
+    }
   }
 
   function saveToFirebase() {
     const rows = document.querySelectorAll("#hardcodedTable tbody tr");
     const updates = {};
     rows.forEach(row => {
-      const question = row.cells[0].querySelector("textarea").value.trim().toLowerCase();
-      const answer = row.cells[1].querySelector("textarea").value.trim();
-      if (question && answer) updates[question] = answer;
+      const q = row.cells[0].querySelector("textarea").value.trim().toLowerCase();
+      const a = row.cells[1].querySelector("textarea").value.trim();
+      if (q && a) updates[q] = a;
     });
 
-    dbRef.set(updates).then(() => {
-      alert("✅ Responses saved to Firebase.");
-    }).catch(err => {
-      console.error("❌ Error saving:", err);
+    db.ref("hardcodedResponses").update(updates).then(() => {
+      alert("✅ All rows saved to hardcodedResponses.");
     });
   }
-
-  function loadFromFirebase() {
-    dbRef.once("value", snapshot => {
-      const data = snapshot.val() || {};
-
-      if (Array.isArray(data)) {
-        // If it's an array of { userQuestion, aiResponse }
-        for (const entry of data) {
-          const q = entry.userQuestion || "";
-          const a = entry.aiResponse || "";
-          addNewRow(q, a);
-        }
-      } else if (typeof data === 'object') {
-        // Map-style object
-        for (const [q, a] of Object.entries(data)) {
-          const responseText = typeof a === "object" ? (a.aiResponse || JSON.stringify(a)) : a;
-          addNewRow(q, responseText);
-        }
-      }
-    });
-  }
-
-  loadFromFirebase();
 </script>
-
 </body>
 </html>
