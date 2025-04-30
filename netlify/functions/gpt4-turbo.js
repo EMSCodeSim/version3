@@ -11,9 +11,9 @@ exports.handler = async function(event, context) {
       };
     }
 
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY; // Set this in Netlify environment variables
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-    // Determine who should answer: Patient or Proctor
+    // Keywords to determine if the question should be routed to the proctor
     const proctorKeywords = [
       'scene safe', 'bsi', 'scene', 'blood pressure', 'pulse', 'respiratory rate', 'saO2',
       'skin color', 'bgl', 'blood sugar', 'breath sounds', 'lung sounds', 'oxygen', 'NRB',
@@ -25,8 +25,7 @@ exports.handler = async function(event, context) {
 
     const lowerContent = content.toLowerCase();
     const isProctorQuestion = proctorKeywords.some(keyword => lowerContent.includes(keyword));
-
-    let responder = isProctorQuestion ? 'proctor' : 'patient';
+    const responder = isProctorQuestion ? 'proctor' : 'patient';
 
     let systemPrompt = '';
 
@@ -60,17 +59,10 @@ exports.handler = async function(event, context) {
 
     const aiReply = openaiData.choices[0].message.content.trim();
 
-    if (responder === 'patient') {
-      return {
-        statusCode: 200,
-        body: JSON.stringify({ patientReply: aiReply })
-      };
-    } else {
-      return {
-        statusCode: 200,
-        body: JSON.stringify({ proctorReply: aiReply })
-      };
-    }
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ reply: aiReply })  // unified reply key
+    };
 
   } catch (error) {
     console.error('Chat function error:', error);
