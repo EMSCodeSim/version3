@@ -1,8 +1,8 @@
+// app.js
 const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
 let hardcodedResponses = {};
 
-// Load hardcoded responses
 firebase.database().ref('hardcodedResponses').once('value').then(snapshot => {
   hardcodedResponses = snapshot.val() || {};
   console.log("✅ Loaded hardcodedResponses:", hardcodedResponses);
@@ -96,7 +96,6 @@ async function getAIResponseGPT4Turbo(message) {
       body: JSON.stringify({ content: message })
     });
     const data = await res.json();
-    console.log("✅ GPT-4 Turbo response:", data);
     return data.reply || null;
   } catch (e) {
     logErrorToDatabase("GPT fallback failed: " + e.message);
@@ -105,40 +104,53 @@ async function getAIResponseGPT4Turbo(message) {
 }
 
 async function processUserMessage(message) {
-  console.log("User sent:", message);
-
   const proctorKeywords = [
     'scene safe', 'bsi', 'scene', 'blood pressure', 'pulse', 'respiratory rate', 'saO2',
     'skin color', 'bgl', 'blood sugar', 'breath sounds', 'lung sounds', 'oxygen', 'NRB',
     'nasal cannula', 'splint', 'transport', 'stretcher', 'spinal immobilization', 'move patient',
     'position patient', 'load and go', 'procedure', 'place patient', 'emergent transport',
-    'administer', 'give aspirin', 'give nitro', 'asa', 'oral glucose', 'epinephrine', 'splint',
-    'immobilize', 'check pupils', 'response to painful stimuli'
+    'administer', 'give aspirin', 'give nitro', 'asa', 'oral glucose', 'epinephrine',
+    'check pupils', 'response to painful stimuli'
   ];
 
   const normalized = message.toLowerCase();
   const role = proctorKeywords.some(keyword => normalized.includes(keyword)) ? "proctor" : "patient";
 
   const hardcoded = checkHardcodedResponse(message);
-  if (hardcoded) return displayChatResponse(hardcoded, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
+  if (hardcoded) {
+    return displayChatResponse(hardcoded, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
+  }
 
   const vector = await getVectorResponse(message);
-  if (vector) return displayChatResponse(vector, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
+  if (vector) {
+    return displayChatResponse(vector, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
+  }
 
   const gpt = await getAIResponseGPT4Turbo(message);
   if (gpt) {
+    firebase.database().ref('unknownQuestions').push({
+      userMessage: message,
+      aiResponse: gpt,
+      responder: role,
+      reviewed: false,
+      timestamp: Date.now()
+    });
+
     firebase.database().ref('ai_responses_log').push({
       userMessage: message,
       aiResponse: gpt,
       responder: role,
       timestamp: Date.now()
     });
+
     return displayChatResponse(gpt, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
   }
 
   firebase.database().ref('unknownQuestions').push({
     userMessage: message,
+    aiResponse: "No GPT response generated.",
     responder: role,
+    reviewed: false,
     timestamp: Date.now()
   });
 
@@ -150,7 +162,6 @@ startScenario = async function () {
   patientContext = await loadPatientInfo();
 
   displayChatResponse(`🚑 Dispatch: ${dispatch}`);
-  console.log("✅ Patient context loaded internally (not displayed).");
 };
 
 endScenario = function () {
@@ -186,12 +197,4 @@ document.addEventListener('DOMContentLoaded', function () {
   startBtn?.addEventListener('click', () => startScenario?.());
   endBtn?.addEventListener('click', () => endScenario?.());
   micBtn?.addEventListener('click', () => startVoiceRecognition?.());
-});
-
-window.onerror = function(message, source, lineno, colno, error) {
-  logErrorToDatabase(`Uncaught Error: ${message} at ${source}:${lineno}:${colno}`);
-};
-
-window.addEventListener('unhandledrejection', function(event) {
-  logErrorToDatabase(`Unhandled Promise Rejection: ${event.reason}`);
 });
