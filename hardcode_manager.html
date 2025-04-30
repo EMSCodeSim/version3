@@ -1,74 +1,105 @@
-const fetch = require('node-fetch');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hardcode Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f8f8f8; }
+    textarea { width: 100%; height: 80px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+    th, td { padding: 10px; border: 1px solid #ccc; }
+    th { background-color: #0077cc; color: white; }
+    button { margin-right: 10px; margin-top: 10px; }
+  </style>
+</head>
+<body>
 
-exports.handler = async function(event, context) {
-  try {
-    const { content } = JSON.parse(event.body);
+<h1>Hardcode Manager</h1>
 
-    if (!content) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Missing message content.' })
-      };
-    }
+<button onclick="addNewRow()">Add New</button>
+<button onclick="saveToFirebase()">Save to Firebase</button>
 
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+<table id="hardcodedTable">
+  <thead>
+    <tr>
+      <th>User Question</th>
+      <th>AI Response</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
 
-    // Keywords to determine if the question should be routed to the proctor
-    const proctorKeywords = [
-      'scene safe', 'bsi', 'scene', 'blood pressure', 'pulse', 'respiratory rate', 'saO2',
-      'skin color', 'bgl', 'blood sugar', 'breath sounds', 'lung sounds', 'oxygen', 'NRB',
-      'nasal cannula', 'splint', 'transport', 'stretcher', 'spinal immobilization', 'move patient',
-      'position patient', 'load and go', 'procedure', 'place patient', 'emergent transport',
-      'administer', 'give aspirin', 'give nitro', 'asa', 'oral glucose', 'epinephrine', 'splint',
-      'immobilize', 'check pupils', 'response to painful stimuli'
-    ];
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
-    const lowerContent = content.toLowerCase();
-    const isProctorQuestion = proctorKeywords.some(keyword => lowerContent.includes(keyword));
-    const responder = isProctorQuestion ? 'proctor' : 'patient';
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
+    authDomain: "ems-code-sim.firebaseapp.com",
+    databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+    projectId: "ems-code-sim",
+    storageBucket: "ems-code-sim.firebasestorage.app",
+    messagingSenderId: "190498607578",
+    appId: "1:190498607578:web:4cf6c8e999b027956070e3",
+    measurementId: "G-2Q3ZT01YT1"
+  };
 
-    let systemPrompt = '';
+  firebase.initializeApp(firebaseConfig);
+  const dbRef = firebase.database().ref('hardcodedResponses');
+  const tableBody = document.querySelector("#hardcodedTable tbody");
 
-    if (responder === 'patient') {
-      systemPrompt = "You are playing the role of a 62-year-old male experiencing chest pain at a public park. Respond realistically as the patient, based only on symptoms, history, or how you feel.";
-    } else {
-      systemPrompt = "You are acting as a certified NREMT Proctor for an EMT Basic exam. You are not the patient. Only respond with scene information, vitals, physical findings, or acknowledge procedures. If asked something the patient would know, say 'Refer to the patient.'";
-    }
+  function addNewRow(q = "", a = "") {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td><textarea placeholder="User Question">${q}</textarea></td>
+      <td><textarea placeholder="AI Response">${a}</textarea></td>
+      <td><button onclick="this.closest('tr').remove()">Delete</button></td>
+    `;
+    tableBody.appendChild(row);
+  }
 
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: content }
-        ],
-        temperature: 0.5
-      })
+  function saveToFirebase() {
+    const rows = document.querySelectorAll("#hardcodedTable tbody tr");
+    const updates = {};
+    rows.forEach(row => {
+      const question = row.cells[0].querySelector("textarea").value.trim().toLowerCase();
+      const answer = row.cells[1].querySelector("textarea").value.trim();
+      if (question && answer) updates[question] = answer;
     });
 
-    const openaiData = await openaiResponse.json();
-
-    if (!openaiData.choices || openaiData.choices.length === 0) {
-      throw new Error('No choices returned from OpenAI.');
-    }
-
-    const aiReply = openaiData.choices[0].message.content.trim();
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ reply: aiReply })  // unified reply key
-    };
-
-  } catch (error) {
-    console.error('Chat function error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to generate reply.' })
-    };
+    dbRef.set(updates).then(() => {
+      alert("✅ Responses saved to Firebase.");
+    }).catch(err => {
+      console.error("❌ Error saving:", err);
+    });
   }
-};
+
+  function loadFromFirebase() {
+    dbRef.once("value", snapshot => {
+      const data = snapshot.val() || {};
+
+      if (Array.isArray(data)) {
+        // If it's an array of { userQuestion, aiResponse }
+        for (const entry of data) {
+          const q = entry.userQuestion || "";
+          const a = entry.aiResponse || "";
+          addNewRow(q, a);
+        }
+      } else if (typeof data === 'object') {
+        // Map-style object
+        for (const [q, a] of Object.entries(data)) {
+          const responseText = typeof a === "object" ? (a.aiResponse || JSON.stringify(a)) : a;
+          addNewRow(q, responseText);
+        }
+      }
+    });
+  }
+
+  loadFromFirebase();
+</script>
+
+</body>
+</html>
