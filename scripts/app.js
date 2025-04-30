@@ -8,7 +8,7 @@ firebase.database().ref('hardcodedResponses').once('value').then(snapshot => {
   console.log("✅ Loaded hardcodedResponses:", hardcodedResponses);
 });
 
-// Load dispatch info
+// Load dispatch and patient
 async function loadDispatchInfo() {
   try {
     const res = await fetch(`${scenarioPath}dispatch.txt`);
@@ -19,7 +19,6 @@ async function loadDispatchInfo() {
   }
 }
 
-// Load patient info
 async function loadPatientInfo() {
   try {
     const res = await fetch(`${scenarioPath}patient.txt`);
@@ -30,7 +29,7 @@ async function loadPatientInfo() {
   }
 }
 
-// Log error to Firebase
+// Error logger
 function logErrorToDatabase(errorInfo) {
   console.error("🔴 Error:", errorInfo);
   if (firebase?.database) {
@@ -41,14 +40,16 @@ function logErrorToDatabase(errorInfo) {
   }
 }
 
-// Display chat
-function displayChatResponse(response) {
+// Chat display
+function displayChatResponse(response, label = "") {
   const chatBox = document.getElementById("chat-box");
-  chatBox.innerHTML += `<div class="response">${response}</div>`;
+  chatBox.innerHTML += `
+    ${label ? `<div class="question">👨‍⚕️ You: ${label}</div>` : ""}
+    <div class="response">${response}</div>`;
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Check hardcoded (fuzzy)
+// Hardcoded matcher
 function checkHardcodedResponse(message) {
   if (!hardcodedResponses) return null;
   const normalized = message.trim().toLowerCase();
@@ -74,7 +75,7 @@ function checkHardcodedResponse(message) {
   return null;
 }
 
-// Vector fallback
+// Vector search
 async function getVectorResponse(message) {
   try {
     const res = await fetch('/api/vector-search', {
@@ -109,17 +110,33 @@ async function getAIResponseGPT4Turbo(message) {
   }
 }
 
-// 🔄 Main response handler
+// Main handler
 async function processUserMessage(message) {
   console.log("User sent:", message);
 
+  const proctorKeywords = [
+    'scene safe', 'bsi', 'scene', 'blood pressure', 'pulse', 'respiratory rate', 'saO2',
+    'skin color', 'bgl', 'blood sugar', 'breath sounds', 'lung sounds', 'oxygen', 'NRB',
+    'nasal cannula', 'splint', 'transport', 'stretcher', 'spinal immobilization', 'move patient',
+    'position patient', 'load and go', 'procedure', 'place patient', 'emergent transport',
+    'administer', 'give aspirin', 'give nitro', 'asa', 'oral glucose', 'epinephrine', 'splint',
+    'immobilize', 'check pupils', 'response to painful stimuli'
+  ];
+
+  const normalized = message.toLowerCase();
+  const role = proctorKeywords.some(keyword => normalized.includes(keyword)) ? "proctor" : "patient";
+
   const hardcoded = checkHardcodedResponse(message);
   console.log("Hardcoded match:", hardcoded);
-  if (hardcoded) return displayChatResponse(hardcoded);
+  if (hardcoded) {
+    return displayChatResponse(hardcoded, message);
+  }
 
   const vector = await getVectorResponse(message);
   console.log("Vector match:", vector);
-  if (vector) return displayChatResponse(vector);
+  if (vector) {
+    return displayChatResponse(vector, message);
+  }
 
   const gpt = await getAIResponseGPT4Turbo(message);
   console.log("GPT fallback:", gpt);
@@ -127,19 +144,21 @@ async function processUserMessage(message) {
     firebase.database().ref('ai_responses_log').push({
       userMessage: message,
       aiResponse: gpt,
+      responder: role,
       timestamp: Date.now()
     });
-    return displayChatResponse(gpt);
+    return displayChatResponse(gpt, message);
   }
 
-  // ❌ Fallback: Log unknown question
+  // ❌ Log fallback to unknowns
   firebase.database().ref('unknownQuestions').push({
-    message: message,
+    userMessage: message,
+    responder: role,
     timestamp: Date.now()
   });
 
   console.warn("⚠️ No response generated.");
-  displayChatResponse("I'm not sure how to answer that right now. Your question has been sent for instructor review.");
+  displayChatResponse("I'm not sure how to answer that right now. Your question has been sent for instructor review.", message);
 }
 
 // Start scenario
@@ -154,7 +173,6 @@ startScenario = async function () {
   }, 1000);
 };
 
-// End scenario
 endScenario = function () {
   console.log("Scenario ended.");
   displayChatResponse("📦 Scenario ended. Please complete your handoff report.");
@@ -164,7 +182,7 @@ startVoiceRecognition = function () {
   displayChatResponse("🎤 Voice recognition activated. (Simulated)");
 };
 
-// UI binding
+// UI bindings
 document.addEventListener('DOMContentLoaded', function () {
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
