@@ -1,10 +1,13 @@
-// /.netlify/functions/tts.js
+// netlify/functions/tts.js
 const fetch = require('node-fetch');
 
 exports.handler = async (event, context) => {
-  const { text, voice } = JSON.parse(event.body);
+  const { text, speaker } = JSON.parse(event.body); // expects speaker: "proctor" or "patient"
 
-  const apiKey = process.env.OPENAI_API_KEY; // Set this in Netlify Environment Variables
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  // Assign voice based on speaker type
+  const voice = speaker === "proctor" ? "shimmer" : "onyx";
 
   const response = await fetch('https://api.openai.com/v1/audio/speech', {
     method: 'POST',
