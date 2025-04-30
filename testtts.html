@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TTS Test Page</title>
+</head>
+<body style="font-family: sans-serif; padding: 2rem;">
+  <h2>Test OpenAI TTS (Shimmer & Onyx)</h2>
+  <label for="speaker">Speaker:</label>
+  <select id="speaker">
+    <option value="proctor">Proctor (Shimmer)</option>
+    <option value="patient">Patient (Onyx)</option>
+  </select>
+
+  <br><br>
+
+  <textarea id="text" rows="4" cols="50" placeholder="Enter something to say..."></textarea>
+  <br><br>
+  <button onclick="speak()">Play TTS</button>
+
+  <p id="log" style="margin-top: 1rem;"></p>
+
+  <script>
+    async function speak() {
+      const text = document.getElementById('text').value.trim();
+      const speaker = document.getElementById('speaker').value;
+      const log = document.getElementById('log');
+      log.innerText = 'Requesting audio...';
+
+      try {
+        const res = await fetch("/api/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, speaker })
+        });
+
+        const data = await res.json();
+
+        if (!data.audio) throw new Error("No audio returned");
+
+        const audioBlob = new Blob([
+          Uint8Array.from(atob(data.audio), c => c.charCodeAt(0))
+        ], { type: "audio/mpeg" });
+
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+
+        log.innerText = "Playing audio with voice: " + speaker;
+      } catch (err) {
+        console.error("TTS error:", err);
+        log.innerText = "Error: " + err.message;
+      }
+    }
+  </script>
+</body>
+</html>
