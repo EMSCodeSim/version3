@@ -8,7 +8,6 @@ firebase.database().ref('hardcodedResponses').once('value').then(snapshot => {
   console.log("✅ Loaded hardcodedResponses:", hardcodedResponses);
 });
 
-// Load dispatch and patient
 async function loadDispatchInfo() {
   try {
     const res = await fetch(`${scenarioPath}dispatch.txt`);
@@ -29,27 +28,25 @@ async function loadPatientInfo() {
   }
 }
 
-// Error logger
 function logErrorToDatabase(errorInfo) {
   console.error("🔴 Error:", errorInfo);
-  if (firebase?.database) {
-    firebase.database().ref('error_logs').push({
-      error: errorInfo,
-      timestamp: Date.now()
-    });
-  }
+  firebase.database().ref('error_logs').push({
+    error: errorInfo,
+    timestamp: Date.now()
+  });
 }
 
-// Chat display
-function displayChatResponse(response, label = "") {
+function displayChatResponse(response, question = "", role = "") {
   const chatBox = document.getElementById("chat-box");
+  const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
+
   chatBox.innerHTML += `
-    ${label ? `<div class="question">👨‍⚕️ You: ${label}</div>` : ""}
-    <div class="response">${response}</div>`;
+    ${question ? `<div class="question">🗣️ <b>You:</b> ${question}</div>` : ""}
+    <div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>
+  `;
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Hardcoded matcher
 function checkHardcodedResponse(message) {
   if (!hardcodedResponses) return null;
   const normalized = message.trim().toLowerCase();
@@ -75,7 +72,6 @@ function checkHardcodedResponse(message) {
   return null;
 }
 
-// Vector search
 async function getVectorResponse(message) {
   try {
     const res = await fetch('/api/vector-search', {
@@ -92,10 +88,8 @@ async function getVectorResponse(message) {
   }
 }
 
-// GPT fallback
 async function getAIResponseGPT4Turbo(message) {
   try {
-    const fullPrompt = `Patient Info:\n${patientContext}\n\nUser asked: ${message}`;
     const res = await fetch('/api/gpt4-turbo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -110,7 +104,6 @@ async function getAIResponseGPT4Turbo(message) {
   }
 }
 
-// Main handler
 async function processUserMessage(message) {
   console.log("User sent:", message);
 
@@ -127,19 +120,12 @@ async function processUserMessage(message) {
   const role = proctorKeywords.some(keyword => normalized.includes(keyword)) ? "proctor" : "patient";
 
   const hardcoded = checkHardcodedResponse(message);
-  console.log("Hardcoded match:", hardcoded);
-  if (hardcoded) {
-    return displayChatResponse(hardcoded, message);
-  }
+  if (hardcoded) return displayChatResponse(hardcoded, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
 
   const vector = await getVectorResponse(message);
-  console.log("Vector match:", vector);
-  if (vector) {
-    return displayChatResponse(vector, message);
-  }
+  if (vector) return displayChatResponse(vector, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
 
   const gpt = await getAIResponseGPT4Turbo(message);
-  console.log("GPT fallback:", gpt);
   if (gpt) {
     firebase.database().ref('ai_responses_log').push({
       userMessage: message,
@@ -147,34 +133,27 @@ async function processUserMessage(message) {
       responder: role,
       timestamp: Date.now()
     });
-    return displayChatResponse(gpt, message);
+    return displayChatResponse(gpt, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
   }
 
-  // ❌ Log fallback to unknowns
   firebase.database().ref('unknownQuestions').push({
     userMessage: message,
     responder: role,
     timestamp: Date.now()
   });
 
-  console.warn("⚠️ No response generated.");
   displayChatResponse("I'm not sure how to answer that right now. Your question has been sent for instructor review.", message);
 }
 
-// Start scenario
 startScenario = async function () {
-  console.log("Scenario started.");
   const dispatch = await loadDispatchInfo();
   patientContext = await loadPatientInfo();
 
   displayChatResponse(`🚑 Dispatch: ${dispatch}`);
-  setTimeout(() => {
-    displayChatResponse(`👤 Patient: ${patientContext}`);
-  }, 1000);
+  console.log("✅ Patient context loaded internally (not displayed).");
 };
 
 endScenario = function () {
-  console.log("Scenario ended.");
   displayChatResponse("📦 Scenario ended. Please complete your handoff report.");
 };
 
@@ -182,7 +161,6 @@ startVoiceRecognition = function () {
   displayChatResponse("🎤 Voice recognition activated. (Simulated)");
 };
 
-// UI bindings
 document.addEventListener('DOMContentLoaded', function () {
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
@@ -210,7 +188,6 @@ document.addEventListener('DOMContentLoaded', function () {
   micBtn?.addEventListener('click', () => startVoiceRecognition?.());
 });
 
-// Global error handlers
 window.onerror = function(message, source, lineno, colno, error) {
   logErrorToDatabase(`Uncaught Error: ${message} at ${source}:${lineno}:${colno}`);
 };
