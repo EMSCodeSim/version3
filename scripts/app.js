@@ -2,7 +2,7 @@ const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
 let hardcodedResponses = {};
 
-// Load hardcoded responses from Firebase
+// Load hardcoded responses
 firebase.database().ref('hardcodedResponses').once('value').then(snapshot => {
   hardcodedResponses = snapshot.val() || {};
   console.log("✅ Loaded hardcodedResponses:", hardcodedResponses);
@@ -30,7 +30,7 @@ async function loadPatientInfo() {
   }
 }
 
-// Error logger
+// Log error to Firebase
 function logErrorToDatabase(errorInfo) {
   console.error("🔴 Error:", errorInfo);
   if (firebase?.database) {
@@ -48,7 +48,7 @@ function displayChatResponse(response) {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Hardcoded match (array or object + fuzzy)
+// Check hardcoded (fuzzy)
 function checkHardcodedResponse(message) {
   if (!hardcodedResponses) return null;
   const normalized = message.trim().toLowerCase();
@@ -83,7 +83,7 @@ async function getVectorResponse(message) {
       body: JSON.stringify({ query: message })
     });
     const data = await res.json();
-    console.log("Vector response:", data);
+    console.log("✅ Vector response:", data);
     return data.match || null;
   } catch (e) {
     logErrorToDatabase("Vector search failed: " + e.message);
@@ -98,10 +98,10 @@ async function getAIResponseGPT4Turbo(message) {
     const res = await fetch('/api/gpt4-turbo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: fullPrompt })
+      body: JSON.stringify({ content: message })
     });
     const data = await res.json();
-    console.log("GPT-4 Turbo response:", data);
+    console.log("✅ GPT-4 Turbo response:", data);
     return data.reply || null;
   } catch (e) {
     logErrorToDatabase("GPT fallback failed: " + e.message);
@@ -109,25 +109,21 @@ async function getAIResponseGPT4Turbo(message) {
   }
 }
 
-// Main handler
+// 🔄 Main response handler
 async function processUserMessage(message) {
   console.log("User sent:", message);
 
   const hardcoded = checkHardcodedResponse(message);
-  if (hardcoded) {
-    console.log("✅ Matched hardcoded.");
-    return displayChatResponse(hardcoded);
-  }
+  console.log("Hardcoded match:", hardcoded);
+  if (hardcoded) return displayChatResponse(hardcoded);
 
   const vector = await getVectorResponse(message);
-  if (vector) {
-    console.log("✅ Matched vector.");
-    return displayChatResponse(vector);
-  }
+  console.log("Vector match:", vector);
+  if (vector) return displayChatResponse(vector);
 
   const gpt = await getAIResponseGPT4Turbo(message);
+  console.log("GPT fallback:", gpt);
   if (gpt) {
-    console.log("✅ GPT-4 Turbo response:", gpt);
     firebase.database().ref('ai_responses_log').push({
       userMessage: message,
       aiResponse: gpt,
@@ -136,8 +132,14 @@ async function processUserMessage(message) {
     return displayChatResponse(gpt);
   }
 
+  // ❌ Fallback: Log unknown question
+  firebase.database().ref('unknownQuestions').push({
+    message: message,
+    timestamp: Date.now()
+  });
+
   console.warn("⚠️ No response generated.");
-  displayChatResponse("I'm not sure how to answer that right now.");
+  displayChatResponse("I'm not sure how to answer that right now. Your question has been sent for instructor review.");
 }
 
 // Start scenario
@@ -162,7 +164,7 @@ startVoiceRecognition = function () {
   displayChatResponse("🎤 Voice recognition activated. (Simulated)");
 };
 
-// Event bindings
+// UI binding
 document.addEventListener('DOMContentLoaded', function () {
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
@@ -190,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function () {
   micBtn?.addEventListener('click', () => startVoiceRecognition?.());
 });
 
-// Global error capture
+// Global error handlers
 window.onerror = function(message, source, lineno, colno, error) {
   logErrorToDatabase(`Uncaught Error: ${message} at ${source}:${lineno}:${colno}`);
 };
