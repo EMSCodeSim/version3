@@ -31,7 +31,6 @@ exports.handler = async (event) => {
         input: text,
         voice: voice,
         response_format: "mp3"
-        speed: speaker === "patient" ? 1.1 : 1.0 // Patient is slightly faster
       })
     });
 
