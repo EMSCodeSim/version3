@@ -31,8 +31,6 @@
   <tbody id="response-table"></tbody>
 </table>
 
-<div id="response-container"></div>
-
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
@@ -176,16 +174,26 @@
     }
   }
 
+  function deleteUnknownQuestion(questionText) {
+    firebase.database().ref('unknownQuestions').once('value', snapshot => {
+      snapshot.forEach(child => {
+        if (child.val().userMessage === questionText) {
+          firebase.database().ref('unknownQuestions').child(child.key).remove();
+        }
+      });
+    });
+  }
+
   function loadUnreviewedResponsesOnly() {
     const table = document.getElementById("response-table");
     table.innerHTML = "";
 
-    firebase.database().ref('unknownQuestions').once('value', snapshot => {
+    firebase.database().ref("unknownQuestions").once("value", snapshot => {
       const data = snapshot.val() || {};
       Object.entries(data).forEach(([key, entry], index) => {
         const questionText = entry.userMessage;
         const responseText = entry.aiResponse;
-        const role = entry.responder || 'patient';
+        const role = entry.responder || "patient";
 
         const row = document.createElement("tr");
         row.innerHTML = `
@@ -197,7 +205,19 @@
               <option value="proctor" ${role === "proctor" ? "selected" : ""}>proctor</option>
             </select>
           </td>
-          <td>(New Entry)</td>
+          <td>
+            <button onclick="openTriggerEditor('${key}')">Add Trigger</button>
+            <div id="trigger-editor-${key}" class="editor">
+              <select id="trigger-type-${key}">
+                <option value="image">Show Image</option>
+                <option value="audio">Play Audio</option>
+                <option value="scenarioChange">Change Scenario</option>
+                <option value="miniApp">Launch Mini App</option>
+              </select>
+              <input type="text" id="trigger-value-${key}" placeholder="Trigger value (e.g. scene2.png)" />
+              <button onclick="saveTriggerToResponse('${key}')">Save Trigger</button>
+            </div>
+          </td>
           <td>
             <button onclick="saveRow('${key}', ${index})">Approve</button>
             <button onclick="deleteUnknownQuestion('${questionText}')">Delete</button>
@@ -208,17 +228,7 @@
     });
   }
 
-  function deleteUnknownQuestion(questionText) {
-    firebase.database().ref('unknownQuestions').once('value', snapshot => {
-      snapshot.forEach(child => {
-        if (child.val().userMessage === questionText) {
-          firebase.database().ref('unknownQuestions').child(child.key).remove();
-        }
-      });
-    });
-  }
-
-  document.getElementById('load-unreviewed').addEventListener('click', loadUnreviewedResponsesOnly);
+  document.getElementById("load-unreviewed").addEventListener("click", loadUnreviewedResponsesOnly);
   loadResponses();
 </script>
 
