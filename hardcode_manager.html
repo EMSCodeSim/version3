@@ -21,6 +21,7 @@
       <th>Response</th>
       <th>Role</th>
       <th>Triggers</th>
+      <th>Save</th>
     </tr>
   </thead>
   <tbody id="response-table"></tbody>
@@ -49,37 +50,36 @@
       const data = snapshot.val();
       if (!data) return;
 
-      Object.keys(data).forEach(key => {
+      Object.keys(data).forEach((key, index) => {
         const entry = data[key];
         const row = document.createElement("tr");
 
-        const qCell = document.createElement("td");
-        qCell.textContent = key;
-        row.appendChild(qCell);
-
-        const rCell = document.createElement("td");
-        rCell.textContent = entry.response || "";
-        row.appendChild(rCell);
-
-        const roleCell = document.createElement("td");
-        roleCell.textContent = entry.role || "patient";
-        row.appendChild(roleCell);
-
-        const triggerCell = document.createElement("td");
-        triggerCell.innerHTML = `
-          <button onclick="openTriggerEditor('${key}')">Add Trigger</button>
-          <div id="trigger-editor-${key}" class="editor">
-            <select id="trigger-type-${key}">
-              <option value="image">Show Image</option>
-              <option value="audio">Play Audio</option>
-              <option value="scenarioChange">Change Scenario</option>
-              <option value="miniApp">Launch Mini App</option>
+        row.innerHTML = `
+          <td><input type="text" id="question-${index}" value="${key}" style="width: 100%"></td>
+          <td><textarea id="response-${index}" style="width: 100%">${entry.response || entry.aiResponse || ""}</textarea></td>
+          <td>
+            <select id="role-${index}">
+              <option value="patient" ${entry.role === "patient" ? "selected" : ""}>patient</option>
+              <option value="proctor" ${entry.role === "proctor" ? "selected" : ""}>proctor</option>
             </select>
-            <input type="text" id="trigger-value-${key}" placeholder="Trigger value (e.g. scene2.png)" />
-            <button onclick="saveTriggerToResponse('${key}')">Save Trigger</button>
-          </div>
+          </td>
+          <td>
+            <button onclick="openTriggerEditor('${key}')">Add Trigger</button>
+            <div id="trigger-editor-${key}" class="editor">
+              <select id="trigger-type-${key}">
+                <option value="image">Show Image</option>
+                <option value="audio">Play Audio</option>
+                <option value="scenarioChange">Change Scenario</option>
+                <option value="miniApp">Launch Mini App</option>
+              </select>
+              <input type="text" id="trigger-value-${key}" placeholder="Trigger value" />
+              <button onclick="saveTriggerToResponse('${key}')">Save Trigger</button>
+            </div>
+          </td>
+          <td>
+            <button onclick="saveRow('${key}', ${index})">Save</button>
+          </td>
         `;
-        row.appendChild(triggerCell);
 
         table.appendChild(row);
       });
@@ -99,6 +99,40 @@
     firebase.database().ref(`hardcodedResponses/${key}/triggers`).push({ type, value });
     alert("Trigger saved to: " + key);
     document.getElementById(`trigger-editor-${key}`).style.display = 'none';
+  }
+
+  function saveRow(oldKey, index) {
+    const newKey = document.getElementById(`question-${index}`).value.trim();
+    const response = document.getElementById(`response-${index}`).value.trim();
+    const role = document.getElementById(`role-${index}`).value;
+
+    if (!newKey || !response) {
+      alert("Question and Response cannot be empty.");
+      return;
+    }
+
+    // Move entry if key was changed
+    if (newKey !== oldKey) {
+      firebase.database().ref(`hardcodedResponses/${oldKey}`).once("value", snapshot => {
+        const entry = snapshot.val();
+        entry.response = response;
+        entry.role = role;
+
+        const updates = {};
+        updates[`hardcodedResponses/${newKey}`] = entry;
+        updates[`hardcodedResponses/${oldKey}`] = null;
+
+        firebase.database().ref().update(updates);
+        alert("Entry updated with new key.");
+        loadResponses();
+      });
+    } else {
+      firebase.database().ref(`hardcodedResponses/${oldKey}`).update({
+        response,
+        role
+      });
+      alert("Entry updated.");
+    }
   }
 
   loadResponses();
