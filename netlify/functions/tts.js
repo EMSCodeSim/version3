@@ -18,7 +18,7 @@ exports.handler = async (event) => {
   }
 
   const voice = speaker === "proctor" ? "shimmer" : "onyx";
-  const speed = speaker === "patient" ? 1.5 : 1.0; // Speed up patient voice
+  const speed = speaker === "patient" ? 1.3 : 1.1; // Speed up patient voice
 
   try {
     const response = await fetch("https://api.openai.com/v1/audio/speech", {
