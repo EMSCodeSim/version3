@@ -28,7 +28,6 @@
 </table>
 
 <script>
-  // ✅ Your Firebase Configuration
   const firebaseConfig = {
     apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
     authDomain: "ems-code-sim.firebaseapp.com",
@@ -52,15 +51,19 @@
 
       Object.keys(data).forEach((key, index) => {
         const entry = data[key];
+        const questionText = entry.userQuestion || key;
+        const responseText = entry.response || entry.aiResponse || "";
+        const role = entry.role || "patient";
+
         const row = document.createElement("tr");
 
         row.innerHTML = `
-          <td><input type="text" id="question-${index}" value="${key}" style="width: 100%"></td>
-          <td><textarea id="response-${index}" style="width: 100%">${entry.response || entry.aiResponse || ""}</textarea></td>
+          <td><input type="text" id="question-${index}" value="${questionText}" style="width: 100%"></td>
+          <td><textarea id="response-${index}" style="width: 100%">${responseText}</textarea></td>
           <td>
             <select id="role-${index}">
-              <option value="patient" ${entry.role === "patient" ? "selected" : ""}>patient</option>
-              <option value="proctor" ${entry.role === "proctor" ? "selected" : ""}>proctor</option>
+              <option value="patient" ${role === "patient" ? "selected" : ""}>patient</option>
+              <option value="proctor" ${role === "proctor" ? "selected" : ""}>proctor</option>
             </select>
           </td>
           <td>
@@ -72,13 +75,11 @@
                 <option value="scenarioChange">Change Scenario</option>
                 <option value="miniApp">Launch Mini App</option>
               </select>
-              <input type="text" id="trigger-value-${key}" placeholder="Trigger value" />
+              <input type="text" id="trigger-value-${key}" placeholder="Trigger value (e.g. scene2.png)" />
               <button onclick="saveTriggerToResponse('${key}')">Save Trigger</button>
             </div>
           </td>
-          <td>
-            <button onclick="saveRow('${key}', ${index})">Save</button>
-          </td>
+          <td><button onclick="saveRow('${key}', ${index})">Save</button></td>
         `;
 
         table.appendChild(row);
@@ -102,35 +103,35 @@
   }
 
   function saveRow(oldKey, index) {
-    const newKey = document.getElementById(`question-${index}`).value.trim();
+    const newQuestion = document.getElementById(`question-${index}`).value.trim();
     const response = document.getElementById(`response-${index}`).value.trim();
     const role = document.getElementById(`role-${index}`).value;
 
-    if (!newKey || !response) {
+    if (!newQuestion || !response) {
       alert("Question and Response cannot be empty.");
       return;
     }
 
-    // Move entry if key was changed
-    if (newKey !== oldKey) {
-      firebase.database().ref(`hardcodedResponses/${oldKey}`).once("value", snapshot => {
-        const entry = snapshot.val();
-        entry.response = response;
-        entry.role = role;
+    const updates = {};
+    const newEntry = {
+      response,
+      role,
+      userQuestion: newQuestion
+    };
 
-        const updates = {};
-        updates[`hardcodedResponses/${newKey}`] = entry;
+    // If the question text has changed (key rename)
+    if (newQuestion !== oldKey) {
+      firebase.database().ref(`hardcodedResponses/${oldKey}`).once("value", snapshot => {
+        const oldData = snapshot.val();
+        updates[`hardcodedResponses/${newQuestion}`] = { ...oldData, ...newEntry };
         updates[`hardcodedResponses/${oldKey}`] = null;
 
         firebase.database().ref().update(updates);
-        alert("Entry updated with new key.");
+        alert("Updated and moved to new key.");
         loadResponses();
       });
     } else {
-      firebase.database().ref(`hardcodedResponses/${oldKey}`).update({
-        response,
-        role
-      });
+      firebase.database().ref(`hardcodedResponses/${oldKey}`).update(newEntry);
       alert("Entry updated.");
     }
   }
