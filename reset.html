@@ -6,13 +6,19 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
   <style>
     body { font-family: Arial; padding: 30px; text-align: center; }
-    button { padding: 10px 20px; font-size: 16px; margin-top: 20px; }
+    button { padding: 12px 24px; font-size: 16px; margin-top: 20px; }
   </style>
 </head>
 <body>
 
-<h2>Reset Firebase Simulator Database</h2>
-<p>This will clear <b>unknownQuestions</b> and reset <b>hardcodedResponses</b>.</p>
+<h2>Reset EMS Simulator Firebase Database</h2>
+<p>This will clear:</p>
+<ul style="text-align:left; display:inline-block;">
+  <li><b>unknownQuestions</b></li>
+  <li><b>hardcodedResponses</b> (sample entries will be added)</li>
+  <li><b>ai_responses_log</b></li>
+</ul>
+
 <button onclick="resetFirebase()">RESET DATABASE</button>
 
 <script>
@@ -30,6 +36,7 @@
 
   function resetFirebase() {
     db.ref("unknownQuestions").set({});
+    db.ref("ai_responses_log").set({});
     db.ref("hardcodedResponses").set({
       "Do you have chest pain?": {
         userQuestion: "Do you have chest pain?",
@@ -66,9 +73,9 @@
         audioUrl: ""
       }
     }).then(() => {
-      alert("✅ Database has been reset.");
+      alert("✅ Database reset complete!");
     }).catch(err => {
-      alert("Error resetting database: " + err.message);
+      alert("Error: " + err.message);
     });
   }
 </script>
