@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Reset Firebase Database</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <style>
+    body { font-family: Arial; padding: 30px; text-align: center; }
+    button { padding: 10px 20px; font-size: 16px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+
+<h2>Reset Firebase Simulator Database</h2>
+<p>This will clear <b>unknownQuestions</b> and reset <b>hardcodedResponses</b>.</p>
+<button onclick="resetFirebase()">RESET DATABASE</button>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
+    authDomain: "ems-code-sim.firebaseapp.com",
+    databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+    projectId: "ems-code-sim",
+    storageBucket: "ems-code-sim.appspot.com",
+    messagingSenderId: "190498607578",
+    appId: "1:190498607578:web:4cf6c8e999b027956070e3"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  function resetFirebase() {
+    db.ref("unknownQuestions").set({});
+    db.ref("hardcodedResponses").set({
+      "Do you have chest pain?": {
+        userQuestion: "Do you have chest pain?",
+        aiResponse: "Yes, it started about 20 minutes ago. It's in the center of my chest.",
+        role: "patient",
+        reviewed: true,
+        timestamp: Date.now(),
+        audioUrl: "",
+        triggers: {
+          chestImage: {
+            type: "image",
+            value: "patients/chest_pain_male.png"
+          },
+          heartSound: {
+            type: "audio",
+            value: "audio/breath_clear.mp3"
+          }
+        }
+      },
+      "What is your name?": {
+        userQuestion: "What is your name?",
+        aiResponse: "My name is John. I’m 62 years old.",
+        role: "patient",
+        reviewed: true,
+        timestamp: Date.now(),
+        audioUrl: ""
+      },
+      "Is the scene safe?": {
+        userQuestion: "Is the scene safe?",
+        aiResponse: "Yes, the scene appears safe. No hazards are present.",
+        role: "proctor",
+        reviewed: true,
+        timestamp: Date.now(),
+        audioUrl: ""
+      }
+    }).then(() => {
+      alert("✅ Database has been reset.");
+    }).catch(err => {
+      alert("Error resetting database: " + err.message);
+    });
+  }
+</script>
+
+</body>
+</html>
