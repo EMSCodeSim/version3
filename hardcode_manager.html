@@ -1,102 +1,108 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Hardcode Manager</title>
+  <title>Hardcoded Response Manager</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    textarea { width: 100%; height: 60px; }
+    body { font-family: Arial; padding: 20px; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 10px; }
-    th { background-color: #0077cc; color: white; }
+    th, td { border: 1px solid #ccc; padding: 10px; vertical-align: top; }
+    .editor { display: none; margin-top: 10px; }
   </style>
 </head>
 <body>
-<h1>Hardcode Manager</h1>
 
-<button onclick="loadUnreviewed()">Load Unreviewed GPT Responses</button>
-<button onclick="saveToFirebase()">Save All to Hardcoded</button>
-
-<table id="hardcodedTable">
+<h2>Hardcoded Response Manager</h2>
+<table>
   <thead>
     <tr>
-      <th>User Question</th>
-      <th>AI Response</th>
+      <th>Question</th>
+      <th>Response</th>
       <th>Role</th>
-      <th>Actions</th>
+      <th>Triggers</th>
     </tr>
   </thead>
-  <tbody></tbody>
+  <tbody id="response-table"></tbody>
 </table>
 
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 <script>
+  // ✅ Your Firebase Configuration
   const firebaseConfig = {
     apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
     authDomain: "ems-code-sim.firebaseapp.com",
     databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
     projectId: "ems-code-sim",
-    storageBucket: "ems-code-sim.appspot.com",
+    storageBucket: "ems-code-sim.firebasestorage.app",
     messagingSenderId: "190498607578",
-    appId: "1:190498607578:web:4cf6c8e999b027956070e3",
-    measurementId: "G-2Q3ZT01YT1"
+    appId: "1:190498607578:web:4cf6c8e999b027956070e3"
   };
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  function addNewRow(q, a, role = "", key = "") {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td><textarea>${q}</textarea></td>
-      <td><textarea>${a}</textarea></td>
-      <td>${role}</td>
-      <td>
-        <button onclick="approveRow(this, '${key}')">Approve</button>
-        <button onclick="this.closest('tr').remove()">Delete</button>
-      </td>
-    `;
-    document.querySelector("#hardcodedTable tbody").appendChild(row);
-  }
+  function loadResponses() {
+    const table = document.getElementById("response-table");
+    table.innerHTML = "";
 
-  function loadUnreviewed() {
-    db.ref("unknownQuestions").once("value", snapshot => {
-      const data = snapshot.val() || {};
-      for (const key in data) {
+    db.ref("hardcodedResponses").once("value", snapshot => {
+      const data = snapshot.val();
+      if (!data) return;
+
+      Object.keys(data).forEach(key => {
         const entry = data[key];
-        if (!entry.reviewed) {
-          addNewRow(entry.userMessage, entry.aiResponse, entry.responder, key);
-        }
-      }
+        const row = document.createElement("tr");
+
+        const qCell = document.createElement("td");
+        qCell.textContent = key;
+        row.appendChild(qCell);
+
+        const rCell = document.createElement("td");
+        rCell.textContent = entry.response || "";
+        row.appendChild(rCell);
+
+        const roleCell = document.createElement("td");
+        roleCell.textContent = entry.role || "patient";
+        row.appendChild(roleCell);
+
+        const triggerCell = document.createElement("td");
+        triggerCell.innerHTML = `
+          <button onclick="openTriggerEditor('${key}')">Add Trigger</button>
+          <div id="trigger-editor-${key}" class="editor">
+            <select id="trigger-type-${key}">
+              <option value="image">Show Image</option>
+              <option value="audio">Play Audio</option>
+              <option value="scenarioChange">Change Scenario</option>
+              <option value="miniApp">Launch Mini App</option>
+            </select>
+            <input type="text" id="trigger-value-${key}" placeholder="Trigger value (e.g. scene2.png)" />
+            <button onclick="saveTriggerToResponse('${key}')">Save Trigger</button>
+          </div>
+        `;
+        row.appendChild(triggerCell);
+
+        table.appendChild(row);
+      });
     });
   }
 
-  function approveRow(btn, key) {
-    const row = btn.closest("tr");
-    const q = row.cells[0].querySelector("textarea").value.trim().toLowerCase();
-    const a = row.cells[1].querySelector("textarea").value.trim();
-
-    if (q && a) {
-      db.ref("hardcodedResponses/" + q).set(a);
-      db.ref("unknownQuestions/" + key + "/reviewed").set(true);
-      alert("✅ Approved and added.");
-    }
+  function openTriggerEditor(key) {
+    const editor = document.getElementById(`trigger-editor-${key}`);
+    if (editor) editor.style.display = 'block';
   }
 
-  function saveToFirebase() {
-    const rows = document.querySelectorAll("#hardcodedTable tbody tr");
-    const updates = {};
-    rows.forEach(row => {
-      const q = row.cells[0].querySelector("textarea").value.trim().toLowerCase();
-      const a = row.cells[1].querySelector("textarea").value.trim();
-      if (q && a) updates[q] = a;
-    });
+  function saveTriggerToResponse(key) {
+    const type = document.getElementById(`trigger-type-${key}`).value;
+    const value = document.getElementById(`trigger-value-${key}`).value;
+    if (!type || !value) return;
 
-    db.ref("hardcodedResponses").update(updates).then(() => {
-      alert("✅ All rows saved to hardcodedResponses.");
-    });
+    firebase.database().ref(`hardcodedResponses/${key}/triggers`).push({ type, value });
+    alert("Trigger saved to: " + key);
+    document.getElementById(`trigger-editor-${key}`).style.display = 'none';
   }
+
+  loadResponses();
 </script>
+
 </body>
 </html>
