@@ -51,68 +51,52 @@
 
   function addRow(key, data, isUnapproved) {
     const row = document.createElement("tr");
-
-    const question = data.userQuestion || data.userMessage || "No question found";
-
+    const question = data.userQuestion || data.userMessage || "Missing question";
     row.innerHTML = `
-      <td><input value="${question}" class="question-input"></td>
-      <td><input value="${data.aiResponse || ""}" class="response-input"></td>
+      <td><input class="question-input" value="${question}"></td>
+      <td><input class="response-input" value="${data.aiResponse || ""}"></td>
       <td>
         <select class="role-select">
-          <option value="patient" ${data.responder === "patient" ? "selected" : ""}>patient</option>
-          <option value="proctor" ${data.responder === "proctor" ? "selected" : ""}>proctor</option>
+          <option value="patient" ${data.role === "patient" ? "selected" : ""}>patient</option>
+          <option value="proctor" ${data.role === "proctor" ? "selected" : ""}>proctor</option>
         </select>
       </td>
-      <td><button onclick="addTrigger('${key}')">Add Trigger</button></td>
+      <td><button onclick="addTrigger(this)">Add Trigger</button></td>
       <td>
-        <button onclick="saveResponse(this, '${key}', ${isUnapproved})">Save</button>
-        <button onclick="deleteEntry('${key}', ${isUnapproved})">Delete</button>
+        <button onclick="approveResponse(this, '${key}', ${isUnapproved})">Save</button>
+        <button onclick="deleteResponse('${key}', ${isUnapproved})">Delete</button>
       </td>
     `;
     table.appendChild(row);
   }
 
-  async function saveResponse(button, key, isUnapproved) {
+  function addTrigger(button) {
+    const cell = button.parentElement;
+    const input = document.createElement("input");
+    input.placeholder = "Trigger value (e.g., scene1.png)";
+    cell.appendChild(document.createElement("br"));
+    cell.appendChild(input);
+  }
+
+  function approveResponse(button, key, fromUnknown) {
     const row = button.closest("tr");
     const question = row.querySelector(".question-input").value;
-    const response = row.querySelector(".response-input").value;
+    const aiResponse = row.querySelector(".response-input").value;
     const role = row.querySelector(".role-select").value;
 
-    const entry = { userQuestion: question, aiResponse: response, role };
+    const newEntry = { userQuestion: question, aiResponse, role };
 
-    // Save to TTS
-    try {
-      const res = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: response, speaker: role })
-      });
-
-      const { audio } = await res.json();
-      entry.audio = audio;
-    } catch (err) {
-      console.error("TTS failed", err);
+    db.ref("hardcodedResponses").push(newEntry);
+    if (fromUnknown) {
+      db.ref("unknownQuestions").child(key).remove();
     }
-
-    await db.ref("hardcodedResponses/" + key).set(entry);
-    if (isUnapproved) {
-      await db.ref("unknownQuestions/" + key).remove();
-    }
-    alert("Saved!");
+    row.remove();
   }
 
-  async function deleteEntry(key, isUnapproved) {
-    const ref = isUnapproved ? "unknownQuestions/" : "hardcodedResponses/";
-    await db.ref(ref + key).remove();
-    alert("Deleted!");
-    location.reload();
-  }
-
-  function addTrigger(key) {
-    const trigger = prompt("Enter trigger: showImage:scenarios/chest_pain_002/scene1.png OR playAudio:file.mp3");
-    if (!trigger) return;
-    db.ref("triggers/" + key).push(trigger);
-    alert("Trigger added");
+  function deleteResponse(key, fromUnknown) {
+    const path = fromUnknown ? "unknownQuestions" : "hardcodedResponses";
+    db.ref(path).child(key).remove();
+    loadUnapproved();
   }
 </script>
 </body>
