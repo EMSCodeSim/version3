@@ -213,3 +213,40 @@ document.addEventListener('DOMContentLoaded', function () {
   endBtn?.addEventListener('click', () => window.endScenario?.());
   micBtn?.addEventListener('click', () => window.startVoiceRecognition?.());
 });
+
+function executeTriggers(triggers) {
+  if (!Array.isArray(triggers)) return;
+  triggers.forEach(trigger => {
+    switch (trigger.type) {
+      case "image": showImage(trigger.value); break;
+      case "audio": playAudio(trigger.value); break;
+      case "scenarioChange": loadScenario(trigger.value); break;
+      case "miniApp": launchMiniApp(trigger.value); break;
+    }
+  });
+}
+
+// Run this after displaying response (inside processUserMessage or displayChatResponse):
+if (entry.triggers) executeTriggers(entry.triggers);
+
+// Trigger action handlers
+function showImage(filename) {
+  const imgBox = document.getElementById("image-box") || document.createElement("div");
+  imgBox.id = "image-box";
+  imgBox.innerHTML = `<img src="scenarios/chest_pain_002/${filename}" style="max-width:100%">`;
+  document.body.appendChild(imgBox);
+}
+
+function playAudio(filename) {
+  const audio = new Audio(`media/${filename}`);
+  audio.play();
+}
+
+function loadScenario(id) {
+  alert("Switching to scenario: " + id);
+  // You would add real scenario-switch logic here
+}
+
+function launchMiniApp(name) {
+  alert("Launching app: " + name);
+}
