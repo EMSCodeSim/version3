@@ -27,7 +27,7 @@
       log.innerText = 'Requesting audio...';
 
       try {
-        const res = await fetch("https://emscodesim3.netlify.app/.netlify/functions/tts", {
+        const res = await fetch("/api/tts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text, speaker })
