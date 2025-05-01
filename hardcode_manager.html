@@ -4,6 +4,7 @@
   <title>Hardcoded Response Manager</title>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -15,6 +16,7 @@
 <body>
 
 <h2>Hardcoded Response Manager</h2>
+<button id="load-unreviewed">Load New GPT Responses</button>
 <button onclick="loadResponses(true)">Load All Approved</button>
 <table>
   <thead>
@@ -29,25 +31,26 @@
   <tbody id="response-table"></tbody>
 </table>
 
+<div id="response-container"></div>
+
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
     authDomain: "ems-code-sim.firebaseapp.com",
     databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
     projectId: "ems-code-sim",
-    storageBucket: "ems-code-sim.firebasestorage.app",
+    storageBucket: "ems-code-sim.appspot.com",
     messagingSenderId: "190498607578",
     appId: "1:190498607578:web:4cf6c8e999b027956070e3"
   };
 
   firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
 
   function loadResponses(loadAll = false) {
     const table = document.getElementById("response-table");
     table.innerHTML = "";
 
-    db.ref("hardcodedResponses").once("value", snapshot => {
+    firebase.database().ref("hardcodedResponses").once("value", snapshot => {
       const data = snapshot.val();
       if (!data) return;
 
@@ -124,6 +127,33 @@
     }
   }
 
+  async function saveTTSAndApprove(question, response, role, base64Audio) {
+    const filename = `audio/${Date.now()}_${question.replace(/\s+/g, '_')}.mp3`;
+    const storageRef = firebase.storage().ref().child(filename);
+
+    try {
+      const audioBlob = new Blob([Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0))], { type: 'audio/mpeg' });
+      await storageRef.put(audioBlob);
+      const downloadURL = await storageRef.getDownloadURL();
+
+      const newEntry = {
+        userQuestion: question,
+        aiResponse: response,
+        role,
+        audioUrl: downloadURL,
+        reviewed: true,
+        timestamp: Date.now()
+      };
+
+      await firebase.database().ref('hardcodedResponses').push(newEntry);
+      await deleteUnknownQuestion(question);
+      alert("Saved and approved with audio.");
+    } catch (error) {
+      console.error('Audio upload failed:', error);
+      alert("TTS audio upload failed: " + error.message);
+    }
+  }
+
   async function saveRow(oldKey, index) {
     const newQuestion = document.getElementById(`question-${index}`).value.trim();
     const response = document.getElementById(`response-${index}`).value.trim();
@@ -135,29 +165,7 @@
     }
 
     const ttsAudio = await generateTTSBase64(response, role);
-    const newEntry = {
-      response,
-      role,
-      userQuestion: newQuestion,
-      reviewed: true,
-      audio: ttsAudio
-    };
-
-    if (newQuestion !== oldKey) {
-      firebase.database().ref(`hardcodedResponses/${oldKey}`).once("value", snapshot => {
-        const oldData = snapshot.val();
-        const updates = {
-          [`hardcodedResponses/${newQuestion}`]: { ...oldData, ...newEntry },
-          [`hardcodedResponses/${oldKey}`]: null
-        };
-        firebase.database().ref().update(updates);
-        alert("Updated and moved to new key with TTS.");
-        loadResponses();
-      });
-    } else {
-      firebase.database().ref(`hardcodedResponses/${oldKey}`).update(newEntry);
-      alert("Entry updated with TTS.");
-    }
+    saveTTSAndApprove(newQuestion, response, role, ttsAudio);
   }
 
   function deleteRow(key) {
@@ -168,22 +176,51 @@
     }
   }
 
-  // New GPT response logging for hardcode manager queue
-  firebase.database().ref("unknownQuestions").on("child_added", snapshot => {
-    const entry = snapshot.val();
-    if (entry && entry.userMessage && entry.aiResponse) {
-      firebase.database().ref("hardcodedResponses/" + entry.userMessage).set({
-        userQuestion: entry.userMessage,
-        aiResponse: entry.aiResponse,
-        role: entry.responder || "patient",
-        reviewed: false
-      });
-    }
-  });
+  function loadUnreviewedResponsesOnly() {
+    const table = document.getElementById("response-table");
+    table.innerHTML = "";
 
+    firebase.database().ref('unknownQuestions').once('value', snapshot => {
+      const data = snapshot.val() || {};
+      Object.entries(data).forEach(([key, entry], index) => {
+        const questionText = entry.userMessage;
+        const responseText = entry.aiResponse;
+        const role = entry.responder || 'patient';
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td><input type="text" id="question-${index}" value="${questionText}" style="width: 100%"></td>
+          <td><textarea id="response-${index}" style="width: 100%">${responseText}</textarea></td>
+          <td>
+            <select id="role-${index}">
+              <option value="patient" ${role === "patient" ? "selected" : ""}>patient</option>
+              <option value="proctor" ${role === "proctor" ? "selected" : ""}>proctor</option>
+            </select>
+          </td>
+          <td>(New Entry)</td>
+          <td>
+            <button onclick="saveRow('${key}', ${index})">Approve</button>
+            <button onclick="deleteUnknownQuestion('${questionText}')">Delete</button>
+          </td>
+        `;
+        table.appendChild(row);
+      });
+    });
+  }
+
+  function deleteUnknownQuestion(questionText) {
+    firebase.database().ref('unknownQuestions').once('value', snapshot => {
+      snapshot.forEach(child => {
+        if (child.val().userMessage === questionText) {
+          firebase.database().ref('unknownQuestions').child(child.key).remove();
+        }
+      });
+    });
+  }
+
+  document.getElementById('load-unreviewed').addEventListener('click', loadUnreviewedResponsesOnly);
   loadResponses();
 </script>
 
 </body>
 </html>
-
