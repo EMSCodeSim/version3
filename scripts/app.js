@@ -77,15 +77,20 @@ function checkHardcodedResponse(message) {
 
   const normalized = message.trim().toLowerCase();
 
-  for (const stored in hardcodedResponses) {
-    const storedNorm = stored.toLowerCase().trim();
-    if (storedNorm === normalized || storedNorm.includes(normalized) || normalized.includes(storedNorm)) {
-      return hardcodedResponses[stored];
+  for (const key in hardcodedResponses) {
+    const entry = hardcodedResponses[key];
+    if (!entry || typeof entry !== 'object') continue;
+
+    const storedQuestion = (entry.userQuestion || "").trim().toLowerCase();
+
+    if (storedQuestion === normalized || storedQuestion.includes(normalized) || normalized.includes(storedQuestion)) {
+      return entry;
     }
   }
 
   return null;
 }
+
 
 async function getVectorResponse(message) {
   try {
