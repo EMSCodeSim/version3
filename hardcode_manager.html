@@ -9,11 +9,13 @@
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #ccc; padding: 10px; vertical-align: top; }
     .editor { display: none; margin-top: 10px; }
+    button { margin: 2px; }
   </style>
 </head>
 <body>
 
 <h2>Hardcoded Response Manager</h2>
+<button onclick="loadResponses(true)">Load All Approved</button>
 <table>
   <thead>
     <tr>
@@ -21,7 +23,7 @@
       <th>Response</th>
       <th>Role</th>
       <th>Triggers</th>
-      <th>Save</th>
+      <th>Actions</th>
     </tr>
   </thead>
   <tbody id="response-table"></tbody>
@@ -41,7 +43,7 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  function loadResponses() {
+  function loadResponses(loadAll = false) {
     const table = document.getElementById("response-table");
     table.innerHTML = "";
 
@@ -51,6 +53,8 @@
 
       Object.keys(data).forEach((key, index) => {
         const entry = data[key];
+        if (!loadAll && entry.reviewed) return; // only unapproved by default
+
         const questionText = entry.userQuestion || key;
         const responseText = entry.response || entry.aiResponse || "";
         const role = entry.role || "patient";
@@ -79,7 +83,10 @@
               <button onclick="saveTriggerToResponse('${key}')">Save Trigger</button>
             </div>
           </td>
-          <td><button onclick="saveRow('${key}', ${index})">Save</button></td>
+          <td>
+            <button onclick="saveRow('${key}', ${index})">Save</button>
+            <button onclick="deleteRow('${key}')">Delete</button>
+          </td>
         `;
 
         table.appendChild(row);
@@ -116,16 +123,15 @@
     const newEntry = {
       response,
       role,
-      userQuestion: newQuestion
+      userQuestion: newQuestion,
+      reviewed: true
     };
 
-    // If the question text has changed (key rename)
     if (newQuestion !== oldKey) {
       firebase.database().ref(`hardcodedResponses/${oldKey}`).once("value", snapshot => {
         const oldData = snapshot.val();
         updates[`hardcodedResponses/${newQuestion}`] = { ...oldData, ...newEntry };
         updates[`hardcodedResponses/${oldKey}`] = null;
-
         firebase.database().ref().update(updates);
         alert("Updated and moved to new key.");
         loadResponses();
@@ -133,6 +139,14 @@
     } else {
       firebase.database().ref(`hardcodedResponses/${oldKey}`).update(newEntry);
       alert("Entry updated.");
+    }
+  }
+
+  function deleteRow(key) {
+    if (confirm("Are you sure you want to delete this entry?")) {
+      firebase.database().ref(`hardcodedResponses/${key}`).remove();
+      alert("Entry deleted.");
+      loadResponses();
     }
   }
 
