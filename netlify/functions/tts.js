@@ -3,7 +3,7 @@ const fetch = require('node-fetch');
 exports.handler = async (event) => {
   let text, speaker;
 
-  // Safely parse body and set defaults
+  // Safely parse request body
   try {
     const body = JSON.parse(event.body || '{}');
     text = body.text || "Hello, this is a test message.";
@@ -18,6 +18,7 @@ exports.handler = async (event) => {
   }
 
   const voice = speaker === "proctor" ? "shimmer" : "onyx";
+  const speed = speaker === "patient" ? 1.5 : 1.0; // Speed up patient voice
 
   try {
     const response = await fetch("https://api.openai.com/v1/audio/speech", {
@@ -30,6 +31,7 @@ exports.handler = async (event) => {
         model: "tts-1",
         input: text,
         voice: voice,
+        speed: speed,
         response_format: "mp3"
       })
     });
@@ -63,3 +65,4 @@ exports.handler = async (event) => {
     };
   }
 };
+
