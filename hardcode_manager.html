@@ -2,135 +2,118 @@
 <html>
 <head>
   <title>Hardcoded Response Manager</title>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-  <style>
-    body { font-family: Arial; padding: 20px; background: #f4f4f4; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    textarea { width: 100%; }
-    button { margin: 5px; }
-    .editor { margin-top: 5px; }
-  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 </head>
 <body>
-  <h2>Hardcoded Response Manager</h2>
-  <button onclick="loadUnreviewedResponsesOnly()">Load Unapproved</button>
-  <button onclick="loadAllResponses()">Load All Approved</button>
-
-  <table id="response-table">
+  <h1>Hardcoded Response Manager</h1>
+  <button onclick="loadUnapproved()">Load Unapproved</button>
+  <button onclick="loadApproved()">Load All Approved</button>
+  <table border="1">
     <thead>
-      <tr><th>Question</th><th>Response</th><th>Role</th><th>Triggers</th><th>Actions</th></tr>
+      <tr>
+        <th>Question</th>
+        <th>Response</th>
+        <th>Role</th>
+        <th>Triggers</th>
+        <th>Actions</th>
+      </tr>
     </thead>
-    <tbody id="response-body"></tbody>
+    <tbody id="response-table"></tbody>
   </table>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
-      authDomain: "ems-code-sim.firebaseapp.com",
-      databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
-      projectId: "ems-code-sim",
-      storageBucket: "ems-code-sim.firebasestorage.app",
-      messagingSenderId: "190498607578",
-      appId: "1:190498607578:web:4cf6c8e999b027956070e3"
-    };
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
+    authDomain: "ems-code-sim.firebaseapp.com",
+    databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+    projectId: "ems-code-sim",
+    storageBucket: "ems-code-sim.firebasestorage.app",
+    messagingSenderId: "190498607578",
+    appId: "1:190498607578:web:4cf6c8e999b027956070e3"
+  };
 
-    firebase.initializeApp(firebaseConfig);
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const table = document.getElementById("response-table");
 
-    const db = firebase.database();
+  async function loadUnapproved() {
+    table.innerHTML = "";
+    const snapshot = await db.ref("unknownQuestions").once("value");
+    snapshot.forEach(child => addRow(child.key, child.val(), true));
+  }
 
-    function loadUnreviewedResponsesOnly() {
-      const table = document.getElementById("response-body");
-      table.innerHTML = '';
-      db.ref("unknownQuestions").once("value", snapshot => {
-        snapshot.forEach(child => {
-          const data = child.val();
-          if (!data.reviewed) addRow(child.key, data);
-        });
+  async function loadApproved() {
+    table.innerHTML = "";
+    const snapshot = await db.ref("hardcodedResponses").once("value");
+    snapshot.forEach(child => addRow(child.key, child.val(), false));
+  }
+
+  function addRow(key, data, isUnapproved) {
+    const row = document.createElement("tr");
+
+    const question = data.userQuestion || data.userMessage || "No question found";
+
+    row.innerHTML = `
+      <td><input value="${question}" class="question-input"></td>
+      <td><input value="${data.aiResponse || ""}" class="response-input"></td>
+      <td>
+        <select class="role-select">
+          <option value="patient" ${data.responder === "patient" ? "selected" : ""}>patient</option>
+          <option value="proctor" ${data.responder === "proctor" ? "selected" : ""}>proctor</option>
+        </select>
+      </td>
+      <td><button onclick="addTrigger('${key}')">Add Trigger</button></td>
+      <td>
+        <button onclick="saveResponse(this, '${key}', ${isUnapproved})">Save</button>
+        <button onclick="deleteEntry('${key}', ${isUnapproved})">Delete</button>
+      </td>
+    `;
+    table.appendChild(row);
+  }
+
+  async function saveResponse(button, key, isUnapproved) {
+    const row = button.closest("tr");
+    const question = row.querySelector(".question-input").value;
+    const response = row.querySelector(".response-input").value;
+    const role = row.querySelector(".role-select").value;
+
+    const entry = { userQuestion: question, aiResponse: response, role };
+
+    // Save to TTS
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: response, speaker: role })
       });
+
+      const { audio } = await res.json();
+      entry.audio = audio;
+    } catch (err) {
+      console.error("TTS failed", err);
     }
 
-    function loadAllResponses() {
-      const table = document.getElementById("response-body");
-      table.innerHTML = '';
-      db.ref("hardcodedResponses").once("value", snapshot => {
-        snapshot.forEach(child => addRow(child.key, child.val(), true));
-      });
+    await db.ref("hardcodedResponses/" + key).set(entry);
+    if (isUnapproved) {
+      await db.ref("unknownQuestions/" + key).remove();
     }
+    alert("Saved!");
+  }
 
-    function addRow(key, data, isApproved = false) {
-      const table = document.getElementById("response-body");
-      const row = document.createElement("tr");
-      const question = data.userQuestion || "";
-      const response = data.aiResponse || "";
-      const role = data.role || data.responder || "patient";
+  async function deleteEntry(key, isUnapproved) {
+    const ref = isUnapproved ? "unknownQuestions/" : "hardcodedResponses/";
+    await db.ref(ref + key).remove();
+    alert("Deleted!");
+    location.reload();
+  }
 
-      row.innerHTML = `
-        <td><input id="question-${key}" value="${question}"></td>
-        <td><textarea id="response-${key}">${response}</textarea></td>
-        <td>
-          <select id="role-${key}">
-            <option value="patient" ${role === 'patient' ? 'selected' : ''}>patient</option>
-            <option value="proctor" ${role === 'proctor' ? 'selected' : ''}>proctor</option>
-          </select>
-        </td>
-        <td>
-          <button onclick="openTriggerEditor('${key}')">Add Trigger</button>
-          <div id="trigger-editor-${key}" class="editor" style="display:none;">
-            <select id="trigger-type-${key}">
-              <option value="image">Show Image</option>
-              <option value="audio">Play Audio</option>
-              <option value="scenarioChange">Change Scenario</option>
-              <option value="miniApp">Launch Mini App</option>
-            </select>
-            <input type="text" id="trigger-value-${key}" placeholder="Trigger value">
-            <button onclick="saveTriggerToResponse('${key}')">Save Trigger</button>
-          </div>
-        </td>
-        <td>
-          ${isApproved
-            ? `<button onclick="deleteApproved('${key}')">Delete</button>`
-            : `<button onclick="approveUnknownQuestion('${key}')">Approve</button>
-               <button onclick="deleteUnknownQuestion('${key}')">Delete</button>`}
-        </td>
-      `;
-      table.appendChild(row);
-    }
-
-    function openTriggerEditor(key) {
-      document.getElementById(`trigger-editor-${key}`).style.display = "block";
-    }
-
-    function saveTriggerToResponse(key) {
-      const type = document.getElementById(`trigger-type-${key}`).value;
-      const value = document.getElementById(`trigger-value-${key}`).value;
-      db.ref("triggers/" + key).push({ type, value });
-      alert("Trigger saved.");
-    }
-
-    function approveUnknownQuestion(key) {
-      const question = document.getElementById(`question-${key}`).value;
-      const response = document.getElementById(`response-${key}`).value;
-      const role = document.getElementById(`role-${key}`).value;
-
-      db.ref("hardcodedResponses").push({ userQuestion: question, aiResponse: response, role });
-      db.ref("unknownQuestions/" + key).remove();
-      location.reload();
-    }
-
-    function deleteUnknownQuestion(key) {
-      db.ref("unknownQuestions/" + key).remove();
-      location.reload();
-    }
-
-    function deleteApproved(key) {
-      db.ref("hardcodedResponses/" + key).remove();
-      location.reload();
-    }
-
-    // Load unapproved on start
-    window.onload = loadUnreviewedResponsesOnly;
-  </script>
+  function addTrigger(key) {
+    const trigger = prompt("Enter trigger: showImage:scenarios/chest_pain_002/scene1.png OR playAudio:file.mp3");
+    if (!trigger) return;
+    db.ref("triggers/" + key).push(trigger);
+    alert("Trigger added");
+  }
+</script>
 </body>
 </html>
