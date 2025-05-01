@@ -1,7 +1,7 @@
 // TTS playback using OpenAI tts-1
 async function speak(text, speaker = "patient") {
   try {
-    const res = await fetch("/api/tts", {
+    const res = await fetch("/.netlify/functions/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text, speaker })
