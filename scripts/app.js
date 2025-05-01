@@ -136,9 +136,15 @@ async function processUserMessage(message) {
   const role = proctorKeywords.some(keyword => normalized.includes(keyword)) ? "proctor" : "patient";
 
   const hardcoded = checkHardcodedResponse(message);
-  if (hardcoded) {
-    return displayChatResponse(hardcoded, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
-  }
+if (hardcoded && typeof hardcoded === "object") {
+  return displayChatResponse(
+    hardcoded.aiResponse || "[Missing aiResponse]",
+    message,
+    role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient",
+    hardcoded.audioUrl || null // Optional: pass audioUrl to speak()
+  );
+}
+
 
   const vector = await getVectorResponse(message);
   if (vector) {
