@@ -69,7 +69,7 @@ async function displayChatResponse(response, question = "", role = "") {
   chatBox.scrollTop = chatBox.scrollHeight;
 
   const speaker = role.toLowerCase().includes("proctor") ? "proctor" : "patient";
-  speak(response, speaker);
+  speak(response, speaker); // 🔈 <-- TTS integration here
 }
 
 function checkHardcodedResponse(message) {
