@@ -53,7 +53,7 @@
 
       Object.keys(data).forEach((key, index) => {
         const entry = data[key];
-        if (!loadAll && entry.reviewed) return;
+        if (!loadAll && entry.reviewed === true) return;
 
         const questionText = entry.userQuestion || key;
         const responseText = entry.response || entry.aiResponse || "";
