@@ -53,7 +53,7 @@
 
       Object.keys(data).forEach((key, index) => {
         const entry = data[key];
-        if (!loadAll && entry.reviewed) return; // only unapproved by default
+        if (!loadAll && entry.reviewed) return;
 
         const questionText = entry.userQuestion || key;
         const responseText = entry.response || entry.aiResponse || "";
@@ -109,7 +109,22 @@
     document.getElementById(`trigger-editor-${key}`).style.display = 'none';
   }
 
-  function saveRow(oldKey, index) {
+  async function generateTTSBase64(text, speaker) {
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, speaker })
+      });
+      const data = await res.json();
+      return data.audio || null;
+    } catch (err) {
+      console.error("TTS Generation Failed:", err);
+      return null;
+    }
+  }
+
+  async function saveRow(oldKey, index) {
     const newQuestion = document.getElementById(`question-${index}`).value.trim();
     const response = document.getElementById(`response-${index}`).value.trim();
     const role = document.getElementById(`role-${index}`).value;
@@ -119,26 +134,29 @@
       return;
     }
 
-    const updates = {};
+    const ttsAudio = await generateTTSBase64(response, role);
     const newEntry = {
       response,
       role,
       userQuestion: newQuestion,
-      reviewed: true
+      reviewed: true,
+      audio: ttsAudio
     };
 
     if (newQuestion !== oldKey) {
       firebase.database().ref(`hardcodedResponses/${oldKey}`).once("value", snapshot => {
         const oldData = snapshot.val();
-        updates[`hardcodedResponses/${newQuestion}`] = { ...oldData, ...newEntry };
-        updates[`hardcodedResponses/${oldKey}`] = null;
+        const updates = {
+          [`hardcodedResponses/${newQuestion}`]: { ...oldData, ...newEntry },
+          [`hardcodedResponses/${oldKey}`]: null
+        };
         firebase.database().ref().update(updates);
-        alert("Updated and moved to new key.");
+        alert("Updated and moved to new key with TTS.");
         loadResponses();
       });
     } else {
       firebase.database().ref(`hardcodedResponses/${oldKey}`).update(newEntry);
-      alert("Entry updated.");
+      alert("Entry updated with TTS.");
     }
   }
 
