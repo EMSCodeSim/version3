@@ -168,8 +168,22 @@
     }
   }
 
+  // New GPT response logging for hardcode manager queue
+  firebase.database().ref("unknownQuestions").on("child_added", snapshot => {
+    const entry = snapshot.val();
+    if (entry && entry.userMessage && entry.aiResponse) {
+      firebase.database().ref("hardcodedResponses/" + entry.userMessage).set({
+        userQuestion: entry.userMessage,
+        aiResponse: entry.aiResponse,
+        role: entry.responder || "patient",
+        reviewed: false
+      });
+    }
+  });
+
   loadResponses();
 </script>
 
 </body>
 </html>
+
