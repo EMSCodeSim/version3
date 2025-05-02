@@ -2,80 +2,81 @@
 <html>
 <head>
   <title>Hardcoded Response Manager</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f4f7f9;
-      padding: 20px;
+      margin: 30px;
+      background-color: #f9f9f9;
     }
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .controls {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .controls button {
-      margin: 5px;
-      padding: 10px 15px;
-      background: #007acc;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .controls button:hover {
-      background-color: #005999;
-    }
-    .entry {
-      background: white;
-      border-radius: 6px;
-      padding: 15px;
+
+    h2 {
       margin-bottom: 15px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      display: grid;
-      grid-template-columns: 1fr 1fr 100px 150px 150px;
-      gap: 10px;
-      align-items: center;
     }
-    input, select {
+
+    table {
       width: 100%;
-      padding: 8px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
+      border-collapse: collapse;
+      margin-top: 10px;
     }
-    .actions button {
-      display: block;
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      vertical-align: top;
+    }
+
+    th {
+      background-color: #f0f0f0;
+      text-align: left;
+    }
+
+    textarea {
       width: 100%;
-      margin-bottom: 5px;
-      padding: 8px;
-      border: none;
-      border-radius: 4px;
+      height: 60px;
+      resize: vertical;
+      font-size: 14px;
+    }
+
+    select {
+      width: 100%;
+      padding: 4px;
+    }
+
+    button {
+      padding: 6px 12px;
+      margin: 4px;
       cursor: pointer;
     }
-    .save-btn {
-      background-color: #2ecc71;
-      color: white;
+
+    .header-buttons {
+      margin-bottom: 20px;
     }
-    .delete-btn {
-      background-color: #e74c3c;
-      color: white;
+
+    .header-buttons button {
+      margin-right: 10px;
     }
   </style>
 </head>
 <body>
-
-  <h1>Hardcoded Response Manager</h1>
-
-  <div class="controls">
+  <h2>Hardcoded Response Manager</h2>
+  <div class="header-buttons">
     <button onclick="loadUnapproved()">Load Unapproved</button>
     <button onclick="loadAllApproved()">Load All Approved</button>
   </div>
 
-  <div id="response-container"></div>
+  <table id="responseTable">
+    <thead>
+      <tr>
+        <th>Question</th>
+        <th>Response</th>
+        <th>Role</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="responseList"></tbody>
+  </table>
 
   <script>
     const firebaseConfig = {
@@ -83,98 +84,95 @@
       authDomain: "ems-code-sim.firebaseapp.com",
       databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
       projectId: "ems-code-sim",
-      storageBucket: "ems-code-sim.appspot.com",
+      storageBucket: "ems-code-sim.firebasestorage.app",
       messagingSenderId: "190498607578",
       appId: "1:190498607578:web:4cf6c8e999b027956070e3"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    let currentData = [];
+
     function loadUnapproved() {
-      const container = document.getElementById("response-container");
-      container.innerHTML = "";
       db.ref("unknownQuestions").once("value", snapshot => {
-        snapshot.forEach(child => {
-          const val = child.val();
-          if (!val.reviewed) {
-            renderEntry(child.key, val, "unknownQuestions");
-          }
-        });
+        const data = snapshot.val() || {};
+        const entries = Object.entries(data).filter(([_, v]) => !v.reviewed);
+        currentData = entries;
+        renderTable(entries);
       });
     }
 
     function loadAllApproved() {
-      const container = document.getElementById("response-container");
-      container.innerHTML = "";
       db.ref("hardcodedResponses").once("value", snapshot => {
-        snapshot.forEach(child => {
-          renderEntry(child.key, child.val(), "hardcodedResponses");
-        });
+        const data = snapshot.val() || {};
+        const entries = Object.entries(data);
+        currentData = entries;
+        renderTable(entries, true);
       });
     }
 
-    function renderEntry(id, data, source) {
-      const container = document.getElementById("response-container");
+    function renderTable(entries, isApproved = false) {
+      const table = document.getElementById("responseList");
+      table.innerHTML = "";
 
-      const div = document.createElement("div");
-      div.className = "entry";
+      entries.forEach(([key, entry]) => {
+        const tr = document.createElement("tr");
 
-      const inputQ = document.createElement("input");
-      inputQ.value = data.userMessage || data.userQuestion || "";
+        const qCell = document.createElement("td");
+        const rCell = document.createElement("td");
+        const roleCell = document.createElement("td");
+        const actionCell = document.createElement("td");
 
-      const inputA = document.createElement("input");
-      inputA.value = data.aiResponse || "";
+        const qInput = document.createElement("textarea");
+        qInput.value = isApproved ? key : entry.userMessage;
 
-      const role = document.createElement("select");
-      ["patient", "proctor"].forEach(r => {
-        const opt = document.createElement("option");
-        opt.value = r;
-        opt.text = r;
-        if (data.role === r) opt.selected = true;
-        role.appendChild(opt);
-      });
+        const rInput = document.createElement("textarea");
+        rInput.value = entry.aiResponse;
 
-      const triggerBtn = document.createElement("button");
-      triggerBtn.textContent = "Add Trigger";
-      triggerBtn.onclick = () => alert("Trigger feature coming soon");
+        const roleSelect = document.createElement("select");
+        ["patient", "proctor"].forEach(role => {
+          const opt = document.createElement("option");
+          opt.value = role;
+          opt.textContent = role;
+          if (entry.role === role) opt.selected = true;
+          roleSelect.appendChild(opt);
+        });
 
-      const actions = document.createElement("div");
-      actions.className = "actions";
-
-      const save = document.createElement("button");
-      save.textContent = "Save";
-      save.className = "save-btn";
-      save.onclick = async () => {
-        const updated = {
-          userMessage: inputQ.value,
-          aiResponse: inputA.value,
-          role: role.value
+        const saveBtn = document.createElement("button");
+        saveBtn.textContent = "Approve & Save";
+        saveBtn.onclick = () => {
+          const newKey = qInput.value.trim();
+          db.ref("hardcodedResponses/" + newKey).set({
+            aiResponse: rInput.value.trim(),
+            role: roleSelect.value,
+            audioUrl: ""  // Placeholder for TTS file
+          });
+          db.ref("unknownQuestions/" + key).update({ reviewed: true });
+          alert("Saved and marked as reviewed.");
+          loadUnapproved();
         };
-        await db.ref("hardcodedResponses").push(updated);
-        if (source === "unknownQuestions") {
-          await db.ref(`${source}/${id}`).remove();
-        }
-        div.remove();
-      };
 
-      const del = document.createElement("button");
-      del.textContent = "Delete";
-      del.className = "delete-btn";
-      del.onclick = async () => {
-        await db.ref(`${source}/${id}`).remove();
-        div.remove();
-      };
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Delete";
+        deleteBtn.onclick = () => {
+          db.ref("unknownQuestions/" + key).remove();
+          alert("Deleted.");
+          loadUnapproved();
+        };
 
-      actions.appendChild(save);
-      actions.appendChild(del);
+        qCell.appendChild(qInput);
+        rCell.appendChild(rInput);
+        roleCell.appendChild(roleSelect);
+        actionCell.appendChild(saveBtn);
+        if (!isApproved) actionCell.appendChild(deleteBtn);
 
-      div.appendChild(inputQ);
-      div.appendChild(inputA);
-      div.appendChild(role);
-      div.appendChild(triggerBtn);
-      div.appendChild(actions);
+        tr.appendChild(qCell);
+        tr.appendChild(rCell);
+        tr.appendChild(roleCell);
+        tr.appendChild(actionCell);
 
-      container.appendChild(div);
+        table.appendChild(tr);
+      });
     }
   </script>
 </body>
