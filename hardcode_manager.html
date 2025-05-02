@@ -2,23 +2,68 @@
 <html>
 <head>
   <title>Hardcoded Response Manager</title>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    h1 { margin-bottom: 10px; }
-    .response-container { display: flex; flex-direction: column; gap: 10px; }
-    .response-box { display: flex; align-items: center; gap: 10px; border: 1px solid #ccc; padding: 10px; border-radius: 5px; }
-    textarea { width: 250px; height: 60px; }
-    select, button { height: 30px; }
-    .actions { display: flex; flex-direction: column; gap: 5px; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+      background-color: #f9f9f9;
+    }
+    h2 {
+      margin-bottom: 15px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      vertical-align: top;
+    }
+    th {
+      background-color: #eee;
+      text-align: left;
+    }
+    textarea {
+      width: 100%;
+      height: 60px;
+      resize: vertical;
+      font-size: 14px;
+    }
+    select {
+      width: 100%;
+      padding: 4px;
+    }
+    button {
+      padding: 6px 12px;
+      margin: 4px 4px 4px 0;
+    }
+    .header-buttons {
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
-  <h1>Hardcoded Response Manager</h1>
-  <button onclick="loadUnapproved()">Load Unapproved</button>
-  <button onclick="loadApproved()">Load All Approved</button>
-  <div class="response-container" id="responseContainer"></div>
+  <h2>Hardcoded Response Manager</h2>
+  <div class="header-buttons">
+    <button onclick="loadUnapproved()">Load Unapproved</button>
+    <button onclick="loadAllApproved()">Load All Approved</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Question</th>
+        <th>Response</th>
+        <th>Role</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="responseList"></tbody>
+  </table>
 
   <script>
     const firebaseConfig = {
@@ -33,75 +78,99 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    async function loadResponses(showAll = false) {
-      const container = document.getElementById("responseContainer");
-      container.innerHTML = "";
-      const snapshot = await db.ref("unknownQuestions").once("value");
-      const entries = snapshot.val();
-      for (let key in entries) {
-        const entry = entries[key];
-        if (!showAll && entry.reviewed) continue;
+    function loadUnapproved() {
+      db.ref("unknownQuestions").once("value", snapshot => {
+        const data = snapshot.val() || {};
+        const entries = Object.entries(data).filter(([_, v]) => !v.reviewed);
+        renderTable(entries, false);
+      });
+    }
 
-        const div = document.createElement("div");
-        div.className = "response-box";
+    function loadAllApproved() {
+      db.ref("hardcodedResponses").once("value", snapshot => {
+        const data = snapshot.val() || {};
+        const entries = Object.entries(data).map(([key, val]) => [key, { ...val, userMessage: key }]);
+        renderTable(entries, true);
+      });
+    }
 
-        const questionInput = document.createElement("textarea");
-        questionInput.value = entry.userMessage ? entry.userMessage : (entry.userQuestion || "");
+    function renderTable(entries, isApproved) {
+      const table = document.getElementById("responseList");
+      table.innerHTML = "";
 
-        const responseInput = document.createElement("textarea");
-        responseInput.value = entry.aiResponse || "";
+      entries.forEach(([key, entry]) => {
+        const tr = document.createElement("tr");
+
+        const qCell = document.createElement("td");
+        const rCell = document.createElement("td");
+        const roleCell = document.createElement("td");
+        const actionCell = document.createElement("td");
+
+        const qInput = document.createElement("textarea");
+        qInput.value = entry.userMessage || key;
+
+        const rInput = document.createElement("textarea");
+        rInput.value = entry.aiResponse || "";
 
         const roleSelect = document.createElement("select");
         ["patient", "proctor"].forEach(role => {
           const opt = document.createElement("option");
           opt.value = role;
           opt.textContent = role;
-          if (entry.responder === role) opt.selected = true;
+          if (entry.role === role) opt.selected = true;
           roleSelect.appendChild(opt);
         });
 
-        const actions = document.createElement("div");
-        actions.className = "actions";
-
-        const approveBtn = document.createElement("button");
-        approveBtn.textContent = "Approve & Save";
-        approveBtn.onclick = async () => {
-          const newEntry = {
-            userQuestion: questionInput.value,
-            aiResponse: responseInput.value,
+        const saveBtn = document.createElement("button");
+        saveBtn.textContent = "Approve & Save";
+        saveBtn.onclick = () => {
+          const question = qInput.value.trim();
+          db.ref("hardcodedResponses/" + question).set({
+            aiResponse: rInput.value.trim(),
             role: roleSelect.value,
-            audioUrl: ""
-          };
-          await db.ref("hardcodedResponses").push(newEntry);
-          await db.ref("unknownQuestions/" + key).remove();
-          loadResponses(showAll);
+            audioUrl: ""  // optional for TTS integration
+          });
+          if (!isApproved) db.ref("unknownQuestions/" + key).update({ reviewed: true });
+          alert("Saved and marked as reviewed.");
+          loadUnapproved();
         };
 
         const deleteBtn = document.createElement("button");
         deleteBtn.textContent = "Delete";
-        deleteBtn.onclick = async () => {
-          await db.ref("unknownQuestions/" + key).remove();
-          loadResponses(showAll);
+        deleteBtn.onclick = () => {
+          db.ref("unknownQuestions/" + key).remove();
+          alert("Deleted.");
+          loadUnapproved();
         };
 
-        actions.appendChild(approveBtn);
-        actions.appendChild(deleteBtn);
+        const triggerBtn = document.createElement("button");
+        triggerBtn.textContent = "Add Trigger";
+        triggerBtn.onclick = () => {
+          const trigger = prompt("Enter trigger type (e.g., Show Image: scenarios/scene1.png):");
+          if (trigger) {
+            db.ref("triggers/" + qInput.value.trim()).push({ action: trigger });
+            alert("Trigger saved.");
+          }
+        };
 
-        div.appendChild(questionInput);
-        div.appendChild(responseInput);
-        div.appendChild(roleSelect);
-        div.appendChild(actions);
+        qCell.appendChild(qInput);
+        rCell.appendChild(rInput);
+        roleCell.appendChild(roleSelect);
 
-        container.appendChild(div);
-      }
+        actionCell.appendChild(saveBtn);
+        if (!isApproved) {
+          actionCell.appendChild(deleteBtn);
+          actionCell.appendChild(triggerBtn);
+        }
+
+        tr.appendChild(qCell);
+        tr.appendChild(rCell);
+        tr.appendChild(roleCell);
+        tr.appendChild(actionCell);
+
+        table.appendChild(tr);
+      });
     }
-
-    function loadUnapproved() { loadResponses(false); }
-    function loadApproved() { loadResponses(true); }
-
-    window.onload = loadUnapproved;
   </script>
 </body>
 </html>
-
-
