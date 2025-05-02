@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>Hardcoded Response Manager</title>
+  <!-- Firebase SDK (compat version) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
@@ -39,7 +40,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr 100px 150px 150px;
       gap: 10px;
-      align-items: center;
+      align-items: start;
     }
     input, select {
       width: 100%;
@@ -78,6 +79,7 @@
   <div id="response-container"></div>
 
   <script>
+    // Initialize Firebase  
     const firebaseConfig = {
       apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
       authDomain: "ems-code-sim.firebaseapp.com",
@@ -106,3 +108,118 @@
     function loadAllApproved() {
       const container = document.getElementById("response-container");
       container.innerHTML = "";
+      db.ref("hardcodedResponses").once("value", snapshot => {
+        snapshot.forEach(child => {
+          renderEntry(child.key, child.val(), "hardcodedResponses");
+        });
+      });
+    }
+
+    function renderEntry(id, data, source) {
+      const container = document.getElementById("response-container");
+
+      const div = document.createElement("div");
+      div.className = "entry";
+
+      // Question input field
+      const inputQ = document.createElement("input");
+      inputQ.value = data.userMessage || data.userQuestion || "";
+      inputQ.placeholder = "Question";
+
+      // Response input field
+      const inputA = document.createElement("input");
+      inputA.value = data.aiResponse || "";
+      inputA.placeholder = "Response";
+
+      // Role dropdown
+      const role = document.createElement("select");
+      if (!data.role) {
+        const placeholderOpt = document.createElement("option");
+        placeholderOpt.text = "Role";
+        placeholderOpt.disabled = true;
+        placeholderOpt.selected = true;
+        placeholderOpt.hidden = true;
+        role.appendChild(placeholderOpt);
+      }
+      ["patient", "proctor"].forEach(r => {
+        const opt = document.createElement("option");
+        opt.value = r;
+        opt.text = r;
+        if (data.role === r) opt.selected = true;
+        role.appendChild(opt);
+      });
+
+      // Triggers container with existing triggers and add button
+      const triggersDiv = document.createElement("div");
+      const triggerInputs = [];
+      if (data.triggers && Array.isArray(data.triggers)) {
+        data.triggers.forEach(tr => {
+          const tInput = document.createElement("input");
+          tInput.value = tr;
+          tInput.placeholder = "Trigger";
+          tInput.style.marginBottom = "5px";
+          triggersDiv.appendChild(tInput);
+          triggerInputs.push(tInput);
+        });
+      }
+      const addTriggerBtn = document.createElement("button");
+      addTriggerBtn.textContent = "Add Trigger";
+      addTriggerBtn.onclick = () => {
+        const newInput = document.createElement("input");
+        newInput.placeholder = "Trigger";
+        newInput.style.marginBottom = "5px";
+        triggersDiv.insertBefore(newInput, addTriggerBtn);
+        triggerInputs.push(newInput);
+      };
+      triggersDiv.appendChild(addTriggerBtn);
+
+      // Action buttons (Approve/Save and Delete)
+      const actions = document.createElement("div");
+      actions.className = "actions";
+
+      const saveBtn = document.createElement("button");
+      saveBtn.textContent = (source === "unknownQuestions") ? "Approve" : "Save";
+      saveBtn.className = "save-btn";
+      saveBtn.onclick = async () => {
+        const updated = {
+          userMessage: inputQ.value,
+          aiResponse: inputA.value,
+          role: role.value,
+          triggers: triggerInputs.map(inp => inp.value).filter(val => val)
+        };
+        if (source === "hardcodedResponses") {
+          // Update existing entry in approved list
+          await db.ref(`hardcodedResponses/${id}`).set(updated);
+        } else if (source === "unknownQuestions") {
+          // Push new entry to approved list and remove from unknown
+          await db.ref("hardcodedResponses").push(updated);
+          await db.ref(`unknownQuestions/${id}`).remove();
+        }
+        if (source === "unknownQuestions") {
+          div.remove();
+        }
+      };
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "Delete";
+      deleteBtn.className = "delete-btn";
+      deleteBtn.onclick = async () => {
+        await db.ref(`${source}/${id}`).remove();
+        div.remove();
+      };
+
+      actions.appendChild(saveBtn);
+      actions.appendChild(deleteBtn);
+
+      // Assemble entry elements
+      div.appendChild(inputQ);
+      div.appendChild(inputA);
+      div.appendChild(role);
+      div.appendChild(triggersDiv);
+      div.appendChild(actions);
+      container.appendChild(div);
+    }
+  </script>
+
+</body>
+</html>
