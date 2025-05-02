@@ -2,102 +2,180 @@
 <html>
 <head>
   <title>Hardcoded Response Manager</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f7f9;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .controls {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .controls button {
+      margin: 5px;
+      padding: 10px 15px;
+      background: #007acc;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .controls button:hover {
+      background-color: #005999;
+    }
+    .entry {
+      background: white;
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      display: grid;
+      grid-template-columns: 1fr 1fr 100px 150px 150px;
+      gap: 10px;
+      align-items: center;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    .actions button {
+      display: block;
+      width: 100%;
+      margin-bottom: 5px;
+      padding: 8px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .save-btn {
+      background-color: #2ecc71;
+      color: white;
+    }
+    .delete-btn {
+      background-color: #e74c3c;
+      color: white;
+    }
+  </style>
 </head>
 <body>
+
   <h1>Hardcoded Response Manager</h1>
-  <button onclick="loadUnapproved()">Load Unapproved</button>
-  <button onclick="loadApproved()">Load All Approved</button>
-  <table border="1">
-    <thead>
-      <tr>
-        <th>Question</th>
-        <th>Response</th>
-        <th>Role</th>
-        <th>Triggers</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="response-table"></tbody>
-  </table>
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
-    authDomain: "ems-code-sim.firebaseapp.com",
-    databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
-    projectId: "ems-code-sim",
-    storageBucket: "ems-code-sim.firebasestorage.app",
-    messagingSenderId: "190498607578",
-    appId: "1:190498607578:web:4cf6c8e999b027956070e3"
-  };
+  <div class="controls">
+    <button onclick="loadUnapproved()">Load Unapproved</button>
+    <button onclick="loadAllApproved()">Load All Approved</button>
+  </div>
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-  const table = document.getElementById("response-table");
+  <div id="response-container"></div>
 
-  async function loadUnapproved() {
-    table.innerHTML = "";
-    const snapshot = await db.ref("unknownQuestions").once("value");
-    snapshot.forEach(child => addRow(child.key, child.val(), true));
-  }
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
+      authDomain: "ems-code-sim.firebaseapp.com",
+      databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+      projectId: "ems-code-sim",
+      storageBucket: "ems-code-sim.appspot.com",
+      messagingSenderId: "190498607578",
+      appId: "1:190498607578:web:4cf6c8e999b027956070e3"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-  async function loadApproved() {
-    table.innerHTML = "";
-    const snapshot = await db.ref("hardcodedResponses").once("value");
-    snapshot.forEach(child => addRow(child.key, child.val(), false));
-  }
-
-  function addRow(key, data, isUnapproved) {
-    const row = document.createElement("tr");
-    const question = data.userQuestion || data.userMessage || "Missing question";
-    row.innerHTML = `
-      <td><input class="question-input" value="${question}"></td>
-      <td><input class="response-input" value="${data.aiResponse || ""}"></td>
-      <td>
-        <select class="role-select">
-          <option value="patient" ${data.role === "patient" ? "selected" : ""}>patient</option>
-          <option value="proctor" ${data.role === "proctor" ? "selected" : ""}>proctor</option>
-        </select>
-      </td>
-      <td><button onclick="addTrigger(this)">Add Trigger</button></td>
-      <td>
-        <button onclick="approveResponse(this, '${key}', ${isUnapproved})">Save</button>
-        <button onclick="deleteResponse('${key}', ${isUnapproved})">Delete</button>
-      </td>
-    `;
-    table.appendChild(row);
-  }
-
-  function addTrigger(button) {
-    const cell = button.parentElement;
-    const input = document.createElement("input");
-    input.placeholder = "Trigger value (e.g., scene1.png)";
-    cell.appendChild(document.createElement("br"));
-    cell.appendChild(input);
-  }
-
-  function approveResponse(button, key, fromUnknown) {
-    const row = button.closest("tr");
-    const question = row.querySelector(".question-input").value;
-    const aiResponse = row.querySelector(".response-input").value;
-    const role = row.querySelector(".role-select").value;
-
-    const newEntry = { userQuestion: question, aiResponse, role };
-
-    db.ref("hardcodedResponses").push(newEntry);
-    if (fromUnknown) {
-      db.ref("unknownQuestions").child(key).remove();
+    function loadUnapproved() {
+      const container = document.getElementById("response-container");
+      container.innerHTML = "";
+      db.ref("unknownQuestions").once("value", snapshot => {
+        snapshot.forEach(child => {
+          const val = child.val();
+          if (!val.reviewed) {
+            renderEntry(child.key, val, "unknownQuestions");
+          }
+        });
+      });
     }
-    row.remove();
-  }
 
-  function deleteResponse(key, fromUnknown) {
-    const path = fromUnknown ? "unknownQuestions" : "hardcodedResponses";
-    db.ref(path).child(key).remove();
-    loadUnapproved();
-  }
-</script>
+    function loadAllApproved() {
+      const container = document.getElementById("response-container");
+      container.innerHTML = "";
+      db.ref("hardcodedResponses").once("value", snapshot => {
+        snapshot.forEach(child => {
+          renderEntry(child.key, child.val(), "hardcodedResponses");
+        });
+      });
+    }
+
+    function renderEntry(id, data, source) {
+      const container = document.getElementById("response-container");
+
+      const div = document.createElement("div");
+      div.className = "entry";
+
+      const inputQ = document.createElement("input");
+      inputQ.value = data.userMessage || data.userQuestion || "";
+
+      const inputA = document.createElement("input");
+      inputA.value = data.aiResponse || "";
+
+      const role = document.createElement("select");
+      ["patient", "proctor"].forEach(r => {
+        const opt = document.createElement("option");
+        opt.value = r;
+        opt.text = r;
+        if (data.role === r) opt.selected = true;
+        role.appendChild(opt);
+      });
+
+      const triggerBtn = document.createElement("button");
+      triggerBtn.textContent = "Add Trigger";
+      triggerBtn.onclick = () => alert("Trigger feature coming soon");
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
+
+      const save = document.createElement("button");
+      save.textContent = "Save";
+      save.className = "save-btn";
+      save.onclick = async () => {
+        const updated = {
+          userMessage: inputQ.value,
+          aiResponse: inputA.value,
+          role: role.value
+        };
+        await db.ref("hardcodedResponses").push(updated);
+        if (source === "unknownQuestions") {
+          await db.ref(`${source}/${id}`).remove();
+        }
+        div.remove();
+      };
+
+      const del = document.createElement("button");
+      del.textContent = "Delete";
+      del.className = "delete-btn";
+      del.onclick = async () => {
+        await db.ref(`${source}/${id}`).remove();
+        div.remove();
+      };
+
+      actions.appendChild(save);
+      actions.appendChild(del);
+
+      div.appendChild(inputQ);
+      div.appendChild(inputA);
+      div.appendChild(role);
+      div.appendChild(triggerBtn);
+      div.appendChild(actions);
+
+      container.appendChild(div);
+    }
+  </script>
 </body>
 </html>
