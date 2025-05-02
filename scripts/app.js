@@ -1,17 +1,16 @@
-// === [EXISTING CODE UNCHANGED UP TO HERE] ===
-
 const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
 let hardcodedResponses = {};
 let gradingTemplate = {};
 let scoreTracker = {};
 
+// Load hardcoded responses from Firebase
 firebase.database().ref('hardcodedResponses').once('value').then(snapshot => {
   hardcodedResponses = snapshot.val() || {};
   console.log("✅ Loaded hardcodedResponses:", hardcodedResponses);
 });
 
-// === Load grading template for medical assessment ===
+// Load grading template dynamically based on scenario config
 async function loadGradingTemplate(type = "medical") {
   const file = `grading_templates/${type}_assessment.json`;
   const res = await fetch(file);
@@ -19,7 +18,7 @@ async function loadGradingTemplate(type = "medical") {
   initializeScoreTracker();
 }
 
-
+// Initialize the scoring tracker
 function initializeScoreTracker() {
   for (let key in gradingTemplate) {
     if (key !== "criticalFails") {
@@ -29,6 +28,7 @@ function initializeScoreTracker() {
   scoreTracker.criticalFails = [];
 }
 
+// Track completed assessment actions
 function updateScoreTracker(input) {
   const msg = input.toLowerCase();
 
@@ -54,6 +54,7 @@ function updateScoreTracker(input) {
   if (msg.includes("reassess")) scoreTracker.reassessment = true;
 }
 
+// Final grading output
 function gradeScenario() {
   let score = 0;
   let missed = [];
@@ -79,8 +80,7 @@ function gradeScenario() {
   return output.join("<br><br>");
 }
 
-// === [EXISTING FUNCTIONS CONTINUE] ===
-
+// Speak via TTS or play audio
 async function speak(text, speaker = "patient", audioUrl = null) {
   try {
     if (audioUrl) {
@@ -105,6 +105,7 @@ async function speak(text, speaker = "patient", audioUrl = null) {
   }
 }
 
+// Display response in chat UI
 async function displayChatResponse(response, question = "", role = "", audioUrl = null) {
   const chatBox = document.getElementById("chat-box");
   const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
@@ -117,6 +118,7 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
   speak(response, speaker, audioUrl);
 }
 
+// Check for exact hardcoded match
 function checkHardcodedResponse(message) {
   if (!hardcodedResponses || typeof hardcodedResponses !== 'object') return null;
   const normalized = message.trim().toLowerCase();
@@ -133,6 +135,7 @@ function checkHardcodedResponse(message) {
   return null;
 }
 
+// Vector search fallback
 async function getVectorResponse(message) {
   try {
     const res = await fetch('/api/vector-search', {
@@ -142,7 +145,6 @@ async function getVectorResponse(message) {
     });
     const data = await res.json();
     console.log("🔍 Vector match:", data.match);
-    if (!data.match) console.log("🟡 No vector match found");
     return data.match || null;
   } catch (e) {
     logErrorToDatabase("Vector search failed: " + e.message);
@@ -150,6 +152,7 @@ async function getVectorResponse(message) {
   }
 }
 
+// GPT-4 fallback
 async function getAIResponseGPT4Turbo(message) {
   try {
     const res = await fetch('/api/gpt4-turbo', {
@@ -165,16 +168,17 @@ async function getAIResponseGPT4Turbo(message) {
   }
 }
 
+// Main message handler
 async function processUserMessage(message) {
   const proctorKeywords = [
     'scene safe', 'bsi', 'blood pressure', 'pulse', 'respiratory rate', 'oxygen', 'splint', 'epinephrine'
   ];
   const role = proctorKeywords.some(k => message.toLowerCase().includes(k)) ? "proctor" : "patient";
 
-  updateScoreTracker(message); // <-- ✅ Track actions
+  updateScoreTracker(message);
 
   const hardcoded = checkHardcodedResponse(message);
-  if (hardcoded && hardcoded.aiResponse) {
+  if (hardcoded?.aiResponse) {
     return displayChatResponse(hardcoded.aiResponse, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient", hardcoded.audioUrl || null);
   }
 
@@ -201,27 +205,34 @@ async function processUserMessage(message) {
     return displayChatResponse(gpt, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
   }
 
-  return displayChatResponse(
-    "I'm not sure how to answer that right now. Your question has been logged for review.",
-    message,
-    role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient"
-  );
+  return displayChatResponse("I'm not sure how to answer that right now. Your question has been logged for review.", message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
 }
 
-async function loadGradingTemplate(type = "medical") {
-  const file = `grading_templates/${type}_assessment.json`;
-  const res = await fetch(file);
-  gradingTemplate = await res.json();
-  initializeScoreTracker();
-}
+// Load scenario and grading template
+window.startScenario = async function () {
+  try {
+    const configRes = await fetch(`${scenarioPath}config.json`);
+    const config = await configRes.json();
+    const gradingType = config.grading || "medical";
 
+    await loadGradingTemplate(gradingType);
 
+    const dispatch = await loadDispatchInfo();
+    patientContext = await loadPatientInfo();
+    displayChatResponse(`🚑 Dispatch: ${dispatch}`);
+  } catch (err) {
+    logErrorToDatabase("startScenario error: " + err.message);
+    displayChatResponse("❌ Failed to load scenario. Check for missing grading or config files.");
+  }
+};
 
+// End scenario and show score
 window.endScenario = function () {
-  const feedback = gradeScenario(); // ✅ Show grading feedback
+  const feedback = gradeScenario();
   displayChatResponse("📦 Scenario ended. Here's your performance summary:<br><br>" + feedback);
 };
 
+// DOM events for buttons
 document.addEventListener('DOMContentLoaded', function () {
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
@@ -248,3 +259,32 @@ document.addEventListener('DOMContentLoaded', function () {
   endBtn?.addEventListener('click', () => window.endScenario?.());
   micBtn?.addEventListener('click', () => window.startVoiceRecognition?.());
 });
+
+// Load supporting files
+async function loadDispatchInfo() {
+  try {
+    const res = await fetch(`${scenarioPath}dispatch.txt`);
+    return await res.text();
+  } catch (e) {
+    logErrorToDatabase("Failed to load dispatch.txt: " + e.message);
+    return "Dispatch not available.";
+  }
+}
+
+async function loadPatientInfo() {
+  try {
+    const res = await fetch(`${scenarioPath}patient.txt`);
+    return await res.text();
+  } catch (e) {
+    logErrorToDatabase("Failed to load patient.txt: " + e.message);
+    return "Patient info not available.";
+  }
+}
+
+function logErrorToDatabase(errorInfo) {
+  console.error("🔴 Error:", errorInfo);
+  firebase.database().ref('error_logs').push({
+    error: errorInfo,
+    timestamp: Date.now()
+  });
+}
