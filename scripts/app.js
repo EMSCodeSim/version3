@@ -1,15 +1,15 @@
-// Full app.js with TTS audioUrl support and complete structure
-
 const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
 let hardcodedResponses = {};
 
+// Load hardcoded responses from Firebase
 firebase.database().ref('hardcodedResponses').once('value').then(snapshot => {
   hardcodedResponses = snapshot.val() || {};
   console.log("✅ Loaded hardcodedResponses:", hardcodedResponses);
 });
 
-async function speak(text, speaker = "patient", audioUrl = null) {
+// TTS playback using OpenAI tts-1
+async function speak(text, speaker = "patient", audioUrl = "") {
   try {
     if (audioUrl) {
       const player = new Audio(audioUrl);
@@ -17,30 +17,24 @@ async function speak(text, speaker = "patient", audioUrl = null) {
       return;
     }
 
-    const res = await fetch("/.netlify/functions/tts", {
+    const res = await fetch("/api/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text, speaker })
     });
 
-    const { audio } = await res.json(); // base64
+    const { audio } = await res.json(); // audio = base64
+
     const audioBlob = new Blob([Uint8Array.from(atob(audio), c => c.charCodeAt(0))], {
       type: "audio/mpeg"
     });
+
     const url = URL.createObjectURL(audioBlob);
     const player = new Audio(url);
     player.play();
   } catch (err) {
     console.error("TTS playback error:", err);
   }
-}
-
-function logErrorToDatabase(errorInfo) {
-  console.error("🔴 Error:", errorInfo);
-  firebase.database().ref('error_logs').push({
-    error: errorInfo,
-    timestamp: Date.now()
-  });
 }
 
 async function loadDispatchInfo() {
@@ -63,26 +57,38 @@ async function loadPatientInfo() {
   }
 }
 
-function displayChatResponse(response, question = "", role = "", audioUrl = null) {
+function logErrorToDatabase(errorInfo) {
+  console.error("🔴 Error:", errorInfo);
+  firebase.database().ref('error_logs').push({
+    error: errorInfo,
+    timestamp: Date.now()
+  });
+}
+
+async function displayChatResponse(response, question = "", role = "", audioUrl = "") {
   const chatBox = document.getElementById("chat-box");
   const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
+
   chatBox.innerHTML += `
     ${question ? `<div class="question">🗣️ <b>You:</b> ${question}</div>` : ""}
     <div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>
   `;
   chatBox.scrollTop = chatBox.scrollHeight;
+
   const speaker = role.toLowerCase().includes("proctor") ? "proctor" : "patient";
   speak(response, speaker, audioUrl);
 }
 
+function normalizeText(text) {
+  return text.trim().toLowerCase();
+}
+
 function checkHardcodedResponse(message) {
-  if (!hardcodedResponses || typeof hardcodedResponses !== 'object') return null;
-  const normalized = message.trim().toLowerCase();
+  const normalized = normalizeText(message);
+
   for (const key in hardcodedResponses) {
     const entry = hardcodedResponses[key];
-    if (!entry || typeof entry !== 'object') continue;
-    const stored = (entry.userQuestion || "").toLowerCase().trim();
-    if (stored === normalized || stored.includes(normalized) || normalized.includes(stored)) {
+    if (entry && normalizeText(entry.userQuestion) === normalized) {
       return entry;
     }
   }
@@ -128,39 +134,40 @@ async function processUserMessage(message) {
     'administer', 'give aspirin', 'give nitro', 'asa', 'oral glucose', 'epinephrine',
     'check pupils', 'response to painful stimuli'
   ];
-  const normalized = message.toLowerCase();
-  const role = proctorKeywords.some(k => normalized.includes(k)) ? "proctor" : "patient";
 
-  const hardcoded = checkHardcodedResponse(message);
-  if (hardcoded && typeof hardcoded === "object") {
-    return displayChatResponse(
-      hardcoded.aiResponse || "[Missing aiResponse]",
-      message,
-      role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient",
-      hardcoded.audioUrl || null
-    );
+  const normalized = message.toLowerCase();
+  const role = proctorKeywords.some(keyword => normalized.includes(keyword)) ? "proctor" : "patient";
+
+  // Check hardcoded
+  const hardcode = checkHardcodedResponse(message);
+  if (hardcode) {
+    return displayChatResponse(hardcode.aiResponse, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient", hardcode.audioUrl);
   }
 
+  // Try vector match
   const vector = await getVectorResponse(message);
   if (vector) {
     return displayChatResponse(vector, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
   }
 
+  // Use GPT as fallback
   const gpt = await getAIResponseGPT4Turbo(message);
   if (gpt) {
     firebase.database().ref('unknownQuestions').push({
-      userMessage: message,
+      userQuestion: message,
       aiResponse: gpt,
-      responder: role,
+      role,
       reviewed: false,
       timestamp: Date.now()
     });
+
     firebase.database().ref('ai_responses_log').push({
       userMessage: message,
       aiResponse: gpt,
       responder: role,
       timestamp: Date.now()
     });
+
     return displayChatResponse(gpt, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
   }
 
@@ -171,6 +178,7 @@ window.startScenario = async function () {
   const dispatch = await loadDispatchInfo();
   patientContext = await loadPatientInfo();
   displayChatResponse(`🚑 Dispatch: ${dispatch}`);
+  console.log("✅ Patient context loaded internally (not displayed).");
 };
 
 window.endScenario = function () {
@@ -181,7 +189,7 @@ window.startVoiceRecognition = function () {
   displayChatResponse("🎤 Voice recognition activated. (Simulated)");
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function () {
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
   const startBtn = document.getElementById('start-button');
