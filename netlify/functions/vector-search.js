@@ -1,27 +1,57 @@
-exports.handler = async function(event, context) {
+// Netlify Function: vector-search.js
+// Updated vector sensitivity threshold to 0.7
+
+const fetch = require('node-fetch');
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const embeddingModel = "text-embedding-ada-002";
+const storedEmbeddings = require("./vector-db.json"); // your local embedding JSON
+
+function cosineSimilarity(vecA, vecB) {
+  const dotProduct = vecA.reduce((sum, a, i) => sum + a * vecB[i], 0);
+  const normA = Math.sqrt(vecA.reduce((sum, a) => sum + a * a, 0));
+  const normB = Math.sqrt(vecB.reduce((sum, b) => sum + b * b, 0));
+  return dotProduct / (normA * normB);
+}
+
+exports.handler = async (event) => {
   try {
-    const body = JSON.parse(event.body || '{}');
-    const query = body.query?.toLowerCase() || "";
+    const { query } = JSON.parse(event.body);
+    const embedRes = await fetch("https://api.openai.com/v1/embeddings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        input: query,
+        model: embeddingModel
+      })
+    });
 
-    // Fake vector dataset
-    const hardcodedVectors = [
-      { question: "when did the chest pain start", match: "About 10 minutes ago while sitting at the park." },
-      { question: "do you take nitro", match: "Yes, I have nitro and take it if I feel pressure in my chest." },
-      { question: "do you feel shortness of breath", match: "Yes, a little, especially if I try to walk." }
-    ];
+    const json = await embedRes.json();
+    const queryEmbedding = json.data[0].embedding;
 
-    // Basic match
-    const result = hardcodedVectors.find(item => query.includes(item.question));
-    const match = result ? result.match : null;
+    let bestMatch = null;
+    let bestScore = 0;
+    const threshold = 0.7; // updated sensitivity level
+
+    for (const item of storedEmbeddings) {
+      const sim = cosineSimilarity(queryEmbedding, item.embedding);
+      if (sim > bestScore && sim > threshold) {
+        bestScore = sim;
+        bestMatch = item.text;
+      }
+    }
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ match })
+      body: JSON.stringify({ match: bestMatch })
     };
+
   } catch (err) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ match: null })
+      body: JSON.stringify({ error: err.message })
     };
   }
 };
