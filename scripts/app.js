@@ -18,7 +18,7 @@ async function loadGradingTemplate(type = "medical") {
   initializeScoreTracker();
 }
 
-// Initialize the scoring tracker
+// Initialize scoring
 function initializeScoreTracker() {
   for (let key in gradingTemplate) {
     if (key !== "criticalFails") {
@@ -28,7 +28,7 @@ function initializeScoreTracker() {
   scoreTracker.criticalFails = [];
 }
 
-// Track completed assessment actions
+// Track points for matched actions
 function updateScoreTracker(input) {
   const msg = input.toLowerCase();
 
@@ -54,33 +54,84 @@ function updateScoreTracker(input) {
   if (msg.includes("reassess")) scoreTracker.reassessment = true;
 }
 
-// Final grading output
+// Final formatted skill sheet output
 function gradeScenario() {
+  const mockStart = "18:53";
+  const mockEnd = "19:08";
   let score = 0;
   let missed = [];
+  let criticalFails = scoreTracker.criticalFails || [];
 
   for (let key in scoreTracker) {
     if (key !== "criticalFails") {
       if (scoreTracker[key]) score++;
-      else missed.push(gradingTemplate[key]);
+      else missed.push(key);
     }
   }
 
-  const total = Object.keys(gradingTemplate).length - 1;
-  let output = [`📊 Final Score: ${score}/${total}`];
-
-  if (scoreTracker.criticalFails.length > 0) {
-    output.push("❌ Critical Failures: " + scoreTracker.criticalFails.join(", "));
+  function check(key, label, points = 1) {
+    const passed = scoreTracker[key];
+    return `<li>${passed ? "✔" : "✘"} ${label} (${passed ? points : 0})</li>`;
   }
 
-  if (missed.length > 0) {
-    output.push("🔍 Missed Items: " + missed.join("; "));
-  }
+  const html = `
+    <div class="grading-summary">
+      <h2>Patient Assessment - Medical (NREMT Skill Sheet)</h2>
+      <p><strong>Candidate:</strong> __________________ &nbsp;&nbsp;&nbsp; <strong>Scenario:</strong> Chest Pain</p>
+      <p><strong>Time Started:</strong> ${mockStart} &nbsp;&nbsp;&nbsp; <strong>Time Ended:</strong> ${mockEnd}</p>
 
-  return output.join("<br><br>");
+      <h3>PPE & Scene Size-Up</h3>
+      <ul>
+        ${check("BSI", "Takes or verbalizes PPE precautions")}
+        ${check("sceneSafety", "Determines scene is safe")}
+        ${check("mechanismInjury", "Determines nature of illness")}
+        ${check("numberPatients", "Determines number of patients")}
+        ${check("additionalHelp", "Requests help if needed")}
+        ${check("cSpine", "Considers spinal stabilization")}
+      </ul>
+
+      <h3>Primary Assessment</h3>
+      <ul>
+        ${check("generalImpression", "General impression")}
+        ${check("responsiveness", "Responsiveness/LOC")}
+        ${check("chiefComplaint", "Chief complaint/life threats")}
+        <li>${scoreTracker.airwayAssessment ? "✔" : "✘"} Airway assessment, ventilation, oxygen therapy (3)</li>
+        <li>${scoreTracker.circulationAssessment ? "✔" : "✘"} Major bleeding, pulse, skin (3)</li>
+        ${check("priorityTransport", "Priority transport decision")}
+      </ul>
+
+      <h3>History Taking (OPQRST + SAMPLE)</h3>
+      <ul>
+        ${check("OPQRST", "OPQRST history")}
+        ${check("SAMPLE", "SAMPLE history")}
+      </ul>
+
+      <h3>Secondary Assessment</h3>
+      <ul>${check("secondaryAssessment", "Focused or rapid physical exam")}</ul>
+
+      <h3>Vital Signs</h3>
+      <ul>${check("vitalSigns", "Pulse, BP, Respiratory rate, AVPU")}</ul>
+
+      <h3>Reassessment</h3>
+      <ul>
+        ${check("fieldImpression", "Field impression")}
+        ${check("treatmentPlan", "Treatment/interventions")}
+        ${check("reassessment", "Reassess primary, vitals, complaint")}
+      </ul>
+
+      <h3>Total Points: <strong>${score} / 48</strong></h3>
+
+      <h3>Critical Failures:</h3>
+      <ul class="critical-fails">
+        ${criticalFails.length > 0 ? criticalFails.map(c => `<li>✘ ${c}</li>`).join("") : "<li>None</li>"}
+      </ul>
+    </div>
+  `;
+
+  return html;
 }
 
-// Speak via TTS or play audio
+// Speak text
 async function speak(text, speaker = "patient", audioUrl = null) {
   try {
     if (audioUrl) {
@@ -94,9 +145,7 @@ async function speak(text, speaker = "patient", audioUrl = null) {
       body: JSON.stringify({ text, speaker })
     });
     const { audio } = await res.json();
-    const audioBlob = new Blob([Uint8Array.from(atob(audio), c => c.charCodeAt(0))], {
-      type: "audio/mpeg"
-    });
+    const audioBlob = new Blob([Uint8Array.from(atob(audio), c => c.charCodeAt(0))], { type: "audio/mpeg" });
     const url = URL.createObjectURL(audioBlob);
     const player = new Audio(url);
     player.play();
@@ -105,7 +154,7 @@ async function speak(text, speaker = "patient", audioUrl = null) {
   }
 }
 
-// Display response in chat UI
+// Display message
 async function displayChatResponse(response, question = "", role = "", audioUrl = null) {
   const chatBox = document.getElementById("chat-box");
   const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
@@ -118,19 +167,12 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
   speak(response, speaker, audioUrl);
 }
 
-// Check for exact hardcoded match
+// Hardcoded response match
 function checkHardcodedResponse(message) {
-  if (!hardcodedResponses || typeof hardcodedResponses !== 'object') return null;
   const normalized = message.trim().toLowerCase();
   for (const key in hardcodedResponses) {
     const stored = hardcodedResponses[key];
-    if (stored && stored.userQuestion && stored.aiResponse) {
-      const storedNormalized = stored.userQuestion.trim().toLowerCase();
-      if (storedNormalized === normalized) {
-        console.log("✅ Hardcoded match found:", storedNormalized);
-        return stored;
-      }
-    }
+    if (stored?.userQuestion?.trim().toLowerCase() === normalized) return stored;
   }
   return null;
 }
@@ -144,7 +186,6 @@ async function getVectorResponse(message) {
       body: JSON.stringify({ query: message })
     });
     const data = await res.json();
-    console.log("🔍 Vector match:", data.match);
     return data.match || null;
   } catch (e) {
     logErrorToDatabase("Vector search failed: " + e.message);
@@ -168,13 +209,10 @@ async function getAIResponseGPT4Turbo(message) {
   }
 }
 
-// Main message handler
+// Handle user message
 async function processUserMessage(message) {
-  const proctorKeywords = [
-    'scene safe', 'bsi', 'blood pressure', 'pulse', 'respiratory rate', 'oxygen', 'splint', 'epinephrine'
-  ];
+  const proctorKeywords = ['scene safe', 'bsi', 'blood pressure', 'pulse', 'respiratory rate', 'oxygen', 'splint', 'epinephrine'];
   const role = proctorKeywords.some(k => message.toLowerCase().includes(k)) ? "proctor" : "patient";
-
   updateScoreTracker(message);
 
   const hardcoded = checkHardcodedResponse(message);
@@ -189,26 +227,15 @@ async function processUserMessage(message) {
 
   const gpt = await getAIResponseGPT4Turbo(message);
   if (gpt) {
-    firebase.database().ref('unknownQuestions').push({
-      userQuestion: message,
-      aiResponse: gpt,
-      role,
-      reviewed: false,
-      timestamp: Date.now()
-    });
-    firebase.database().ref('ai_responses_log').push({
-      userMessage: message,
-      aiResponse: gpt,
-      responder: role,
-      timestamp: Date.now()
-    });
+    firebase.database().ref('unknownQuestions').push({ userQuestion: message, aiResponse: gpt, role, reviewed: false, timestamp: Date.now() });
+    firebase.database().ref('ai_responses_log').push({ userMessage: message, aiResponse: gpt, responder: role, timestamp: Date.now() });
     return displayChatResponse(gpt, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
   }
 
   return displayChatResponse("I'm not sure how to answer that right now. Your question has been logged for review.", message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
 }
 
-// Load scenario and grading template
+// Start scenario and grading
 window.startScenario = async function () {
   try {
     const configRes = await fetch(`${scenarioPath}config.json`);
@@ -216,7 +243,6 @@ window.startScenario = async function () {
     const gradingType = config.grading || "medical";
 
     await loadGradingTemplate(gradingType);
-
     const dispatch = await loadDispatchInfo();
     patientContext = await loadPatientInfo();
     displayChatResponse(`🚑 Dispatch: ${dispatch}`);
@@ -226,13 +252,13 @@ window.startScenario = async function () {
   }
 };
 
-// End scenario and show score
+// End scenario and show final report
 window.endScenario = function () {
   const feedback = gradeScenario();
-  displayChatResponse("📦 Scenario ended. Here's your performance summary:<br><br>" + feedback);
+  displayChatResponse(feedback);
 };
 
-// DOM events for buttons
+// DOM events
 document.addEventListener('DOMContentLoaded', function () {
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
@@ -260,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function () {
   micBtn?.addEventListener('click', () => window.startVoiceRecognition?.());
 });
 
-// Load supporting files
+// Utility loaders
 async function loadDispatchInfo() {
   try {
     const res = await fetch(`${scenarioPath}dispatch.txt`);
