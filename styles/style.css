@@ -80,6 +80,12 @@ button:hover {
   margin-left: 10px;
 }
 
+#mic-button.active {
+  background-color: red; /* Mic ON color */
+  color: white;
+}
+
+
 /* Layout for input and buttons */
 input, button {
   margin-top: 10px;
