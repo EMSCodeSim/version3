@@ -208,23 +208,13 @@ async function processUserMessage(message) {
   );
 }
 
-window.startScenario = async function () {
-  try {
-    // Load scenario-specific config
-    const configRes = await fetch(`${scenarioPath}config.json`);
-    const config = await configRes.json();
-    const gradingType = config.grading || "medical";
+async function loadGradingTemplate(type = "medical") {
+  const file = `grading_templates/${type}_assessment.json`;
+  const res = await fetch(file);
+  gradingTemplate = await res.json();
+  initializeScoreTracker();
+}
 
-    await loadGradingTemplate(gradingType);
-
-    const dispatch = await loadDispatchInfo();
-    patientContext = await loadPatientInfo();
-    displayChatResponse(`🚑 Dispatch: ${dispatch}`);
-  } catch (err) {
-    logErrorToDatabase("startScenario error: " + err.message);
-    displayChatResponse("❌ Failed to load scenario. Check for missing grading or config files.");
-  }
-};
 
 
 window.endScenario = function () {
