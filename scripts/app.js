@@ -1,25 +1,4 @@
-// TTS playback using OpenAI tts-1
-async function speak(text, speaker = "patient") {
-  try {
-    const res = await fetch("/.netlify/functions/tts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, speaker })
-    });
-
-    const { audio } = await res.json(); // audio = base64
-
-    const audioBlob = new Blob([Uint8Array.from(atob(audio), c => c.charCodeAt(0))], {
-      type: "audio/mpeg"
-    });
-
-    const url = URL.createObjectURL(audioBlob);
-    const player = new Audio(url);
-    player.play();
-  } catch (err) {
-    console.error("TTS playback error:", err);
-  }
-}
+// Full app.js with TTS audioUrl support and complete structure
 
 const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
@@ -29,6 +8,40 @@ firebase.database().ref('hardcodedResponses').once('value').then(snapshot => {
   hardcodedResponses = snapshot.val() || {};
   console.log("✅ Loaded hardcodedResponses:", hardcodedResponses);
 });
+
+async function speak(text, speaker = "patient", audioUrl = null) {
+  try {
+    if (audioUrl) {
+      const player = new Audio(audioUrl);
+      player.play();
+      return;
+    }
+
+    const res = await fetch("/.netlify/functions/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, speaker })
+    });
+
+    const { audio } = await res.json(); // base64
+    const audioBlob = new Blob([Uint8Array.from(atob(audio), c => c.charCodeAt(0))], {
+      type: "audio/mpeg"
+    });
+    const url = URL.createObjectURL(audioBlob);
+    const player = new Audio(url);
+    player.play();
+  } catch (err) {
+    console.error("TTS playback error:", err);
+  }
+}
+
+function logErrorToDatabase(errorInfo) {
+  console.error("🔴 Error:", errorInfo);
+  firebase.database().ref('error_logs').push({
+    error: errorInfo,
+    timestamp: Date.now()
+  });
+}
 
 async function loadDispatchInfo() {
   try {
@@ -50,47 +63,31 @@ async function loadPatientInfo() {
   }
 }
 
-function logErrorToDatabase(errorInfo) {
-  console.error("🔴 Error:", errorInfo);
-  firebase.database().ref('error_logs').push({
-    error: errorInfo,
-    timestamp: Date.now()
-  });
-}
-
-async function displayChatResponse(response, question = "", role = "") {
+function displayChatResponse(response, question = "", role = "", audioUrl = null) {
   const chatBox = document.getElementById("chat-box");
   const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
-
   chatBox.innerHTML += `
     ${question ? `<div class="question">🗣️ <b>You:</b> ${question}</div>` : ""}
     <div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>
   `;
   chatBox.scrollTop = chatBox.scrollHeight;
-
   const speaker = role.toLowerCase().includes("proctor") ? "proctor" : "patient";
-  speak(response, speaker); // 🔈 <-- TTS integration here
+  speak(response, speaker, audioUrl);
 }
 
 function checkHardcodedResponse(message) {
   if (!hardcodedResponses || typeof hardcodedResponses !== 'object') return null;
-
   const normalized = message.trim().toLowerCase();
-
   for (const key in hardcodedResponses) {
     const entry = hardcodedResponses[key];
     if (!entry || typeof entry !== 'object') continue;
-
-    const storedQuestion = (entry.userQuestion || "").trim().toLowerCase();
-
-    if (storedQuestion === normalized || storedQuestion.includes(normalized) || normalized.includes(storedQuestion)) {
+    const stored = (entry.userQuestion || "").toLowerCase().trim();
+    if (stored === normalized || stored.includes(normalized) || normalized.includes(stored)) {
       return entry;
     }
   }
-
   return null;
 }
-
 
 async function getVectorResponse(message) {
   try {
@@ -131,20 +128,18 @@ async function processUserMessage(message) {
     'administer', 'give aspirin', 'give nitro', 'asa', 'oral glucose', 'epinephrine',
     'check pupils', 'response to painful stimuli'
   ];
-
   const normalized = message.toLowerCase();
-  const role = proctorKeywords.some(keyword => normalized.includes(keyword)) ? "proctor" : "patient";
+  const role = proctorKeywords.some(k => normalized.includes(k)) ? "proctor" : "patient";
 
   const hardcoded = checkHardcodedResponse(message);
-if (hardcoded && typeof hardcoded === "object") {
-  return displayChatResponse(
-    hardcoded.aiResponse || "[Missing aiResponse]",
-    message,
-    role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient",
-    hardcoded.audioUrl || null // Optional: pass audioUrl to speak()
-  );
-}
-
+  if (hardcoded && typeof hardcoded === "object") {
+    return displayChatResponse(
+      hardcoded.aiResponse || "[Missing aiResponse]",
+      message,
+      role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient",
+      hardcoded.audioUrl || null
+    );
+  }
 
   const vector = await getVectorResponse(message);
   if (vector) {
@@ -160,24 +155,14 @@ if (hardcoded && typeof hardcoded === "object") {
       reviewed: false,
       timestamp: Date.now()
     });
-
     firebase.database().ref('ai_responses_log').push({
       userMessage: message,
       aiResponse: gpt,
       responder: role,
       timestamp: Date.now()
     });
-
     return displayChatResponse(gpt, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
   }
-
-  firebase.database().ref('unknownQuestions').push({
-    userMessage: message,
-    aiResponse: "No GPT response generated.",
-    responder: role,
-    reviewed: false,
-    timestamp: Date.now()
-  });
 
   displayChatResponse("I'm not sure how to answer that right now. Your question has been sent for instructor review.", message);
 }
@@ -185,9 +170,7 @@ if (hardcoded && typeof hardcoded === "object") {
 window.startScenario = async function () {
   const dispatch = await loadDispatchInfo();
   patientContext = await loadPatientInfo();
-
   displayChatResponse(`🚑 Dispatch: ${dispatch}`);
-  console.log("✅ Patient context loaded internally (not displayed).");
 };
 
 window.endScenario = function () {
@@ -198,7 +181,7 @@ window.startVoiceRecognition = function () {
   displayChatResponse("🎤 Voice recognition activated. (Simulated)");
 };
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
   const startBtn = document.getElementById('start-button');
@@ -224,40 +207,3 @@ document.addEventListener('DOMContentLoaded', function () {
   endBtn?.addEventListener('click', () => window.endScenario?.());
   micBtn?.addEventListener('click', () => window.startVoiceRecognition?.());
 });
-
-function executeTriggers(triggers) {
-  if (!Array.isArray(triggers)) return;
-  triggers.forEach(trigger => {
-    switch (trigger.type) {
-      case "image": showImage(trigger.value); break;
-      case "audio": playAudio(trigger.value); break;
-      case "scenarioChange": loadScenario(trigger.value); break;
-      case "miniApp": launchMiniApp(trigger.value); break;
-    }
-  });
-}
-
-// Run this after displaying response (inside processUserMessage or displayChatResponse):
-if (entry.triggers) executeTriggers(entry.triggers);
-
-// Trigger action handlers
-function showImage(filename) {
-  const imgBox = document.getElementById("image-box") || document.createElement("div");
-  imgBox.id = "image-box";
-  imgBox.innerHTML = `<img src="scenarios/chest_pain_002/${filename}" style="max-width:100%">`;
-  document.body.appendChild(imgBox);
-}
-
-function playAudio(filename) {
-  const audio = new Audio(`media/${filename}`);
-  audio.play();
-}
-
-function loadScenario(id) {
-  alert("Switching to scenario: " + id);
-  // You would add real scenario-switch logic here
-}
-
-function launchMiniApp(name) {
-  alert("Launching app: " + name);
-}
