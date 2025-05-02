@@ -10,52 +10,39 @@
       margin: 30px;
       background-color: #f9f9f9;
     }
-
     h2 {
       margin-bottom: 15px;
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
     }
-
     th, td {
-      border: 1px solid #ddd;
+      border: 1px solid #ccc;
       padding: 10px;
       vertical-align: top;
     }
-
     th {
-      background-color: #f0f0f0;
+      background-color: #eee;
       text-align: left;
     }
-
     textarea {
       width: 100%;
       height: 60px;
       resize: vertical;
       font-size: 14px;
     }
-
     select {
       width: 100%;
       padding: 4px;
     }
-
     button {
       padding: 6px 12px;
-      margin: 4px;
-      cursor: pointer;
+      margin: 4px 4px 4px 0;
     }
-
     .header-buttons {
       margin-bottom: 20px;
-    }
-
-    .header-buttons button {
-      margin-right: 10px;
     }
   </style>
 </head>
@@ -66,7 +53,7 @@
     <button onclick="loadAllApproved()">Load All Approved</button>
   </div>
 
-  <table id="responseTable">
+  <table>
     <thead>
       <tr>
         <th>Question</th>
@@ -91,27 +78,23 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let currentData = [];
-
     function loadUnapproved() {
       db.ref("unknownQuestions").once("value", snapshot => {
         const data = snapshot.val() || {};
         const entries = Object.entries(data).filter(([_, v]) => !v.reviewed);
-        currentData = entries;
-        renderTable(entries);
+        renderTable(entries, false);
       });
     }
 
     function loadAllApproved() {
       db.ref("hardcodedResponses").once("value", snapshot => {
         const data = snapshot.val() || {};
-        const entries = Object.entries(data);
-        currentData = entries;
+        const entries = Object.entries(data).map(([key, val]) => [key, { ...val, userMessage: key }]);
         renderTable(entries, true);
       });
     }
 
-    function renderTable(entries, isApproved = false) {
+    function renderTable(entries, isApproved) {
       const table = document.getElementById("responseList");
       table.innerHTML = "";
 
@@ -124,10 +107,10 @@
         const actionCell = document.createElement("td");
 
         const qInput = document.createElement("textarea");
-        qInput.value = isApproved ? key : entry.userMessage;
+        qInput.value = entry.userMessage || key;
 
         const rInput = document.createElement("textarea");
-        rInput.value = entry.aiResponse;
+        rInput.value = entry.aiResponse || "";
 
         const roleSelect = document.createElement("select");
         ["patient", "proctor"].forEach(role => {
@@ -141,13 +124,13 @@
         const saveBtn = document.createElement("button");
         saveBtn.textContent = "Approve & Save";
         saveBtn.onclick = () => {
-          const newKey = qInput.value.trim();
-          db.ref("hardcodedResponses/" + newKey).set({
+          const question = qInput.value.trim();
+          db.ref("hardcodedResponses/" + question).set({
             aiResponse: rInput.value.trim(),
             role: roleSelect.value,
-            audioUrl: ""  // Placeholder for TTS file
+            audioUrl: ""  // optional for TTS integration
           });
-          db.ref("unknownQuestions/" + key).update({ reviewed: true });
+          if (!isApproved) db.ref("unknownQuestions/" + key).update({ reviewed: true });
           alert("Saved and marked as reviewed.");
           loadUnapproved();
         };
@@ -160,11 +143,25 @@
           loadUnapproved();
         };
 
+        const triggerBtn = document.createElement("button");
+        triggerBtn.textContent = "Add Trigger";
+        triggerBtn.onclick = () => {
+          const trigger = prompt("Enter trigger type (e.g., Show Image: scenarios/scene1.png):");
+          if (trigger) {
+            db.ref("triggers/" + qInput.value.trim()).push({ action: trigger });
+            alert("Trigger saved.");
+          }
+        };
+
         qCell.appendChild(qInput);
         rCell.appendChild(rInput);
         roleCell.appendChild(roleSelect);
+
         actionCell.appendChild(saveBtn);
-        if (!isApproved) actionCell.appendChild(deleteBtn);
+        if (!isApproved) {
+          actionCell.appendChild(deleteBtn);
+          actionCell.appendChild(triggerBtn);
+        }
 
         tr.appendChild(qCell);
         tr.appendChild(rCell);
