@@ -1,13 +1,83 @@
-// Updated app.js with strict hardcoded matching, fallback logging, and guaranteed GPT fallback display
+// === [EXISTING CODE UNCHANGED UP TO HERE] ===
 
 const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
 let hardcodedResponses = {};
+let gradingTemplate = {};
+let scoreTracker = {};
 
 firebase.database().ref('hardcodedResponses').once('value').then(snapshot => {
   hardcodedResponses = snapshot.val() || {};
   console.log("✅ Loaded hardcodedResponses:", hardcodedResponses);
 });
+
+// === Load grading template for medical assessment ===
+async function loadGradingTemplate() {
+  const res = await fetch('grading_templates/medical_assessment.json');
+  gradingTemplate = await res.json();
+  initializeScoreTracker();
+}
+
+function initializeScoreTracker() {
+  for (let key in gradingTemplate) {
+    if (key !== "criticalFails") {
+      scoreTracker[key] = false;
+    }
+  }
+  scoreTracker.criticalFails = [];
+}
+
+function updateScoreTracker(input) {
+  const msg = input.toLowerCase();
+
+  if (msg.includes("scene safe")) scoreTracker.sceneSafety = true;
+  if (msg.includes("gloves") || msg.includes("bsi")) scoreTracker.BSI = true;
+  if (msg.includes("nature of illness")) scoreTracker.mechanismInjury = true;
+  if (msg.includes("number of patients")) scoreTracker.numberPatients = true;
+  if (msg.includes("call for help") || msg.includes("additional help")) scoreTracker.additionalHelp = true;
+  if (msg.includes("c-spine") || msg.includes("immobilize")) scoreTracker.cSpine = true;
+  if (msg.includes("general impression")) scoreTracker.generalImpression = true;
+  if (msg.includes("responsive") || msg.includes("avpu")) scoreTracker.responsiveness = true;
+  if (msg.includes("chief complaint")) scoreTracker.chiefComplaint = true;
+  if (msg.includes("airway")) scoreTracker.airwayAssessment = true;
+  if (msg.includes("breathing")) scoreTracker.breathingAssessment = true;
+  if (msg.includes("pulse") || msg.includes("skin") || msg.includes("bleeding")) scoreTracker.circulationAssessment = true;
+  if (msg.includes("transport decision")) scoreTracker.priorityTransport = true;
+  if (msg.includes("opqrst")) scoreTracker.OPQRST = true;
+  if (msg.includes("sample")) scoreTracker.SAMPLE = true;
+  if (msg.includes("exam") || msg.includes("focused")) scoreTracker.secondaryAssessment = true;
+  if (msg.includes("vitals") || msg.includes("blood pressure")) scoreTracker.vitalSigns = true;
+  if (msg.includes("impression")) scoreTracker.fieldImpression = true;
+  if (msg.includes("treatment") || msg.includes("intervention")) scoreTracker.treatmentPlan = true;
+  if (msg.includes("reassess")) scoreTracker.reassessment = true;
+}
+
+function gradeScenario() {
+  let score = 0;
+  let missed = [];
+
+  for (let key in scoreTracker) {
+    if (key !== "criticalFails") {
+      if (scoreTracker[key]) score++;
+      else missed.push(gradingTemplate[key]);
+    }
+  }
+
+  const total = Object.keys(gradingTemplate).length - 1;
+  let output = [`📊 Final Score: ${score}/${total}`];
+
+  if (scoreTracker.criticalFails.length > 0) {
+    output.push("❌ Critical Failures: " + scoreTracker.criticalFails.join(", "));
+  }
+
+  if (missed.length > 0) {
+    output.push("🔍 Missed Items: " + missed.join("; "));
+  }
+
+  return output.join("<br><br>");
+}
+
+// === [EXISTING FUNCTIONS CONTINUE] ===
 
 async function speak(text, speaker = "patient", audioUrl = null) {
   try {
@@ -16,13 +86,11 @@ async function speak(text, speaker = "patient", audioUrl = null) {
       player.play();
       return;
     }
-
     const res = await fetch("/.netlify/functions/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text, speaker })
     });
-
     const { audio } = await res.json();
     const audioBlob = new Blob([Uint8Array.from(atob(audio), c => c.charCodeAt(0))], {
       type: "audio/mpeg"
@@ -33,34 +101,6 @@ async function speak(text, speaker = "patient", audioUrl = null) {
   } catch (err) {
     console.error("TTS playback error:", err);
   }
-}
-
-async function loadDispatchInfo() {
-  try {
-    const res = await fetch(`${scenarioPath}dispatch.txt`);
-    return await res.text();
-  } catch (e) {
-    logErrorToDatabase("Failed to load dispatch.txt: " + e.message);
-    return "Dispatch not available.";
-  }
-}
-
-async function loadPatientInfo() {
-  try {
-    const res = await fetch(`${scenarioPath}patient.txt`);
-    return await res.text();
-  } catch (e) {
-    logErrorToDatabase("Failed to load patient.txt: " + e.message);
-    return "Patient info not available.";
-  }
-}
-
-function logErrorToDatabase(errorInfo) {
-  console.error("🔴 Error:", errorInfo);
-  firebase.database().ref('error_logs').push({
-    error: errorInfo,
-    timestamp: Date.now()
-  });
 }
 
 async function displayChatResponse(response, question = "", role = "", audioUrl = null) {
@@ -129,6 +169,8 @@ async function processUserMessage(message) {
   ];
   const role = proctorKeywords.some(k => message.toLowerCase().includes(k)) ? "proctor" : "patient";
 
+  updateScoreTracker(message); // <-- ✅ Track actions
+
   const hardcoded = checkHardcodedResponse(message);
   if (hardcoded && hardcoded.aiResponse) {
     return displayChatResponse(hardcoded.aiResponse, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient", hardcoded.audioUrl || null);
@@ -165,13 +207,15 @@ async function processUserMessage(message) {
 }
 
 window.startScenario = async function () {
+  await loadGradingTemplate(); // ✅ Load grading system on start
   const dispatch = await loadDispatchInfo();
   patientContext = await loadPatientInfo();
   displayChatResponse(`🚑 Dispatch: ${dispatch}`);
 };
 
 window.endScenario = function () {
-  displayChatResponse("📦 Scenario ended. Please complete your handoff report.");
+  const feedback = gradeScenario(); // ✅ Show grading feedback
+  displayChatResponse("📦 Scenario ended. Here's your performance summary:<br><br>" + feedback);
 };
 
 document.addEventListener('DOMContentLoaded', function () {
