@@ -1,0 +1,29 @@
+{
+  "sceneSafety": "Determines scene is safe",
+  "BSI": "Takes or verbalizes BSI precautions",
+  "mechanismInjury": "Determines nature of illness",
+  "numberPatients": "Determines number of patients",
+  "additionalHelp": "Requests additional EMS assistance if necessary",
+  "cSpine": "Considers stabilization of the spine",
+  "generalImpression": "Verbalizes general impression of the patient",
+  "responsiveness": "Determines responsiveness / level of consciousness (AVPU)",
+  "chiefComplaint": "Determines chief complaint / apparent life-threats",
+  "airwayAssessment": "Assesses airway and initiates appropriate management",
+  "breathingAssessment": "Assesses breathing and initiates appropriate oxygen therapy",
+  "circulationAssessment": "Checks pulse, assesses skin color/temp/condition, controls major bleeding, initiates shock management",
+  "priorityTransport": "Identifies patient priority and makes transport decision",
+  "OPQRST": "Obtains OPQRST history",
+  "SAMPLE": "Obtains SAMPLE history",
+  "secondaryAssessment": "Performs focused physical exam based on chief complaint",
+  "vitalSigns": "Obtains and verbalizes baseline vital signs (BP, P, R)",
+  "fieldImpression": "States field impression of patient",
+  "treatmentPlan": "Verbalizes proper interventions/treatment",
+  "reassessment": "Reassesses patient appropriately",
+  "criticalFails": [
+    "Failure to initiate or call for transport within 15 minutes",
+    "Failure to assess airway, breathing, and circulation",
+    "Failure to provide appropriate oxygen therapy",
+    "Failure to manage the patient as a competent EMT",
+    "Failure to voice and ultimately provide appropriate treatment"
+  ]
+}
