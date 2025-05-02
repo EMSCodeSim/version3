@@ -12,11 +12,13 @@ firebase.database().ref('hardcodedResponses').once('value').then(snapshot => {
 });
 
 // === Load grading template for medical assessment ===
-async function loadGradingTemplate() {
-  const res = await fetch('grading_templates/medical_assessment.json');
+async function loadGradingTemplate(type = "medical") {
+  const file = `grading_templates/${type}_assessment.json`;
+  const res = await fetch(file);
   gradingTemplate = await res.json();
   initializeScoreTracker();
 }
+
 
 function initializeScoreTracker() {
   for (let key in gradingTemplate) {
