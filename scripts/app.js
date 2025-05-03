@@ -19,18 +19,7 @@ async function loadGradingTemplate(type = "medical") {
   initializeScoreTracker();
 }
 
-  const total = Object.keys(gradingTemplate).length - 1;
-  let output = [`📊 Final Score: ${score}/${total}`];
-
-  if (scoreTracker.criticalFails.length > 0) {
-    output.push("❌ Critical Failures: " + scoreTracker.criticalFails.join(", "));
-  }
-
-  if (missed.length > 0) {
-    output.push("🔍 Missed Items: " + missed.join("; "));
-  }
-
-  return output.join("<br><br>");
+  
 }
 
 // Speak via TTS or play audio
