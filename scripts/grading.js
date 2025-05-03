@@ -1,91 +1,93 @@
+export let scoreTracker = {};
+export let gradingTemplate = {};
 
-let gradingTemplate = {};
-let scoreTracker = {};
-
-function initializeScoreTracker() {
-  for (let key in gradingTemplate) {
-    if (key !== "criticalFails") {
-      scoreTracker[key] = false;
-    }
-  }
-  scoreTracker.criticalFails = [];
+// Initialize score tracker
+export function initializeScoreTracker() {
+  scoreTracker = {
+    completed: new Set(),
+    points: 0,
+    criticalFailures: [],
+    logs: []
+  };
 }
 
-function updateScoreTracker(input) {
-  const msg = input.toLowerCase();
-  if (msg.includes("scene safe")) scoreTracker.sceneSafety = true;
-  if (msg.includes("gloves") || msg.includes("bsi")) scoreTracker.BSI = true;
-  if (msg.includes("nature of illness")) scoreTracker.mechanismInjury = true;
-  if (msg.includes("number of patients")) scoreTracker.numberPatients = true;
-  if (msg.includes("call for help") || msg.includes("additional help")) scoreTracker.additionalHelp = true;
-  if (msg.includes("c-spine") || msg.includes("immobilize")) scoreTracker.cSpine = true;
-  if (msg.includes("general impression")) scoreTracker.generalImpression = true;
-  if (msg.includes("responsive") || msg.includes("avpu")) scoreTracker.responsiveness = true;
-  if (msg.includes("chief complaint")) scoreTracker.chiefComplaint = true;
-  if (msg.includes("airway")) scoreTracker.airwayAssessment = true;
-  if (msg.includes("breathing")) scoreTracker.breathingAssessment = true;
-  if (msg.includes("pulse") || msg.includes("skin") || msg.includes("bleeding")) scoreTracker.circulationAssessment = true;
-  if (msg.includes("transport decision")) scoreTracker.priorityTransport = true;
-  if (msg.includes("opqrst")) scoreTracker.OPQRST = true;
-  if (msg.includes("sample")) scoreTracker.SAMPLE = true;
-  if (msg.includes("exam") || msg.includes("focused")) scoreTracker.secondaryAssessment = true;
-  if (msg.includes("vitals") || msg.includes("blood pressure")) scoreTracker.vitalSigns = true;
-  if (msg.includes("impression")) scoreTracker.fieldImpression = true;
-  if (msg.includes("treatment") || msg.includes("intervention")) scoreTracker.treatmentPlan = true;
-  if (msg.includes("reassess")) scoreTracker.reassessment = true;
-}
+// Check and update score based on a message
+export function updateScoreTracker(message) {
+  const text = message.toLowerCase();
 
-function gradeScenario() {
-  const mockStart = "18:53";
-  const mockEnd = "19:08";
-  let score = 0;
-  let missed = [];
-  let criticalFails = scoreTracker.criticalFails || [];
-
-  for (let key in scoreTracker) {
-    if (key !== "criticalFails") {
-      if (scoreTracker[key]) score++;
-      else missed.push(key);
+  for (const [key, entry] of Object.entries(gradingTemplate)) {
+    if (!scoreTracker.completed.has(key)) {
+      const found = entry.keywords.some(kw => text.includes(kw));
+      if (found) {
+        scoreTracker.completed.add(key);
+        scoreTracker.points += entry.points;
+        scoreTracker.logs.push(`✅ ${entry.label} (+${entry.points})`);
+      }
     }
   }
 
-  function check(key, label) {
-    const passed = scoreTracker[key];
-    return `<li>${passed ? "✔" : "✘"} ${label}</li>`;
+  // Critical failure checks
+  if (text.includes("no ppe") || text.includes("didn’t wear ppe")) {
+    scoreTracker.criticalFailures.push("❌ Failure to take or verbalize PPE precautions");
   }
 
-  return `
-    <div class="grading-summary">
-      <h2>Patient Assessment - Medical (NREMT Skill Sheet)</h2>
-      <p><strong>Time Started:</strong> ${mockStart} &nbsp;&nbsp;&nbsp; <strong>Time Ended:</strong> ${mockEnd}</p>
-      <h3>Checklist</h3>
-      <ul>
-        ${check("BSI", "BSI Precautions")}
-        ${check("sceneSafety", "Scene Safety")}
-        ${check("mechanismInjury", "Nature of Illness")}
-        ${check("numberPatients", "Number of Patients")}
-        ${check("additionalHelp", "Request Additional Help")}
-        ${check("cSpine", "Spinal Precautions")}
-        ${check("generalImpression", "General Impression")}
-        ${check("responsiveness", "Responsiveness")}
-        ${check("chiefComplaint", "Chief Complaint")}
-        ${check("airwayAssessment", "Airway Management")}
-        ${check("breathingAssessment", "Breathing Assessment")}
-        ${check("circulationAssessment", "Circulation Check")}
-        ${check("priorityTransport", "Priority Transport Decision")}
-        ${check("OPQRST", "OPQRST History")}
-        ${check("SAMPLE", "SAMPLE History")}
-        ${check("secondaryAssessment", "Secondary Assessment")}
-        ${check("vitalSigns", "Vital Signs")}
-        ${check("fieldImpression", "Field Impression")}
-        ${check("treatmentPlan", "Treatment/Intervention")}
-        ${check("reassessment", "Reassessment")}
-      </ul>
-      <p><strong>Total Points:</strong> ${score} / 48</p>
-      <h3>Critical Failures:</h3>
-      <ul>${criticalFails.length ? criticalFails.map(c => `<li>✘ ${c}</li>`).join('') : "<li>None</li>"}</ul>
-    </div>
-  `;
+  if (text.includes("scene unsafe") || text.includes("not safe")) {
+    scoreTracker.criticalFailures.push("❌ Failed to determine scene safety before approaching patient");
+  }
+
+  if (text.includes("no oxygen") || text.includes("refused oxygen when needed")) {
+    scoreTracker.criticalFailures.push("❌ Failed to provide appropriate oxygen therapy");
+  }
+
+  if (text.includes("dangerous drug") || text.includes("wrong dose") || text.includes("gave wrong treatment")) {
+    scoreTracker.criticalFailures.push("❌ Ordered a dangerous or inappropriate intervention");
+  }
+
+  if (text.includes("no spinal") && text.includes("neck") || text.includes("c-spine") && text.includes("ignored")) {
+    scoreTracker.criticalFailures.push("❌ Failed to provide spinal protection when indicated");
+  }
 }
 
-export { initializeScoreTracker, updateScoreTracker, gradeScenario, scoreTracker, gradingTemplate };
+// Final grading and feedback
+export function gradeScenario() {
+  const maxPoints = 48;
+  const total = scoreTracker.points;
+  const percent = Math.round((total / maxPoints) * 100);
+
+  let feedback = `<h3>📊 Final Score: ${total} / ${maxPoints} (${percent}%)</h3>`;
+  feedback += "<ul>";
+
+  // Show passed items
+  for (const log of scoreTracker.logs) {
+    feedback += `<li>${log}</li>`;
+  }
+
+  // Show critical failures
+  if (scoreTracker.criticalFailures.length > 0) {
+    feedback += "</ul><h4>⚠️ Critical Failures:</h4><ul>";
+    for (const fail of scoreTracker.criticalFailures) {
+      feedback += `<li>${fail}</li>`;
+    }
+  }
+
+  // Positive feedback
+  feedback += "</ul><h4>✅ What You Did Well:</h4><ul>";
+  const good = [...scoreTracker.completed].slice(0, 3);
+  for (const key of good) {
+    if (gradingTemplate[key]) {
+      feedback += `<li>${gradingTemplate[key].label}</li>`;
+    }
+  }
+
+  // Improvement tips
+  feedback += "</ul><h4>💡 Improvement Tips:</h4><ul>";
+  const missed = Object.keys(gradingTemplate).filter(k => !scoreTracker.completed.has(k));
+  missed.slice(0, 3).forEach(key => {
+    if (gradingTemplate[key]) {
+      feedback += `<li>Try to include: <b>${gradingTemplate[key].label}</b></li>`;
+    }
+  });
+
+  feedback += "</ul>";
+  return feedback;
+}
