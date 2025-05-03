@@ -55,17 +55,66 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
   speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient", audioUrl);
 }
 
-// Check hardcoded responses
-function checkHardcodedResponse(message) {
-  if (!hardcodedResponses || typeof hardcodedResponses !== 'object') return null;
-  const normalized = message.trim().toLowerCase();
-  for (const key in hardcodedResponses) {
-    const stored = hardcodedResponses[key];
-    if (stored?.userQuestion?.trim().toLowerCase() === normalized) {
-      console.log("✅ Hardcoded match found:", stored.userQuestion);
-      return stored;
+// Normalize and fuzzy matching helpers
+function normalize(text) {
+  return text.toLowerCase().replace(/[^\w\s]/gi, '').replace(/\s+/g, ' ').trim();
+}
+
+function similarity(a, b) {
+  const longer = a.length > b.length ? a : b;
+  const shorter = a.length > b.length ? b : a;
+  const longerLength = longer.length;
+  if (longerLength === 0) return 1.0;
+  return (longerLength - editDistance(longer, shorter)) / parseFloat(longerLength);
+}
+
+function editDistance(a, b) {
+  const matrix = [];
+  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1)
+        );
+      }
     }
   }
+  return matrix[b.length][a.length];
+}
+
+// Hardcoded response with fuzzy fallback
+function checkHardcodedResponse(message) {
+  if (!hardcodedResponses || typeof hardcodedResponses !== 'object') return null;
+
+  const userInput = normalize(message);
+  let bestMatch = null;
+  let highestScore = 0.0;
+
+  for (const key in hardcodedResponses) {
+    const stored = hardcodedResponses[key];
+    const storedInput = normalize(stored?.userQuestion || '');
+    if (userInput === storedInput) {
+      console.log("✅ Exact hardcoded match found:", stored.userQuestion);
+      return stored;
+    }
+    const score = similarity(userInput, storedInput);
+    if (score > highestScore) {
+      highestScore = score;
+      bestMatch = stored;
+    }
+  }
+
+  if (highestScore >= 0.85) {
+    console.log(`✅ Fuzzy hardcoded match found (score ${highestScore.toFixed(2)}):`, bestMatch.userQuestion);
+    return bestMatch;
+  }
+
+  console.log("❌ No hardcoded match (exact or fuzzy).");
   return null;
 }
 
@@ -101,11 +150,9 @@ async function getAIResponseGPT4Turbo(message) {
   }
 }
 
-// Process user message
+// Main message processor
 async function processUserMessage(message) {
-  const proctorKeywords = [
-    'scene safe', 'bsi', 'blood pressure', 'pulse', 'respiratory rate', 'oxygen', 'splint', 'epinephrine'
-  ];
+  const proctorKeywords = ['scene safe', 'bsi', 'blood pressure', 'pulse', 'respiratory rate', 'oxygen', 'splint', 'epinephrine'];
   const role = proctorKeywords.some(k => message.toLowerCase().includes(k)) ? "proctor" : "patient";
 
   updateScoreTracker(message);
@@ -130,7 +177,7 @@ async function processUserMessage(message) {
   return displayChatResponse("I'm not sure how to answer that right now. Your question has been logged for review.", message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
 }
 
-// Scenario logic
+// Start scenario
 window.startScenario = async function () {
   console.log("Start Scenario Triggered");
   try {
@@ -149,12 +196,43 @@ window.startScenario = async function () {
   }
 };
 
+// End scenario
 window.endScenario = function () {
   const feedback = gradeScenario();
   displayChatResponse("📦 Scenario ended. Here's your performance summary:<br><br>" + feedback);
 };
 
-// Button events
+// Load scenario files
+async function loadDispatchInfo() {
+  try {
+    const res = await fetch(`${scenarioPath}dispatch.txt`);
+    return await res.text();
+  } catch (e) {
+    logErrorToDatabase("Failed to load dispatch.txt: " + e.message);
+    return "Dispatch not available.";
+  }
+}
+
+async function loadPatientInfo() {
+  try {
+    const res = await fetch(`${scenarioPath}patient.txt`);
+    return await res.text();
+  } catch (e) {
+    logErrorToDatabase("Failed to load patient.txt: " + e.message);
+    return "Patient info not available.";
+  }
+}
+
+// Error logger
+function logErrorToDatabase(errorInfo) {
+  console.error("🔴 Error:", errorInfo);
+  firebase.database().ref('error_logs').push({
+    error: errorInfo,
+    timestamp: Date.now()
+  });
+}
+
+// DOM buttons
 document.addEventListener('DOMContentLoaded', () => {
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
@@ -181,32 +259,3 @@ document.addEventListener('DOMContentLoaded', () => {
   endBtn?.addEventListener('click', () => window.endScenario?.());
   micBtn?.addEventListener('click', () => startVoiceRecognition());
 });
-
-// Helpers
-async function loadDispatchInfo() {
-  try {
-    const res = await fetch(`${scenarioPath}dispatch.txt`);
-    return await res.text();
-  } catch (e) {
-    logErrorToDatabase("Failed to load dispatch.txt: " + e.message);
-    return "Dispatch not available.";
-  }
-}
-
-async function loadPatientInfo() {
-  try {
-    const res = await fetch(`${scenarioPath}patient.txt`);
-    return await res.text();
-  } catch (e) {
-    logErrorToDatabase("Failed to load patient.txt: " + e.message);
-    return "Patient info not available.";
-  }
-}
-
-function logErrorToDatabase(errorInfo) {
-  console.error("🔴 Error:", errorInfo);
-  firebase.database().ref('error_logs').push({
-    error: errorInfo,
-    timestamp: Date.now()
-  });
-}
