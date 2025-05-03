@@ -1,197 +1,197 @@
 {
   "ppe": {
-    "label": "PPE precautions",
-    "keywords": ["ppe", "body substance isolation", "gloves", "puts on ppe"],
-    "points": 1
+    "label": "Takes or verbalizes PPE precautions",
+    "points": 1,
+    "keywords": ["bsi", "gloves", "ppe", "body substance isolation"]
   },
-  "scene_safety": {
-    "label": "Scene safety",
-    "keywords": ["scene safe", "is the scene safe", "ensure scene safety"],
-    "points": 1
+  "sceneSafety": {
+    "label": "Determines the scene is safe",
+    "points": 1,
+    "keywords": ["scene safe", "scene is secure", "check for hazards"]
   },
-  "moi_noi": {
-    "label": "Determine MOI/NOI",
-    "keywords": ["mechanism of injury", "nature of illness", "moi", "noi"],
-    "points": 1
+  "moiNoi": {
+    "label": "Determines MOI/NOI",
+    "points": 1,
+    "keywords": ["mechanism of injury", "nature of illness", "moi", "noi"]
   },
-  "number_of_patients": {
-    "label": "Determine number of patients",
-    "keywords": ["how many patients", "number of patients"],
-    "points": 1
+  "numPatients": {
+    "label": "Determines number of patients",
+    "points": 1,
+    "keywords": ["how many patients", "number of patients"]
   },
-  "request_als": {
-    "label": "Request additional EMS or ALS",
-    "keywords": ["request als", "call for als", "als not needed", "additional help"],
-    "points": 1
+  "requestAls": {
+    "label": "Requests additional EMS assistance if necessary",
+    "points": 1,
+    "keywords": ["call als", "need als", "request als", "advanced life support"]
   },
   "cspine": {
-    "label": "C-Spine consideration",
-    "keywords": ["c-spine", "immobilize spine", "manual stabilization"],
-    "points": 1
+    "label": "Considers stabilization of spine",
+    "points": 1,
+    "keywords": ["c-spine", "spinal motion restriction", "stabilize spine"]
   },
-  "general_impression": {
-    "label": "General impression",
-    "keywords": ["general impression", "sick or not sick", "overall condition"],
-    "points": 1
+  "generalImpression": {
+    "label": "Performs general impression",
+    "points": 1,
+    "keywords": ["sick or not sick", "general impression", "looks ill"]
   },
   "avpu": {
-    "label": "Assess responsiveness (AVPU)",
-    "keywords": ["avpu", "alert", "verbal", "pain", "unresponsive"],
-    "points": 1
+    "label": "Determines responsiveness (AVPU)",
+    "points": 1,
+    "keywords": ["alert", "verbal", "pain", "unresponsive", "avpu"]
   },
-  "chief_complaint": {
-    "label": "Determine chief complaint",
-    "keywords": ["chief complaint", "what's wrong", "why did you call"],
-    "points": 1
+  "chiefComplaint": {
+    "label": "Determines chief complaint",
+    "points": 1,
+    "keywords": ["what's wrong", "chief complaint", "what happened"]
   },
   "airway": {
-    "label": "Assess airway",
-    "keywords": ["airway", "open airway", "check airway"],
-    "points": 1
+    "label": "Assesses airway",
+    "points": 1,
+    "keywords": ["airway", "check airway", "open airway"]
   },
   "breathing": {
-    "label": "Assess breathing",
-    "keywords": ["breathing", "respiratory rate", "lung sounds"],
-    "points": 1
+    "label": "Assesses breathing",
+    "points": 1,
+    "keywords": ["breathing rate", "respiratory rate", "breathing"]
   },
   "oxygen": {
-    "label": "Initiate oxygen therapy",
-    "keywords": ["oxygen", "apply oxygen", "o2"],
-    "points": 1
+    "label": "Initiates appropriate oxygen therapy",
+    "points": 1,
+    "keywords": ["oxygen", "apply oxygen", "non-rebreather", "nasal cannula", "oxygen therapy"]
   },
   "circulation": {
-    "label": "Assess circulation (bleeding, pulse, skin signs)",
-    "keywords": ["pulse", "bleeding", "skin signs", "color", "temperature", "cap refill"],
-    "points": 1
+    "label": "Checks circulation (pulse, bleeding, skin)",
+    "points": 1,
+    "keywords": ["pulse", "skin signs", "bleeding", "circulation"]
   },
-  "transport_decision": {
-    "label": "Make transport decision",
-    "keywords": ["emergent", "non-emergent", "hospital", "transport now"],
-    "points": 1
+  "transportDecision": {
+    "label": "Makes transport decision",
+    "points": 1,
+    "keywords": ["transport", "load and go", "emergent", "non-emergent"]
   },
-  "opqrst_onset": {
-    "label": "OPQRST - Onset",
-    "keywords": ["onset", "when did it start", "how did it begin"],
-    "points": 1
+  "opqrstOnset": {
+    "label": "History: OPQRST - Onset",
+    "points": 1,
+    "keywords": ["when did it start", "onset"]
   },
-  "opqrst_provocation": {
-    "label": "OPQRST - Provocation",
-    "keywords": ["provokes", "makes it better", "makes it worse"],
-    "points": 1
+  "opqrstProvocation": {
+    "label": "History: OPQRST - Provocation",
+    "points": 1,
+    "keywords": ["what makes it better", "what makes it worse", "provocation"]
   },
-  "opqrst_quality": {
-    "label": "OPQRST - Quality",
-    "keywords": ["sharp", "dull", "crushing", "describe the pain", "quality"],
-    "points": 1
+  "opqrstQuality": {
+    "label": "History: OPQRST - Quality",
+    "points": 1,
+    "keywords": ["sharp", "dull", "stabbing", "aching", "quality"]
   },
-  "opqrst_radiation": {
-    "label": "OPQRST - Radiation",
-    "keywords": ["radiates", "move anywhere", "traveling pain"],
-    "points": 1
+  "opqrstRadiation": {
+    "label": "History: OPQRST - Radiation",
+    "points": 1,
+    "keywords": ["does it move", "radiate", "spreads"]
   },
-  "opqrst_severity": {
-    "label": "OPQRST - Severity",
-    "keywords": ["scale of 1 to 10", "how bad", "severity"],
-    "points": 1
+  "opqrstSeverity": {
+    "label": "History: OPQRST - Severity",
+    "points": 1,
+    "keywords": ["how bad", "scale of 1 to 10", "severity"]
   },
-  "opqrst_time": {
-    "label": "OPQRST - Time",
-    "keywords": ["how long", "duration", "has it changed"],
-    "points": 1
+  "opqrstTime": {
+    "label": "History: OPQRST - Time",
+    "points": 1,
+    "keywords": ["how long", "duration", "started when"]
   },
-  "opqrst_clarifiers": {
-    "label": "Clarifying questions related to OPQRST",
-    "keywords": ["associated symptoms", "nausea", "sweating", "other symptoms"],
-    "points": 2
+  "opqrstClarify": {
+    "label": "Clarifies associated signs/symptoms",
+    "points": 2,
+    "keywords": ["associated symptoms", "related symptoms", "also experiencing"]
   },
-  "sample_allergies": {
-    "label": "SAMPLE - Allergies",
-    "keywords": ["allergies", "are you allergic"],
-    "points": 1
+  "sampleAllergies": {
+    "label": "SAMPLE: Allergies",
+    "points": 1,
+    "keywords": ["any allergies", "allergic to anything"]
   },
-  "sample_medications": {
-    "label": "SAMPLE - Medications",
-    "keywords": ["medications", "do you take", "prescriptions"],
-    "points": 1
+  "sampleMedications": {
+    "label": "SAMPLE: Medications",
+    "points": 1,
+    "keywords": ["what medications", "taking any meds"]
   },
-  "sample_history": {
-    "label": "SAMPLE - Past pertinent history",
-    "keywords": ["past medical history", "any conditions", "chronic issues"],
-    "points": 1
+  "sampleHistory": {
+    "label": "SAMPLE: Past pertinent history",
+    "points": 1,
+    "keywords": ["medical history", "past problems", "diagnosed with"]
   },
-  "sample_last_oral": {
-    "label": "SAMPLE - Last oral intake",
-    "keywords": ["last ate", "last meal", "when did you eat"],
-    "points": 1
+  "sampleIntake": {
+    "label": "SAMPLE: Last oral intake",
+    "points": 1,
+    "keywords": ["last ate", "last drink", "oral intake"]
   },
-  "sample_events": {
-    "label": "SAMPLE - Events leading up to incident",
-    "keywords": ["what happened", "what were you doing", "lead up"],
-    "points": 1
+  "sampleEvents": {
+    "label": "SAMPLE: Events leading to illness",
+    "points": 1,
+    "keywords": ["what were you doing", "what happened", "leading up to"]
   },
-  "secondary_assessment": {
-    "label": "Secondary assessment (body system)",
-    "keywords": ["head to toe", "check chest", "recheck abdomen", "neurological exam", "cardiovascular"],
-    "points": 5
+  "secondaryAssessment": {
+    "label": "Performs secondary assessment",
+    "points": 5,
+    "keywords": ["head to toe", "focused exam", "secondary assessment"]
   },
-  "vitals_bp": {
-    "label": "Vital signs - Blood pressure",
-    "keywords": ["blood pressure", "bp"],
-    "points": 1
+  "vitalsBP": {
+    "label": "Vital Signs: Blood Pressure",
+    "points": 1,
+    "keywords": ["blood pressure", "bp"]
   },
-  "vitals_pulse": {
-    "label": "Vital signs - Pulse",
-    "keywords": ["pulse", "heart rate"],
-    "points": 1
+  "vitalsPulse": {
+    "label": "Vital Signs: Pulse",
+    "points": 1,
+    "keywords": ["pulse", "heart rate"]
   },
-  "vitals_resp": {
-    "label": "Vital signs - Respirations",
-    "keywords": ["respiratory rate", "breathing rate", "respiratory quality"],
-    "points": 1
+  "vitalsResp": {
+    "label": "Vital Signs: Resp Rate & Quality",
+    "points": 1,
+    "keywords": ["respiratory rate", "breathing quality"]
   },
-  "vitals_avpu": {
-    "label": "Vital signs - AVPU",
-    "keywords": ["avpu", "alert", "verbal", "pain", "unresponsive"],
-    "points": 1
+  "vitalsAvpu": {
+    "label": "Vital Signs: AVPU",
+    "points": 1,
+    "keywords": ["avpu", "alert", "verbal", "pain", "unresponsive"]
   },
   "diagnostics": {
-    "label": "Diagnostics (pulse ox, glucose)",
-    "keywords": ["glucose", "blood sugar", "pulse ox", "spo2"],
-    "points": 2
+    "label": "Performs diagnostics (glucose, pulse ox)",
+    "points": 2,
+    "keywords": ["blood sugar", "glucose", "pulse ox", "oxygen saturation"]
   },
-  "field_impression": {
-    "label": "State field impression",
-    "keywords": ["my impression is", "i think the patient", "likely cause"],
-    "points": 1
+  "fieldImpression": {
+    "label": "States field impression",
+    "points": 1,
+    "keywords": ["i think", "field impression", "most likely"]
   },
-  "treatment_plan": {
-    "label": "Verbalize treatment plan and call for interventions",
-    "keywords": ["treatment plan", "i will", "start an iv", "administer", "apply"],
-    "points": 1
+  "treatmentPlan": {
+    "label": "Verbalizes treatment plan and initiates interventions",
+    "points": 1,
+    "keywords": ["treatment plan", "doing now", "interventions"]
   },
-  "re_eval_treatment": {
-    "label": "Re-evaluates treatment decision",
-    "keywords": ["re-evaluate", "adjust treatment", "changed plan"],
-    "points": 1
+  "treatmentReeval": {
+    "label": "Reevaluates treatment decision",
+    "points": 1,
+    "keywords": ["check treatment", "reevaluate", "treatment working"]
   },
-  "reassess_vitals": {
+  "reassessVitals": {
     "label": "Reassess vital signs",
-    "keywords": ["recheck blood pressure", "recheck pulse", "recheck respirations"],
-    "points": 1
+    "points": 1,
+    "keywords": ["repeat vitals", "recheck bp", "recheck pulse"]
   },
-  "reassess_primary": {
-    "label": "Repeat primary survey",
-    "keywords": ["recheck abc", "repeat primary", "primary reassessment"],
-    "points": 1
+  "recheckPrimary": {
+    "label": "Repeats primary survey",
+    "points": 1,
+    "keywords": ["repeat primary", "primary again"]
   },
-  "response_to_treatment": {
-    "label": "Evaluate response to treatment",
-    "keywords": ["better", "worse", "how are you feeling now", "improved"],
-    "points": 1
+  "responseEval": {
+    "label": "Evaluates patient response to treatment",
+    "points": 1,
+    "keywords": ["getting better", "any improvement", "responding"]
   },
-  "reassess_secondary": {
-    "label": "Repeat secondary assessment",
-    "keywords": ["repeat head to toe", "recheck injuries", "second exam"],
-    "points": 1
+  "recheckSecondary": {
+    "label": "Repeats secondary assessment",
+    "points": 1,
+    "keywords": ["repeat secondary", "second head to toe"]
   }
 }
