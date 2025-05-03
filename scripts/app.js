@@ -19,54 +19,6 @@ async function loadGradingTemplate(type = "medical") {
   initializeScoreTracker();
 }
 
-// Initialize the scoring tracker
-function initializeScoreTracker() {
-  for (let key in gradingTemplate) {
-    if (key !== "criticalFails") {
-      scoreTracker[key] = false;
-    }
-  }
-  scoreTracker.criticalFails = [];
-}
-
-// Track completed assessment actions
-function updateScoreTracker(input) {
-  const msg = input.toLowerCase();
-
-  if (msg.includes("scene safe")) scoreTracker.sceneSafety = true;
-  if (msg.includes("gloves") || msg.includes("bsi")) scoreTracker.BSI = true;
-  if (msg.includes("nature of illness")) scoreTracker.mechanismInjury = true;
-  if (msg.includes("number of patients")) scoreTracker.numberPatients = true;
-  if (msg.includes("call for help") || msg.includes("additional help")) scoreTracker.additionalHelp = true;
-  if (msg.includes("c-spine") || msg.includes("immobilize")) scoreTracker.cSpine = true;
-  if (msg.includes("general impression")) scoreTracker.generalImpression = true;
-  if (msg.includes("responsive") || msg.includes("avpu")) scoreTracker.responsiveness = true;
-  if (msg.includes("chief complaint")) scoreTracker.chiefComplaint = true;
-  if (msg.includes("airway")) scoreTracker.airwayAssessment = true;
-  if (msg.includes("breathing")) scoreTracker.breathingAssessment = true;
-  if (msg.includes("pulse") || msg.includes("skin") || msg.includes("bleeding")) scoreTracker.circulationAssessment = true;
-  if (msg.includes("transport decision")) scoreTracker.priorityTransport = true;
-  if (msg.includes("opqrst")) scoreTracker.OPQRST = true;
-  if (msg.includes("sample")) scoreTracker.SAMPLE = true;
-  if (msg.includes("exam") || msg.includes("focused")) scoreTracker.secondaryAssessment = true;
-  if (msg.includes("vitals") || msg.includes("blood pressure")) scoreTracker.vitalSigns = true;
-  if (msg.includes("impression")) scoreTracker.fieldImpression = true;
-  if (msg.includes("treatment") || msg.includes("intervention")) scoreTracker.treatmentPlan = true;
-  if (msg.includes("reassess")) scoreTracker.reassessment = true;
-}
-
-// Final grading output
-function gradeScenario() {
-  let score = 0;
-  let missed = [];
-
-  for (let key in scoreTracker) {
-    if (key !== "criticalFails") {
-      if (scoreTracker[key]) score++;
-      else missed.push(gradingTemplate[key]);
-    }
-  }
-
   const total = Object.keys(gradingTemplate).length - 1;
   let output = [`📊 Final Score: ${score}/${total}`];
 
