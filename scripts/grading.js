@@ -49,8 +49,15 @@ export async function gradeScenario() {
   const passedItems = Array.from(scoreTracker.completed).map(k => gradingTemplate[k]?.label);
   const criticals = findCriticalFailures(scoreTracker.userInputs);
 
+  const allItems = Object.keys(gradingTemplate).map(k => ({
+    id: k,
+    label: gradingTemplate[k].label,
+    points: gradingTemplate[k].points,
+    earned: scoreTracker.completed.has(k)
+  }));
+
   const prompt = `
-You are an NREMT evaluator. Generate professional but supportive feedback for a student.
+You are an NREMT evaluator. Generate professional, specific, and constructive feedback for a student.
 
 Score: ${totalScore} / 48
 Successes:
@@ -60,8 +67,8 @@ ${missedItems.map(k => "- " + gradingTemplate[k]?.label).join("\n") || "None"}
 Critical Failures:
 ${criticals.length ? criticals.map(f => "- " + f).join("\n") : "None"}
 
-Format response with: Summary, What You Did Well, Improvement Tips.
-Do NOT repeat the word 'score'.
+Provide a summary, list what was done well, and offer clear improvement suggestions.
+Avoid repeating the numeric score in your response.
 `;
 
   let gptFeedback = "";
@@ -78,7 +85,6 @@ Do NOT repeat the word 'score'.
     gptFeedback = "(GPT feedback unavailable)";
   }
 
-  // Try pulling tips from improvementTips too
   const tips = missedItems
     .map(k => improvementTips[k])
     .filter(Boolean)
@@ -90,7 +96,8 @@ Do NOT repeat the word 'score'.
     positives: passedItems,
     improvementTips: tips.length ? tips : ["Review OPQRST thoroughly.", "Ensure scene safety and PPE are clearly stated."],
     criticalFails: criticals,
-    gptFeedback
+    gptFeedback,
+    allItems
   };
 }
 
@@ -101,9 +108,11 @@ function normalize(text) {
 function findCriticalFailures(inputs) {
   const found = [];
   for (const rule of criticalFailures) {
-    if (rule.keywords.length === 0 && rule.id === "timeout") continue;
+    if (!rule.keywords?.length || !rule.reason) continue;
     for (const userInput of inputs) {
-      const match = rule.keywords.some(keyword => userInput.includes(keyword.toLowerCase()));
+      const match = rule.keywords.some(keyword =>
+        userInput.includes(keyword.toLowerCase())
+      );
       if (match) {
         found.push(rule.reason);
         break;
