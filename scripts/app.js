@@ -1,4 +1,5 @@
 import { initializeScoreTracker, updateScoreTracker, gradeScenario } from './grading.js';
+import { startVoiceRecognition, stopVoiceRecognition } from './mic.js';
 
 const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
@@ -12,7 +13,7 @@ firebase.database().ref('hardcodedResponses').once('value').then(snapshot => {
   console.log("✅ Loaded hardcodedResponses:", hardcodedResponses);
 });
 
-// Load grading template dynamically based on scenario config
+// Load grading template
 async function loadGradingTemplate(type = "medical") {
   const file = `grading_templates/${type}_assessment.json`;
   const res = await fetch(file);
@@ -58,7 +59,7 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
   speak(response, speaker, audioUrl);
 }
 
-// Check for exact hardcoded match
+// Check for hardcoded match
 function checkHardcodedResponse(message) {
   if (!hardcodedResponses || typeof hardcodedResponses !== 'object') return null;
   const normalized = message.trim().toLowerCase();
@@ -72,7 +73,7 @@ function checkHardcodedResponse(message) {
   return null;
 }
 
-// Vector search fallback
+// Vector fallback
 async function getVectorResponse(message) {
   try {
     const res = await fetch('/api/vector-search', {
@@ -81,7 +82,6 @@ async function getVectorResponse(message) {
       body: JSON.stringify({ query: message })
     });
     const data = await res.json();
-    console.log("🔍 Vector match:", data.match);
     return data.match || null;
   } catch (e) {
     logErrorToDatabase("Vector search failed: " + e.message);
@@ -89,7 +89,7 @@ async function getVectorResponse(message) {
   }
 }
 
-// GPT-4 fallback
+// GPT fallback
 async function getAIResponseGPT4Turbo(message) {
   try {
     const res = await fetch('/api/gpt4-turbo', {
@@ -145,84 +145,4 @@ async function processUserMessage(message) {
   return displayChatResponse("I'm not sure how to answer that right now. Your question has been logged for review.", message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
 }
 
-// Start scenario and load grading
-window.startScenario = async function () {
-  console.log("Start Scenario Triggered");
-  try {
-    const configRes = await fetch(`${scenarioPath}config.json`);
-    const config = await configRes.json();
-    const gradingType = config.grading || "medical";
-
-    await loadGradingTemplate(gradingType);
-
-    const dispatch = await loadDispatchInfo();
-    patientContext = await loadPatientInfo();
-    displayChatResponse(`🚑 Dispatch: ${dispatch}`);
-  } catch (err) {
-    logErrorToDatabase("startScenario error: " + err.message);
-    displayChatResponse("❌ Failed to load scenario. Check for missing grading or config files.");
-  }
-};
-
-// End scenario and show score
-window.endScenario = function () {
-  const feedback = gradeScenario();
-  displayChatResponse("📦 Scenario ended. Here's your performance summary:<br><br>" + feedback);
-};
-
-// DOM events for buttons
-document.addEventListener('DOMContentLoaded', function () {
-  const sendBtn = document.getElementById('send-button');
-  const input = document.getElementById('user-input');
-  const startBtn = document.getElementById('start-button');
-  const endBtn = document.getElementById('end-button');
-  const micBtn = document.getElementById('mic-button');
-
-  sendBtn?.addEventListener('click', () => {
-    const message = input.value.trim();
-    if (message) {
-      processUserMessage(message);
-      input.value = '';
-    }
-  });
-
-  input?.addEventListener('keypress', e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      sendBtn.click();
-    }
-  });
-
-  startBtn?.addEventListener('click', () => window.startScenario?.());
-  endBtn?.addEventListener('click', () => window.endScenario?.());
-  micBtn?.addEventListener('click', () => window.startVoiceRecognition?.());
-});
-
-// Load supporting files
-async function loadDispatchInfo() {
-  try {
-    const res = await fetch(`${scenarioPath}dispatch.txt`);
-    return await res.text();
-  } catch (e) {
-    logErrorToDatabase("Failed to load dispatch.txt: " + e.message);
-    return "Dispatch not available.";
-  }
-}
-
-async function loadPatientInfo() {
-  try {
-    const res = await fetch(`${scenarioPath}patient.txt`);
-    return await res.text();
-  } catch (e) {
-    logErrorToDatabase("Failed to load patient.txt: " + e.message);
-    return "Patient info not available.";
-  }
-}
-
-function logErrorToDatabase(errorInfo) {
-  console.error("🔴 Error:", errorInfo);
-  firebase.database().ref('error_logs').push({
-    error: errorInfo,
-    timestamp: Date.now()
-  });
-}
+// Start
