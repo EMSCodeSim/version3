@@ -1,5 +1,5 @@
 import { initializeScoreTracker, updateScoreTracker, gradeScenario } from './grading.js';
-import { startVoiceRecognition, stopVoiceRecognition } from './mic.js';
+import { startVoiceRecognition } from './mic.js';
 
 const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
@@ -13,7 +13,7 @@ firebase.database().ref('hardcodedResponses').once('value').then(snapshot => {
   console.log("✅ Loaded hardcodedResponses:", hardcodedResponses);
 });
 
-// Load grading template
+// Load grading template dynamically based on scenario config
 async function loadGradingTemplate(type = "medical") {
   const file = `grading_templates/${type}_assessment.json`;
   const res = await fetch(file);
@@ -35,18 +35,15 @@ async function speak(text, speaker = "patient", audioUrl = null) {
       body: JSON.stringify({ text, speaker })
     });
     const { audio } = await res.json();
-    const audioBlob = new Blob([Uint8Array.from(atob(audio), c => c.charCodeAt(0))], {
-      type: "audio/mpeg"
-    });
+    const audioBlob = new Blob([Uint8Array.from(atob(audio), c => c.charCodeAt(0))], { type: "audio/mpeg" });
     const url = URL.createObjectURL(audioBlob);
-    const player = new Audio(url);
-    player.play();
+    new Audio(url).play();
   } catch (err) {
     console.error("TTS playback error:", err);
   }
 }
 
-// Display response in chat UI
+// Display chat response
 async function displayChatResponse(response, question = "", role = "", audioUrl = null) {
   const chatBox = document.getElementById("chat-box");
   const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
@@ -55,11 +52,10 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
     <div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>
   `;
   chatBox.scrollTop = chatBox.scrollHeight;
-  const speaker = role.toLowerCase().includes("proctor") ? "proctor" : "patient";
-  speak(response, speaker, audioUrl);
+  speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient", audioUrl);
 }
 
-// Check for hardcoded match
+// Check hardcoded responses
 function checkHardcodedResponse(message) {
   if (!hardcodedResponses || typeof hardcodedResponses !== 'object') return null;
   const normalized = message.trim().toLowerCase();
@@ -105,7 +101,7 @@ async function getAIResponseGPT4Turbo(message) {
   }
 }
 
-// Main message handler
+// Process user message
 async function processUserMessage(message) {
   const proctorKeywords = [
     'scene safe', 'bsi', 'blood pressure', 'pulse', 'respiratory rate', 'oxygen', 'splint', 'epinephrine'
@@ -126,23 +122,91 @@ async function processUserMessage(message) {
 
   const gpt = await getAIResponseGPT4Turbo(message);
   if (gpt) {
-    firebase.database().ref('unknownQuestions').push({
-      userQuestion: message,
-      aiResponse: gpt,
-      role,
-      reviewed: false,
-      timestamp: Date.now()
-    });
-    firebase.database().ref('ai_responses_log').push({
-      userMessage: message,
-      aiResponse: gpt,
-      responder: role,
-      timestamp: Date.now()
-    });
+    firebase.database().ref('unknownQuestions').push({ userQuestion: message, aiResponse: gpt, role, reviewed: false, timestamp: Date.now() });
+    firebase.database().ref('ai_responses_log').push({ userMessage: message, aiResponse: gpt, responder: role, timestamp: Date.now() });
     return displayChatResponse(gpt, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
   }
 
   return displayChatResponse("I'm not sure how to answer that right now. Your question has been logged for review.", message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
 }
 
-// Start
+// Scenario logic
+window.startScenario = async function () {
+  console.log("Start Scenario Triggered");
+  try {
+    const configRes = await fetch(`${scenarioPath}config.json`);
+    const config = await configRes.json();
+    const gradingType = config.grading || "medical";
+
+    await loadGradingTemplate(gradingType);
+
+    const dispatch = await loadDispatchInfo();
+    patientContext = await loadPatientInfo();
+    displayChatResponse(`🚑 Dispatch: ${dispatch}`);
+  } catch (err) {
+    logErrorToDatabase("startScenario error: " + err.message);
+    displayChatResponse("❌ Failed to load scenario. Check for missing grading or config files.");
+  }
+};
+
+window.endScenario = function () {
+  const feedback = gradeScenario();
+  displayChatResponse("📦 Scenario ended. Here's your performance summary:<br><br>" + feedback);
+};
+
+// Button events
+document.addEventListener('DOMContentLoaded', () => {
+  const sendBtn = document.getElementById('send-button');
+  const input = document.getElementById('user-input');
+  const startBtn = document.getElementById('start-button');
+  const endBtn = document.getElementById('end-button');
+  const micBtn = document.getElementById('mic-button');
+
+  sendBtn?.addEventListener('click', () => {
+    const message = input.value.trim();
+    if (message) {
+      processUserMessage(message);
+      input.value = '';
+    }
+  });
+
+  input?.addEventListener('keypress', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendBtn.click();
+    }
+  });
+
+  startBtn?.addEventListener('click', () => window.startScenario?.());
+  endBtn?.addEventListener('click', () => window.endScenario?.());
+  micBtn?.addEventListener('click', () => startVoiceRecognition());
+});
+
+// Helpers
+async function loadDispatchInfo() {
+  try {
+    const res = await fetch(`${scenarioPath}dispatch.txt`);
+    return await res.text();
+  } catch (e) {
+    logErrorToDatabase("Failed to load dispatch.txt: " + e.message);
+    return "Dispatch not available.";
+  }
+}
+
+async function loadPatientInfo() {
+  try {
+    const res = await fetch(`${scenarioPath}patient.txt`);
+    return await res.text();
+  } catch (e) {
+    logErrorToDatabase("Failed to load patient.txt: " + e.message);
+    return "Patient info not available.";
+  }
+}
+
+function logErrorToDatabase(errorInfo) {
+  console.error("🔴 Error:", errorInfo);
+  firebase.database().ref('error_logs').push({
+    error: errorInfo,
+    timestamp: Date.now()
+  });
+}
