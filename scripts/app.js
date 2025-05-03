@@ -151,8 +151,13 @@ async function processUserMessage(message) {
 }
 
 // Load scenario and grading template
-window.startScenario = async function () {
-  try {
+function startScenario() {
+  console.log("Start Scenario Triggered");
+  // your existing start logic here
+}
+
+window.startScenario = startScenario;
+
     const configRes = await fetch(`${scenarioPath}config.json`);
     const config = await configRes.json();
     const gradingType = config.grading || "medical";
