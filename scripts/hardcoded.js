@@ -1,61 +1,83 @@
-// hardcoded.js
-function normalize(text) {
-  return text.toLowerCase().replace(/[^\w\s]/gi, '').replace(/\s+/g, ' ').trim();
-}
+document.addEventListener('DOMContentLoaded', () => {
+  const logRef = firebase.database().ref('unknownQuestions');
+  const hardcodedRef = firebase.database().ref('hardcodedResponses');
 
-function similarity(a, b) {
-  const longer = a.length > b.length ? a : b;
-  const shorter = a.length > b.length ? b : a;
-  const longerLength = longer.length;
-  if (longerLength === 0) return 1.0;
-  return (longerLength - editDistance(longer, shorter)) / parseFloat(longerLength);
-}
+  const table = document.getElementById('hardcode-table');
+  const saveBtn = document.getElementById('save-button');
+  const refreshBtn = document.getElementById('refresh-button');
 
-function editDistance(a, b) {
-  const matrix = [];
-  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-  for (let i = 1; i <= b.length; i++) {
-    for (let j = 1; j <= a.length; j++) {
-      if (b.charAt(i - 1) === a.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1,
-          Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1)
-        );
-      }
+  let editingRow = null;
+
+  refreshBtn.addEventListener('click', loadUnapproved);
+
+  saveBtn.addEventListener('click', () => {
+    const userQuestion = document.getElementById('user-question').value.trim();
+    const aiResponse = document.getElementById('ai-response').value.trim();
+    const role = document.getElementById('response-role').value;
+    const mediaTrigger = document.getElementById('media-trigger').value.trim();
+
+    if (!userQuestion || !aiResponse) {
+      alert('Question and response are required.');
+      return;
     }
-  }
-  return matrix[b.length][a.length];
-}
 
-export function checkHardcodedResponse(message, hardcodedResponses) {
-  if (!hardcodedResponses || typeof hardcodedResponses !== 'object') return null;
+    const entry = {
+      userQuestion,
+      aiResponse,
+      role,
+      reviewed: true,
+      timestamp: Date.now()
+    };
 
-  const userInput = normalize(message);
-  let bestMatch = null;
-  let highestScore = 0.0;
-
-  for (const key in hardcodedResponses) {
-    const stored = hardcodedResponses[key];
-    const storedInput = normalize(stored?.userQuestion || '');
-    if (userInput === storedInput) {
-      console.log("✅ Exact hardcoded match found:", stored.userQuestion);
-      return stored;
+    if (mediaTrigger) {
+      entry.mediaTrigger = mediaTrigger;
     }
-    const score = similarity(userInput, storedInput);
-    if (score > highestScore) {
-      highestScore = score;
-      bestMatch = stored;
-    }
-  }
 
-  if (highestScore >= 0.85) {
-    console.log(`✅ Fuzzy hardcoded match found (score ${highestScore.toFixed(2)}):`, bestMatch.userQuestion);
-    return bestMatch;
+    // Save to hardcoded responses
+    hardcodedRef.push(entry);
+
+    // Mark as reviewed
+    if (editingRow?.logKey) {
+      logRef.child(editingRow.logKey).update({ reviewed: true });
+    }
+
+    clearForm();
+    loadUnapproved();
+  });
+
+  function clearForm() {
+    document.getElementById('user-question').value = '';
+    document.getElementById('ai-response').value = '';
+    document.getElementById('media-trigger').value = '';
+    document.getElementById('response-role').value = 'patient';
+    editingRow = null;
   }
 
-  console.log("❌ No hardcoded match (exact or fuzzy).");
-  return null;
-}
+  function loadUnapproved() {
+    table.innerHTML = '';
+    logRef.orderByChild('reviewed').equalTo(false).once('value', snapshot => {
+      snapshot.forEach(child => {
+        const data = child.val();
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${data.userQuestion}</td>
+          <td>${data.aiResponse}</td>
+          <td>${data.role}</td>
+          <td>
+            <button class="edit-btn">Edit</button>
+          </td>
+        `;
+        row.querySelector('.edit-btn').addEventListener('click', () => {
+          document.getElementById('user-question').value = data.userQuestion || '';
+          document.getElementById('ai-response').value = data.aiResponse || '';
+          document.getElementById('response-role').value = data.role || 'patient';
+          document.getElementById('media-trigger').value = data.mediaTrigger || '';
+          editingRow = { logKey: child.key };
+        });
+        table.appendChild(row);
+      });
+    });
+  }
+
+  loadUnapproved();
+});
