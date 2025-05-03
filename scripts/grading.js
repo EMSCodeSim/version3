@@ -1,124 +1,102 @@
-export let scoreTracker = {};
-export let gradingTemplate = {};
+let gradingTemplate = {};
+let criticalFailures = [];
+let improvementTips = {};
+let scoreTracker = {};
 
-// Initialize score tracker
+export async function loadGradingAssets(type = "medical") {
+  const [templateRes, failsRes, tipsRes] = await Promise.all([
+    fetch(`grading_templates/${type}_assessment.json`),
+    fetch(`grading_templates/critical_failures.json`),
+    fetch(`grading_templates/grading_tips.json`)
+  ]);
+
+  gradingTemplate = await templateRes.json();
+  criticalFailures = await failsRes.json();
+  improvementTips = await tipsRes.json();
+
+  initializeScoreTracker();
+}
+
 export function initializeScoreTracker() {
   scoreTracker = {
     completed: new Set(),
     points: 0,
-    criticalFailures: [],
-    logs: []
+    logs: [],
+    userInputs: []
   };
 }
 
-// Helpers
-function normalize(text) {
-  return text.toLowerCase().replace(/[^\w\s]/gi, '').replace(/\s+/g, ' ').trim();
-}
+export function updateScoreTracker(input) {
+  const normalized = normalize(input);
+  scoreTracker.userInputs.push(normalized);
 
-function similarity(a, b) {
-  const longer = a.length > b.length ? a : b;
-  const shorter = a.length > b.length ? b : a;
-  const longerLength = longer.length;
-  if (longerLength === 0) return 1.0;
-  return (longerLength - editDistance(longer, shorter)) / parseFloat(longerLength);
-}
-
-function editDistance(a, b) {
-  const matrix = [];
-  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-  for (let i = 1; i <= b.length; i++) {
-    for (let j = 1; j <= a.length; j++) {
-      if (b.charAt(i - 1) === a.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1,
-          Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1)
-        );
-      }
-    }
-  }
-  return matrix[b.length][a.length];
-}
-
-// Score tracker w/ fuzzy grading
-export function updateScoreTracker(message) {
-  const userInput = normalize(message);
-
-  for (const [key, entry] of Object.entries(gradingTemplate)) {
+  for (const key in gradingTemplate) {
     if (!scoreTracker.completed.has(key)) {
-      const match = entry.keywords.some(kw => {
-        const sim = similarity(userInput, normalize(kw));
-        return sim >= 0.85;
-      });
-      if (match) {
+      const entry = gradingTemplate[key];
+      const matches = entry.keywords.some(k => normalized.includes(k.toLowerCase()));
+      if (matches) {
         scoreTracker.completed.add(key);
         scoreTracker.points += entry.points;
-        scoreTracker.logs.push(`✅ ${entry.label} (+${entry.points})`);
+        scoreTracker.logs.push({ key, label: entry.label, points: entry.points });
+      }
+    }
+  }
+}
+
+// Main grading result
+export function gradeScenario() {
+  const missedItems = Object.keys(gradingTemplate).filter(k => !scoreTracker.completed.has(k));
+  const totalPossible = Object.values(gradingTemplate).reduce((sum, item) => sum + item.points, 0);
+  const totalScore = scoreTracker.points;
+
+  const passedItems = Array.from(scoreTracker.completed).map(k => gradingTemplate[k]?.label);
+  const improvementSuggestions = missedItems
+    .map(k => improvementTips[k])
+    .filter(Boolean)
+    .slice(0, 3);
+
+  const criticals = findCriticalFailures(scoreTracker.userInputs);
+
+  let feedback = `<b>Final Score:</b> ${totalScore} / ${totalPossible}<br><br>`;
+
+  if (criticals.length) {
+    feedback += `<b>❌ Critical Failures:</b><ul>${criticals.map(f => `<li>${f}</li>`).join("")}</ul><br>`;
+  }
+
+  if (passedItems.length) {
+    feedback += `<b>✅ What You Did Well:</b><ul>${passedItems.slice(0, 5).map(i => `<li>${i}</li>`).join("")}</ul><br>`;
+  }
+
+  if (improvementSuggestions.length) {
+    feedback += `<b>💡 Improvement Tips:</b><ul>${improvementSuggestions.map(t => `<li>${t}</li>`).join("")}</ul><br>`;
+  }
+
+  return feedback;
+}
+
+// Normalize for fuzzy match
+function normalize(text) {
+  return text.toLowerCase().replace(/[^\w\s]/gi, '').trim();
+}
+
+// Detect critical failures
+function findCriticalFailures(inputs) {
+  const found = [];
+
+  for (const rule of criticalFailures) {
+    if (rule.keywords.length === 0 && rule.id === "timeout") {
+      // Optional: detect timeout logic here
+      continue;
+    }
+
+    for (const userInput of inputs) {
+      const match = rule.keywords.some(keyword => userInput.includes(keyword.toLowerCase()));
+      if (match) {
+        found.push(rule.reason);
+        break;
       }
     }
   }
 
-  // Critical failure checks
-  if (userInput.includes("no ppe") || userInput.includes("didn’t wear ppe")) {
-    scoreTracker.criticalFailures.push("❌ Failure to take or verbalize PPE precautions");
-  }
-
-  if (userInput.includes("scene unsafe") || userInput.includes("not safe")) {
-    scoreTracker.criticalFailures.push("❌ Failed to determine scene safety before approaching patient");
-  }
-
-  if (userInput.includes("no oxygen") || userInput.includes("refused oxygen when needed")) {
-    scoreTracker.criticalFailures.push("❌ Failed to provide appropriate oxygen therapy");
-  }
-
-  if (userInput.includes("dangerous drug") || userInput.includes("wrong dose") || userInput.includes("gave wrong treatment")) {
-    scoreTracker.criticalFailures.push("❌ Ordered a dangerous or inappropriate intervention");
-  }
-
-  if ((userInput.includes("no spinal") && userInput.includes("neck")) || (userInput.includes("c-spine") && userInput.includes("ignored"))) {
-    scoreTracker.criticalFailures.push("❌ Failed to provide spinal protection when indicated");
-  }
-}
-
-// Final grading and feedback
-export function gradeScenario() {
-  const maxPoints = 48;
-  const total = scoreTracker.points;
-  const percent = Math.round((total / maxPoints) * 100);
-
-  let feedback = `<h3>📊 Final Score: ${total} / ${maxPoints} (${percent}%)</h3>`;
-  feedback += "<ul>";
-
-  for (const log of scoreTracker.logs) {
-    feedback += `<li>${log}</li>`;
-  }
-
-  if (scoreTracker.criticalFailures.length > 0) {
-    feedback += "</ul><h4>⚠️ Critical Failures:</h4><ul>";
-    for (const fail of scoreTracker.criticalFailures) {
-      feedback += `<li>${fail}</li>`;
-    }
-  }
-
-  feedback += "</ul><h4>✅ What You Did Well:</h4><ul>";
-  const good = [...scoreTracker.completed].slice(0, 3);
-  for (const key of good) {
-    if (gradingTemplate[key]) {
-      feedback += `<li>${gradingTemplate[key].label}</li>`;
-    }
-  }
-
-  feedback += "</ul><h4>💡 Improvement Tips:</h4><ul>";
-  const missed = Object.keys(gradingTemplate).filter(k => !scoreTracker.completed.has(k));
-  missed.slice(0, 3).forEach(key => {
-    if (gradingTemplate[key]) {
-      feedback += `<li>Try to include: <b>${gradingTemplate[key].label}</b></li>`;
-    }
-  });
-
-  feedback += "</ul>";
-  return feedback;
+  return found;
 }
