@@ -1,4 +1,5 @@
 import { initializeScoreTracker, updateScoreTracker, gradeScenario } from './grading.js';
+import { checkHardcodedResponse } from './hardcoded.js';
 import { startVoiceRecognition } from './mic.js';
 
 const scenarioPath = 'scenarios/chest_pain_002/';
@@ -43,7 +44,7 @@ async function speak(text, speaker = "patient", audioUrl = null) {
   }
 }
 
-// Display chat response
+// Display response
 async function displayChatResponse(response, question = "", role = "", audioUrl = null) {
   const chatBox = document.getElementById("chat-box");
   const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
@@ -53,69 +54,6 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
   `;
   chatBox.scrollTop = chatBox.scrollHeight;
   speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient", audioUrl);
-}
-
-// Normalize and fuzzy matching helpers
-function normalize(text) {
-  return text.toLowerCase().replace(/[^\w\s]/gi, '').replace(/\s+/g, ' ').trim();
-}
-
-function similarity(a, b) {
-  const longer = a.length > b.length ? a : b;
-  const shorter = a.length > b.length ? b : a;
-  const longerLength = longer.length;
-  if (longerLength === 0) return 1.0;
-  return (longerLength - editDistance(longer, shorter)) / parseFloat(longerLength);
-}
-
-function editDistance(a, b) {
-  const matrix = [];
-  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-  for (let i = 1; i <= b.length; i++) {
-    for (let j = 1; j <= a.length; j++) {
-      if (b.charAt(i - 1) === a.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1,
-          Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1)
-        );
-      }
-    }
-  }
-  return matrix[b.length][a.length];
-}
-
-// Hardcoded response with fuzzy fallback
-function checkHardcodedResponse(message) {
-  if (!hardcodedResponses || typeof hardcodedResponses !== 'object') return null;
-
-  const userInput = normalize(message);
-  let bestMatch = null;
-  let highestScore = 0.0;
-
-  for (const key in hardcodedResponses) {
-    const stored = hardcodedResponses[key];
-    const storedInput = normalize(stored?.userQuestion || '');
-    if (userInput === storedInput) {
-      console.log("✅ Exact hardcoded match found:", stored.userQuestion);
-      return stored;
-    }
-    const score = similarity(userInput, storedInput);
-    if (score > highestScore) {
-      highestScore = score;
-      bestMatch = stored;
-    }
-  }
-
-  if (highestScore >= 0.85) {
-    console.log(`✅ Fuzzy hardcoded match found (score ${highestScore.toFixed(2)}):`, bestMatch.userQuestion);
-    return bestMatch;
-  }
-
-  console.log("❌ No hardcoded match (exact or fuzzy).");
-  return null;
 }
 
 // Vector fallback
@@ -150,23 +88,26 @@ async function getAIResponseGPT4Turbo(message) {
   }
 }
 
-// Main message processor
+// Main message handler
 async function processUserMessage(message) {
   const proctorKeywords = ['scene safe', 'bsi', 'blood pressure', 'pulse', 'respiratory rate', 'oxygen', 'splint', 'epinephrine'];
   const role = proctorKeywords.some(k => message.toLowerCase().includes(k)) ? "proctor" : "patient";
 
   updateScoreTracker(message);
 
-  const hardcoded = checkHardcodedResponse(message);
+  // 1. Hardcoded response
+  const hardcoded = checkHardcodedResponse(message, hardcodedResponses);
   if (hardcoded?.aiResponse) {
     return displayChatResponse(hardcoded.aiResponse, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient", hardcoded.audioUrl || null);
   }
 
+  // 2. Vector fallback
   const vector = await getVectorResponse(message);
   if (vector) {
     return displayChatResponse(vector, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
   }
 
+  // 3. GPT fallback
   const gpt = await getAIResponseGPT4Turbo(message);
   if (gpt) {
     firebase.database().ref('unknownQuestions').push({ userQuestion: message, aiResponse: gpt, role, reviewed: false, timestamp: Date.now() });
@@ -232,7 +173,7 @@ function logErrorToDatabase(errorInfo) {
   });
 }
 
-// DOM buttons
+// DOM setup
 document.addEventListener('DOMContentLoaded', () => {
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
