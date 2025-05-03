@@ -131,44 +131,22 @@ window.startScenario = async function () {
   }
 };
 
+let scenarioEnded = false;
+
 window.endScenario = async function () {
+  if (scenarioEnded) return;
+  scenarioEnded = true;
+
   const chatBox = document.getElementById("chat-box");
   chatBox.querySelectorAll(".response").forEach(el => {
     if (el.innerHTML.includes("Final Score:") || el.innerHTML.includes("[object Promise]")) el.remove();
   });
 
-  const feedback = await gradeScenario(); // ✅ FIXED: Await the feedback
+  const feedback = await gradeScenario();
   displayChatResponse("📦 Scenario ended. Here's your performance summary:<br><br>" + feedback);
 };
 
-async function loadDispatchInfo() {
-  try {
-    const res = await fetch(`${scenarioPath}dispatch.txt`);
-    return await res.text();
-  } catch (e) {
-    logErrorToDatabase("Failed to load dispatch.txt: " + e.message);
-    return "Dispatch not available.";
-  }
-}
-
-async function loadPatientInfo() {
-  try {
-    const res = await fetch(`${scenarioPath}patient.txt`);
-    return await res.text();
-  } catch (e) {
-    logErrorToDatabase("Failed to load patient.txt: " + e.message);
-    return "Patient info not available.";
-  }
-}
-
-function logErrorToDatabase(errorInfo) {
-  console.error("🔴 Error:", errorInfo);
-  firebase.database().ref('error_logs').push({
-    error: errorInfo,
-    timestamp: Date.now()
-  });
-}
-
+// DOM events with cleanup protection
 document.addEventListener('DOMContentLoaded', () => {
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
@@ -176,13 +154,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const endBtn = document.getElementById('end-button');
   const micBtn = document.getElementById('mic-button');
 
-  sendBtn?.addEventListener('click', () => {
+  sendBtn?.removeEventListener('click', sendBtn._clickHandler);
+  sendBtn._clickHandler = () => {
     const message = input.value.trim();
     if (message) {
       processUserMessage(message);
       input.value = '';
     }
-  });
+  };
+  sendBtn?.addEventListener('click', sendBtn._clickHandler);
 
   input?.addEventListener('keypress', e => {
     if (e.key === 'Enter') {
