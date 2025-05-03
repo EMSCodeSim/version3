@@ -45,5 +45,12 @@
   <!-- App Logic -->
   <script type="module" src="scripts/app.js"></script>
 
+  <!-- Score Breakdown Modal -->
+<div id="scoreModal" class="modal" style="display:none; position:fixed; top:10%; left:50%; transform:translateX(-50%); background:white; border:1px solid #ccc; padding:20px; width:90%; max-width:600px; z-index:9999;">
+  <h2>Performance Summary</h2>
+  <div id="scoreDetails"></div>
+  <button onclick="document.getElementById('scoreModal').style.display='none'" style="margin-top:10px;">Close</button>
+</div>
+
 </body>
 </html>
