@@ -133,18 +133,121 @@ window.startScenario = async function () {
 
 let scenarioEnded = false;
 
-window.endScenario = async function () {
-  if (scenarioEnded) return;
-  scenarioEnded = true;
+let gradingTemplate = {};
+let criticalFailures = [];
+let improvementTips = {};
+let scoreTracker = {};
 
-  const chatBox = document.getElementById("chat-box");
-  chatBox.querySelectorAll(".response").forEach(el => {
-    if (el.innerHTML.includes("Final Score:") || el.innerHTML.includes("[object Promise]")) el.remove();
-  });
+export async function loadGradingAssets(type = "medical") {
+  const [templateRes, failsRes, tipsRes] = await Promise.all([
+    fetch(`grading_templates/${type}_assessment.json`),
+    fetch(`grading_templates/critical_failures.json`),
+    fetch(`grading_templates/grading_tips.json`)
+  ]);
 
-  const feedback = await gradeScenario();
-  displayChatResponse("📦 Scenario ended. Here's your performance summary:<br><br>" + feedback);
-};
+  gradingTemplate = await templateRes.json();
+  criticalFailures = await failsRes.json();
+  improvementTips = await tipsRes.json();
+
+  initializeScoreTracker();
+}
+
+export function initializeScoreTracker() {
+  scoreTracker = {
+    completed: new Set(),
+    points: 0,
+    logs: [],
+    userInputs: []
+  };
+}
+
+export function updateScoreTracker(input) {
+  const normalized = normalize(input);
+  scoreTracker.userInputs.push(normalized);
+
+  for (const key in gradingTemplate) {
+    if (!scoreTracker.completed.has(key)) {
+      const entry = gradingTemplate[key];
+      const matches = entry.keywords.some(k => normalized.includes(k.toLowerCase()));
+      if (matches) {
+        scoreTracker.completed.add(key);
+        scoreTracker.points += entry.points;
+        scoreTracker.logs.push({ key, label: entry.label, points: entry.points });
+      }
+    }
+  }
+}
+
+export async function gradeScenario() {
+  const missedItems = Object.keys(gradingTemplate).filter(k => !scoreTracker.completed.has(k));
+  const totalScore = scoreTracker.points;
+  const passedItems = Array.from(scoreTracker.completed).map(k => gradingTemplate[k]?.label);
+  const criticals = findCriticalFailures(scoreTracker.userInputs);
+
+  const prompt = `
+You are an NREMT evaluator. Generate professional but supportive feedback for a student.
+
+Score: ${totalScore} / 48
+Successes:
+${passedItems.map(i => "- " + i).join("\n") || "None"}
+Missed:
+${missedItems.map(k => "- " + gradingTemplate[k]?.label).join("\n") || "None"}
+Critical Failures:
+${criticals.length ? criticals.map(f => "- " + f).join("\n") : "None"}
+
+Format response with: Summary, What You Did Well, Improvement Tips.
+Do NOT repeat the word 'score'.
+`;
+
+  let gptFeedback = "";
+  try {
+    const res = await fetch('/api/gpt4-turbo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: prompt })
+    });
+    const data = await res.json();
+    gptFeedback = data.reply || "(No GPT feedback returned)";
+  } catch (e) {
+    console.error("GPT feedback error:", e.message);
+    gptFeedback = "(GPT feedback unavailable)";
+  }
+
+  // Try pulling tips from improvementTips too
+  const tips = missedItems
+    .map(k => improvementTips[k])
+    .filter(Boolean)
+    .flat()
+    .slice(0, 3);
+
+  return {
+    score: totalScore,
+    positives: passedItems,
+    improvementTips: tips.length ? tips : ["Review OPQRST thoroughly.", "Ensure scene safety and PPE are clearly stated."],
+    criticalFails: criticals,
+    gptFeedback
+  };
+}
+
+function normalize(text) {
+  return text.toLowerCase().replace(/[^\w\s]/gi, '').trim();
+}
+
+function findCriticalFailures(inputs) {
+  const found = [];
+  for (const rule of criticalFailures) {
+    if (rule.keywords.length === 0 && rule.id === "timeout") continue;
+    for (const userInput of inputs) {
+      const match = rule.keywords.some(keyword => userInput.includes(keyword.toLowerCase()));
+      if (match) {
+        found.push(rule.reason);
+        break;
+      }
+    }
+  }
+  return found;
+}
+
 
 // DOM events with cleanup protection
 document.addEventListener('DOMContentLoaded', () => {
