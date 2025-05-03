@@ -1,28 +1,15 @@
-import { initializeScoreTracker, updateScoreTracker, gradeScenario } from './grading.js';
+import { loadGradingAssets, updateScoreTracker, gradeScenario } from './grading.js';
 import { checkHardcodedResponse } from './hardcoded.js';
 import { startVoiceRecognition } from './mic.js';
 
 const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
-let hardcodedResponses = {};
-let gradingTemplate = {};
 let scenarioStarted = false;
 
-// Load hardcoded responses from Firebase
 firebase.database().ref('hardcodedResponses').once('value').then(snapshot => {
-  hardcodedResponses = snapshot.val() || {};
-  console.log("✅ Loaded hardcodedResponses:", hardcodedResponses);
+  console.log("✅ Loaded hardcodedResponses:", snapshot.val());
 });
 
-// Load grading template
-async function loadGradingTemplate(type = "medical") {
-  const file = `grading_templates/${type}_assessment.json`;
-  const res = await fetch(file);
-  gradingTemplate = await res.json();
-  initializeScoreTracker();
-}
-
-// TTS
 async function speak(text, speaker = "patient", audioUrl = null) {
   try {
     if (audioUrl) return new Audio(audioUrl).play();
@@ -32,14 +19,13 @@ async function speak(text, speaker = "patient", audioUrl = null) {
       body: JSON.stringify({ text, speaker })
     });
     const { audio } = await res.json();
-    const audioBlob = new Blob([Uint8Array.from(atob(audio), c => c.charCodeAt(0))], { type: "audio/mpeg" });
-    new Audio(URL.createObjectURL(audioBlob)).play();
+    const blob = new Blob([Uint8Array.from(atob(audio), c => c.charCodeAt(0))], { type: "audio/mpeg" });
+    new Audio(URL.createObjectURL(blob)).play();
   } catch (err) {
-    console.error("TTS playback error:", err);
+    console.error("TTS error:", err);
   }
 }
 
-// Chat display
 async function displayChatResponse(response, question = "", role = "", audioUrl = null) {
   const chatBox = document.getElementById("chat-box");
   const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
@@ -51,7 +37,6 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
   speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient", audioUrl);
 }
 
-// Vector fallback
 async function getVectorResponse(message) {
   try {
     const res = await fetch('/api/vector-search', {
@@ -62,12 +47,11 @@ async function getVectorResponse(message) {
     const data = await res.json();
     return data.match || null;
   } catch (e) {
-    logErrorToDatabase("Vector search failed: " + e.message);
+    logErrorToDatabase("Vector search error: " + e.message);
     return null;
   }
 }
 
-// GPT fallback
 async function getAIResponseGPT4Turbo(message) {
   try {
     const res = await fetch('/api/gpt4-turbo', {
@@ -78,19 +62,18 @@ async function getAIResponseGPT4Turbo(message) {
     const data = await res.json();
     return data.reply || null;
   } catch (e) {
-    logErrorToDatabase("GPT fallback failed: " + e.message);
+    logErrorToDatabase("GPT error: " + e.message);
     return null;
   }
 }
 
-// Process user input
 async function processUserMessage(message) {
-  const proctorKeywords = ['scene safe', 'bsi', 'blood pressure', 'pulse', 'respiratory rate', 'oxygen', 'splint', 'epinephrine'];
+  const proctorKeywords = ['scene safe', 'bsi', 'blood pressure', 'pulse', 'oxygen', 'splint'];
   const role = proctorKeywords.some(k => message.toLowerCase().includes(k)) ? "proctor" : "patient";
 
   updateScoreTracker(message);
 
-  const hardcoded = checkHardcodedResponse(message, hardcodedResponses);
+  const hardcoded = checkHardcodedResponse(message);
   if (hardcoded?.aiResponse) {
     return displayChatResponse(hardcoded.aiResponse, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient", hardcoded.audioUrl || null);
   }
@@ -102,29 +85,38 @@ async function processUserMessage(message) {
 
   const gpt = await getAIResponseGPT4Turbo(message);
   if (gpt) {
-    firebase.database().ref('unknownQuestions').push({ userQuestion: message, aiResponse: gpt, role, reviewed: false, timestamp: Date.now() });
-    firebase.database().ref('ai_responses_log').push({ userMessage: message, aiResponse: gpt, responder: role, timestamp: Date.now() });
+    firebase.database().ref('unknownQuestions').push({
+      userQuestion: message,
+      aiResponse: gpt,
+      role,
+      reviewed: false,
+      timestamp: Date.now()
+    });
+    firebase.database().ref('ai_responses_log').push({
+      userMessage: message,
+      aiResponse: gpt,
+      responder: role,
+      timestamp: Date.now()
+    });
     return displayChatResponse(gpt, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
   }
 
-  return displayChatResponse("I'm not sure how to answer that right now. Your question has been logged for review.", message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
+  return displayChatResponse("I'm not sure how to answer that. Logging for review.", message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
 }
 
-// Start scenario
 window.startScenario = async function () {
   if (scenarioStarted) return;
   scenarioStarted = true;
-  console.log("Start Scenario Triggered");
+
   try {
     const configRes = await fetch(`${scenarioPath}config.json`);
     const config = await configRes.json();
     const gradingType = config.grading || "medical";
-    await loadGradingTemplate(gradingType);
+    await loadGradingAssets(gradingType);
 
     const dispatch = await loadDispatchInfo();
     patientContext = await loadPatientInfo();
 
-    // Display scene image before dispatch
     const chatBox = document.getElementById("chat-box");
     chatBox.innerHTML += `
       <div class="image-block">
@@ -135,11 +127,10 @@ window.startScenario = async function () {
     displayChatResponse(`🚑 Dispatch: ${dispatch}`);
   } catch (err) {
     logErrorToDatabase("startScenario error: " + err.message);
-    displayChatResponse("❌ Failed to load scenario. Check for missing grading or config files.");
+    displayChatResponse("❌ Failed to load scenario.");
   }
 };
 
-// End scenario
 window.endScenario = function () {
   const chatBox = document.getElementById("chat-box");
   chatBox.querySelectorAll(".response").forEach(el => {
@@ -150,7 +141,6 @@ window.endScenario = function () {
   displayChatResponse("📦 Scenario ended. Here's your performance summary:<br><br>" + feedback);
 };
 
-// Load text files
 async function loadDispatchInfo() {
   try {
     const res = await fetch(`${scenarioPath}dispatch.txt`);
@@ -171,7 +161,6 @@ async function loadPatientInfo() {
   }
 }
 
-// Error logger
 function logErrorToDatabase(errorInfo) {
   console.error("🔴 Error:", errorInfo);
   firebase.database().ref('error_logs').push({
@@ -180,7 +169,6 @@ function logErrorToDatabase(errorInfo) {
   });
 }
 
-// DOM Events
 document.addEventListener('DOMContentLoaded', () => {
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
@@ -188,31 +176,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const endBtn = document.getElementById('end-button');
   const micBtn = document.getElementById('mic-button');
 
-  if (!startBtn.dataset.bound) {
-    startBtn.addEventListener('click', () => window.startScenario?.());
-    startBtn.dataset.bound = "true";
-  }
-
-  if (!endBtn.dataset.bound) {
-    endBtn.addEventListener('click', () => window.endScenario?.());
-    endBtn.dataset.bound = "true";
-  }
-
-  if (!micBtn.dataset.bound) {
-    micBtn.addEventListener('click', () => startVoiceRecognition?.());
-    micBtn.dataset.bound = "true";
-  }
-
-  if (!sendBtn.dataset.bound) {
-    sendBtn.addEventListener('click', () => {
-      const message = input.value.trim();
-      if (message) {
-        processUserMessage(message);
-        input.value = '';
-      }
-    });
-    sendBtn.dataset.bound = "true";
-  }
+  sendBtn?.addEventListener('click', () => {
+    const message = input.value.trim();
+    if (message) {
+      processUserMessage(message);
+      input.value = '';
+    }
+  });
 
   input?.addEventListener('keypress', e => {
     if (e.key === 'Enter') {
@@ -220,4 +190,8 @@ document.addEventListener('DOMContentLoaded', () => {
       sendBtn.click();
     }
   });
+
+  startBtn?.addEventListener('click', () => window.startScenario?.());
+  endBtn?.addEventListener('click', () => window.endScenario?.());
+  micBtn?.addEventListener('click', () => startVoiceRecognition?.());
 });
