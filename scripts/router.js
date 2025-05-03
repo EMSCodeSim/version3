@@ -1,4 +1,6 @@
 import { checkHardcodedResponse } from './hardcoded.js';
+import { getVectorResponse } from './vector.js';
+import { getAIResponseGPT4Turbo } from './gpt.js';
 
 const proctorKeywords = [
   "scene safe", "bsi", "gloves", "ppe", "mechanism of injury", "nature of illness", "noi", "moi",
@@ -9,19 +11,16 @@ const proctorKeywords = [
   "splint", "tourniquet", "dressing", "transport decision", "time elapsed"
 ];
 
-// Normalize text
 function normalize(text) {
   return text.trim().toLowerCase().replace(/[^\w\s]/g, '');
 }
 
-// Check if question matches Proctor responsibility
 function isProctorQuestion(message) {
   const norm = normalize(message);
   return proctorKeywords.some(kw => norm.includes(kw));
 }
 
-// Main router
-export async function routeMessage(message, vectorSearch, gptSearch, displayChatResponse) {
+export async function routeMessage(message, displayChatResponse) {
   const role = isProctorQuestion(message) ? "🧑‍⚕️ Proctor" : "🧍 Patient";
 
   // 1. Hardcoded
@@ -30,14 +29,14 @@ export async function routeMessage(message, vectorSearch, gptSearch, displayChat
     return displayChatResponse(hardcoded.aiResponse, message, role, hardcoded.audioUrl || null);
   }
 
-  // 2. Vector search fallback
-  const vector = await vectorSearch(message);
+  // 2. Vector
+  const vector = await getVectorResponse(message);
   if (vector) {
     return displayChatResponse(vector, message, role);
   }
 
   // 3. GPT fallback
-  const gpt = await gptSearch(message);
+  const gpt = await getAIResponseGPT4Turbo(message);
   if (gpt) {
     firebase.database().ref('unknownQuestions').push({
       userQuestion: message,
