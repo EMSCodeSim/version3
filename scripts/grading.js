@@ -43,49 +43,62 @@ export function updateScoreTracker(input) {
   }
 }
 
-// Main grading result
-export function gradeScenario() {
+export async function gradeScenario() {
   const missedItems = Object.keys(gradingTemplate).filter(k => !scoreTracker.completed.has(k));
   const totalPossible = Object.values(gradingTemplate).reduce((sum, item) => sum + item.points, 0);
   const totalScore = scoreTracker.points;
 
   const passedItems = Array.from(scoreTracker.completed).map(k => gradingTemplate[k]?.label);
-  const improvementSuggestions = missedItems
-    .map(k => improvementTips[k])
-    .filter(Boolean)
-    .slice(0, 3);
-
   const criticals = findCriticalFailures(scoreTracker.userInputs);
 
-  let feedback = `<b>Final Score:</b> ${totalScore} / ${totalPossible}<br><br>`;
+  const prompt = `
+You are a certified NREMT evaluator. A student just completed a medical patient assessment simulation.
 
-  if (criticals.length) {
-    feedback += `<b>❌ Critical Failures:</b><ul>${criticals.map(f => `<li>${f}</li>`).join("")}</ul><br>`;
+Give them personalized performance feedback based on the following:
+
+Score: ${totalScore} out of ${totalPossible}
+
+Things they did well:
+${passedItems.length ? passedItems.map(i => "- " + i).join("\n") : "None"}
+
+Things they missed:
+${missedItems.length ? missedItems.map(k => "- " + gradingTemplate[k]?.label).join("\n") : "None"}
+
+Critical Failures:
+${criticals.length ? criticals.map(f => "- " + f).join("\n") : "None"}
+
+Please respond in this format:
+**Summary:** (Brief summary of how they did)  
+**What You Did Well:** (3–5 things)  
+**Improvement Tips:** (2–3 specific tips)  
+${criticals.length ? "**Critical Failures:** (List and short explanation)" : ""}
+Use a professional and encouraging tone.
+`;
+
+  try {
+    const res = await fetch('/api/gpt4-turbo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: prompt })
+    });
+
+    const data = await res.json();
+    return data.reply || `Score: ${totalScore} / ${totalPossible} (AI feedback unavailable)`;
+  } catch (e) {
+    console.error("GPT feedback error:", e.message);
+    return `Score: ${totalScore} / ${totalPossible} (Feedback system offline)`;
   }
-
-  if (passedItems.length) {
-    feedback += `<b>✅ What You Did Well:</b><ul>${passedItems.slice(0, 5).map(i => `<li>${i}</li>`).join("")}</ul><br>`;
-  }
-
-  if (improvementSuggestions.length) {
-    feedback += `<b>💡 Improvement Tips:</b><ul>${improvementSuggestions.map(t => `<li>${t}</li>`).join("")}</ul><br>`;
-  }
-
-  return feedback;
 }
 
-// Normalize for fuzzy match
 function normalize(text) {
   return text.toLowerCase().replace(/[^\w\s]/gi, '').trim();
 }
 
-// Detect critical failures
 function findCriticalFailures(inputs) {
   const found = [];
 
   for (const rule of criticalFailures) {
     if (rule.keywords.length === 0 && rule.id === "timeout") {
-      // Optional: detect timeout logic here
       continue;
     }
 
