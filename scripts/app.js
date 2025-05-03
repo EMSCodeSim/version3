@@ -131,13 +131,13 @@ window.startScenario = async function () {
   }
 };
 
-window.endScenario = function () {
+window.endScenario = async function () {
   const chatBox = document.getElementById("chat-box");
   chatBox.querySelectorAll(".response").forEach(el => {
-    if (el.innerHTML.includes("Final Score:")) el.remove();
+    if (el.innerHTML.includes("Final Score:") || el.innerHTML.includes("[object Promise]")) el.remove();
   });
 
-  const feedback = gradeScenario();
+  const feedback = await gradeScenario(); // ✅ FIXED: Await the feedback
   displayChatResponse("📦 Scenario ended. Here's your performance summary:<br><br>" + feedback);
 };
 
