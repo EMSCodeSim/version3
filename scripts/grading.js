@@ -20,15 +20,28 @@ export function updateScoreTracker(input) {
     }
   }
 
-  // Example: critical fail if user says “no gloves”
+  // Example: critical fail logic
   if (lower.includes("no gloves")) {
     scoreTracker.criticalFails.push("Did not apply PPE");
   }
 }
 
+async function generateImprovementTips(missedLabels) {
+  const prompt = `You are an EMT trainer. The student missed the following items during an EMT medical assessment: ${missedLabels.join(", ")}. Give 2 to 4 short friendly improvement tips.`;
+
+  const res = await fetch('/api/gpt4-turbo', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content: prompt })
+  });
+
+  const data = await res.json();
+  return data.reply || "Keep practicing — you'll improve with each run!";
+}
+
 export async function gradeScenario() {
   let score = 0;
-  let allItems = [];
+  let rows = [];
 
   for (let key in gradingTemplate) {
     if (key === "criticalFails") continue;
@@ -36,19 +49,27 @@ export async function gradeScenario() {
     const points = gradingTemplate[key].points || 1;
     const earned = !!scoreTracker[key];
     if (earned) score += points;
-    allItems.push({ label, points, earned });
+    rows.push({ label, earned });
   }
 
-  const total = allItems.reduce((sum, i) => sum + i.points, 0);
-  const positives = allItems.filter(i => i.earned).map(i => i.label);
-  const missed = allItems.filter(i => !i.earned).map(i => i.label);
+  const total = rows.length;
+  const missed = rows.filter(r => !r.earned).map(r => r.label);
+  const criticalFails = scoreTracker.criticalFails;
+
+  const tips = await generateImprovementTips(missed);
+
+  const listItems = rows.map(row =>
+    `<li>${row.earned ? '✅' : '❌'} ${row.label}</li>`
+  ).join("");
 
   const feedbackText = `
-    <strong>Score:</strong> ${score}/${total}<br>
-    ${scoreTracker.criticalFails.length ? `<strong>Critical Fails:</strong><br>❌ ${scoreTracker.criticalFails.join("<br>")}` : ""}
-    <br><br><strong>What You Did Well:</strong><br>✅ ${positives.join("<br>")}
-    <br><br><strong>What to Improve:</strong><br>⚠️ ${missed.join("<br>")}
+    <strong>Score:</strong> ${score}/${total}<br><br>
+    ${criticalFails.length > 0 ? `<strong>Critical Fails:</strong><br>❌ ${criticalFails.join("<br>")}<br><br>` : ""}
+    <strong>Skill Breakdown:</strong><br>
+    <ul style="list-style-type: none; padding-left: 0;">${listItems}</ul>
+    <br><strong>Tips for Improvement:</strong><br>
+    ${tips}
   `;
 
-  return { score, positives, missed, criticalFails: scoreTracker.criticalFails, feedbackText };
+  return { score, feedbackText };
 }
