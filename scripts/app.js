@@ -8,7 +8,7 @@ let hardcodedResponses = {};
 let gradingTemplate = {};
 let scenarioStarted = false;
 
-// Load hardcoded responses
+// Load hardcoded responses from Firebase
 firebase.database().ref('hardcodedResponses').once('value').then(snapshot => {
   hardcodedResponses = snapshot.val() || {};
   console.log("✅ Loaded hardcodedResponses:", hardcodedResponses);
@@ -83,7 +83,7 @@ async function getAIResponseGPT4Turbo(message) {
   }
 }
 
-// User input processor
+// Process user input
 async function processUserMessage(message) {
   const proctorKeywords = ['scene safe', 'bsi', 'blood pressure', 'pulse', 'respiratory rate', 'oxygen', 'splint', 'epinephrine'];
   const role = proctorKeywords.some(k => message.toLowerCase().includes(k)) ? "proctor" : "patient";
@@ -123,7 +123,16 @@ window.startScenario = async function () {
 
     const dispatch = await loadDispatchInfo();
     patientContext = await loadPatientInfo();
-    displayChatResponse(`🚑  ${dispatch}`);
+
+    // Display scene image before dispatch
+    const chatBox = document.getElementById("chat-box");
+    chatBox.innerHTML += `
+      <div class="image-block">
+        <img src="/media/scene1.png" alt="Scene Image" class="scene-image" style="max-width: 100%; border: 1px solid #ccc; margin: 10px 0;" />
+      </div>
+    `;
+
+    displayChatResponse(`🚑 Dispatch: ${dispatch}`);
   } catch (err) {
     logErrorToDatabase("startScenario error: " + err.message);
     displayChatResponse("❌ Failed to load scenario. Check for missing grading or config files.");
@@ -133,7 +142,6 @@ window.startScenario = async function () {
 // End scenario
 window.endScenario = function () {
   const chatBox = document.getElementById("chat-box");
-  // Remove old grading outputs if present
   chatBox.querySelectorAll(".response").forEach(el => {
     if (el.innerHTML.includes("Final Score:")) el.remove();
   });
@@ -142,7 +150,7 @@ window.endScenario = function () {
   displayChatResponse("📦 Scenario ended. Here's your performance summary:<br><br>" + feedback);
 };
 
-// Supporting file loaders
+// Load text files
 async function loadDispatchInfo() {
   try {
     const res = await fetch(`${scenarioPath}dispatch.txt`);
@@ -163,7 +171,7 @@ async function loadPatientInfo() {
   }
 }
 
-// Firebase error logger
+// Error logger
 function logErrorToDatabase(errorInfo) {
   console.error("🔴 Error:", errorInfo);
   firebase.database().ref('error_logs').push({
@@ -172,7 +180,7 @@ function logErrorToDatabase(errorInfo) {
   });
 }
 
-// DOM Setup
+// DOM Events
 document.addEventListener('DOMContentLoaded', () => {
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
