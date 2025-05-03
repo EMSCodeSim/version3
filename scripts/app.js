@@ -5,6 +5,7 @@ import { startVoiceRecognition } from './mic.js';
 const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
 let scenarioStarted = false;
+let scenarioEnded = false;
 
 firebase.database().ref('hardcodedResponses').once('value').then(snapshot => {
   console.log("✅ Loaded hardcodedResponses:", snapshot.val());
@@ -107,6 +108,7 @@ async function processUserMessage(message) {
 window.startScenario = async function () {
   if (scenarioStarted) return;
   scenarioStarted = true;
+  scenarioEnded = false;
 
   try {
     const configRes = await fetch(`${scenarioPath}config.json`);
@@ -131,125 +133,55 @@ window.startScenario = async function () {
   }
 };
 
-let scenarioEnded = false;
+window.endScenario = async function () {
+  if (scenarioEnded) return;
+  scenarioEnded = true;
 
-let gradingTemplate = {};
-let criticalFailures = [];
-let improvementTips = {};
-let scoreTracker = {};
+  const feedback = await gradeScenario();
 
-export async function loadGradingAssets(type = "medical") {
-  const [templateRes, failsRes, tipsRes] = await Promise.all([
-    fetch(`grading_templates/${type}_assessment.json`),
-    fetch(`grading_templates/critical_failures.json`),
-    fetch(`grading_templates/grading_tips.json`)
-  ]);
+  const modal = document.getElementById("scoreModal");
+  const details = document.getElementById("scoreDetails");
 
-  gradingTemplate = await templateRes.json();
-  criticalFailures = await failsRes.json();
-  improvementTips = await tipsRes.json();
+  details.innerHTML = `
+    <p><strong>Final Score:</strong> ${feedback.score} / 48 (${Math.round((feedback.score / 48) * 100)}%)</p>
+    ${feedback.criticalFails.length > 0 ? `<p><strong>Critical Fails:</strong><br>${feedback.criticalFails.map(f => `- ${f}`).join("<br>")}</p>` : ""}
+    <p><strong>What You Did Well:</strong><br>${feedback.positives.map(p => `✅ ${p}`).join("<br>")}</p>
+    <p><strong>Improvement Tips:</strong><br>${feedback.improvementTips.map(t => `💡 ${t}`).join("<br>")}</p>
+    <p><strong>Personalized Feedback:</strong><br>${feedback.gptFeedback}</p>
+  `;
 
-  initializeScoreTracker();
-}
+  modal.style.display = 'block';
+  displayChatResponse(`📦 Scenario ended. Score: ${feedback.score}/48 (${Math.round((feedback.score / 48) * 100)}%)`);
+};
 
-export function initializeScoreTracker() {
-  scoreTracker = {
-    completed: new Set(),
-    points: 0,
-    logs: [],
-    userInputs: []
-  };
-}
-
-export function updateScoreTracker(input) {
-  const normalized = normalize(input);
-  scoreTracker.userInputs.push(normalized);
-
-  for (const key in gradingTemplate) {
-    if (!scoreTracker.completed.has(key)) {
-      const entry = gradingTemplate[key];
-      const matches = entry.keywords.some(k => normalized.includes(k.toLowerCase()));
-      if (matches) {
-        scoreTracker.completed.add(key);
-        scoreTracker.points += entry.points;
-        scoreTracker.logs.push({ key, label: entry.label, points: entry.points });
-      }
-    }
-  }
-}
-
-export async function gradeScenario() {
-  const missedItems = Object.keys(gradingTemplate).filter(k => !scoreTracker.completed.has(k));
-  const totalScore = scoreTracker.points;
-  const passedItems = Array.from(scoreTracker.completed).map(k => gradingTemplate[k]?.label);
-  const criticals = findCriticalFailures(scoreTracker.userInputs);
-
-  const prompt = `
-You are an NREMT evaluator. Generate professional but supportive feedback for a student.
-
-Score: ${totalScore} / 48
-Successes:
-${passedItems.map(i => "- " + i).join("\n") || "None"}
-Missed:
-${missedItems.map(k => "- " + gradingTemplate[k]?.label).join("\n") || "None"}
-Critical Failures:
-${criticals.length ? criticals.map(f => "- " + f).join("\n") : "None"}
-
-Format response with: Summary, What You Did Well, Improvement Tips.
-Do NOT repeat the word 'score'.
-`;
-
-  let gptFeedback = "";
+async function loadDispatchInfo() {
   try {
-    const res = await fetch('/api/gpt4-turbo', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: prompt })
-    });
-    const data = await res.json();
-    gptFeedback = data.reply || "(No GPT feedback returned)";
+    const res = await fetch(`${scenarioPath}dispatch.txt`);
+    return await res.text();
   } catch (e) {
-    console.error("GPT feedback error:", e.message);
-    gptFeedback = "(GPT feedback unavailable)";
+    logErrorToDatabase("Failed to load dispatch.txt: " + e.message);
+    return "Dispatch not available.";
   }
-
-  // Try pulling tips from improvementTips too
-  const tips = missedItems
-    .map(k => improvementTips[k])
-    .filter(Boolean)
-    .flat()
-    .slice(0, 3);
-
-  return {
-    score: totalScore,
-    positives: passedItems,
-    improvementTips: tips.length ? tips : ["Review OPQRST thoroughly.", "Ensure scene safety and PPE are clearly stated."],
-    criticalFails: criticals,
-    gptFeedback
-  };
 }
 
-function normalize(text) {
-  return text.toLowerCase().replace(/[^\w\s]/gi, '').trim();
-}
-
-function findCriticalFailures(inputs) {
-  const found = [];
-  for (const rule of criticalFailures) {
-    if (rule.keywords.length === 0 && rule.id === "timeout") continue;
-    for (const userInput of inputs) {
-      const match = rule.keywords.some(keyword => userInput.includes(keyword.toLowerCase()));
-      if (match) {
-        found.push(rule.reason);
-        break;
-      }
-    }
+async function loadPatientInfo() {
+  try {
+    const res = await fetch(`${scenarioPath}patient.txt`);
+    return await res.text();
+  } catch (e) {
+    logErrorToDatabase("Failed to load patient.txt: " + e.message);
+    return "Patient info not available.";
   }
-  return found;
 }
 
+function logErrorToDatabase(errorInfo) {
+  console.error("🔴 Error:", errorInfo);
+  firebase.database().ref('error_logs').push({
+    error: errorInfo,
+    timestamp: Date.now()
+  });
+}
 
-// DOM events with cleanup protection
 document.addEventListener('DOMContentLoaded', () => {
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
@@ -257,15 +189,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const endBtn = document.getElementById('end-button');
   const micBtn = document.getElementById('mic-button');
 
-  sendBtn?.removeEventListener('click', sendBtn._clickHandler);
-  sendBtn._clickHandler = () => {
+  sendBtn?.addEventListener('click', () => {
     const message = input.value.trim();
     if (message) {
       processUserMessage(message);
       input.value = '';
     }
-  };
-  sendBtn?.addEventListener('click', sendBtn._clickHandler);
+  });
 
   input?.addEventListener('keypress', e => {
     if (e.key === 'Enter') {
