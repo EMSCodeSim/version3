@@ -139,19 +139,24 @@ window.endScenario = async function () {
 
   const feedback = await gradeScenario();
 
-  const modal = document.getElementById("scoreModal");
-  const details = document.getElementById("scoreDetails");
+  // Full breakdown to display in chat
+  let breakdownHtml = `<strong>Final Score:</strong> ${feedback.score} / 48 (${Math.round((feedback.score / 48) * 100)}%)<br><br>`;
 
-  details.innerHTML = `
-    <p><strong>Final Score:</strong> ${feedback.score} / 48 (${Math.round((feedback.score / 48) * 100)}%)</p>
-    ${feedback.criticalFails.length > 0 ? `<p><strong>Critical Fails:</strong><br>${feedback.criticalFails.map(f => `- ${f}`).join("<br>")}</p>` : ""}
-    <p><strong>What You Did Well:</strong><br>${feedback.positives.map(p => `✅ ${p}`).join("<br>")}</p>
-    <p><strong>Improvement Tips:</strong><br>${feedback.improvementTips.map(t => `💡 ${t}`).join("<br>")}</p>
-    <p><strong>Personalized Feedback:</strong><br>${feedback.gptFeedback}</p>
-  `;
+  if (feedback.criticalFails.length > 0) {
+    breakdownHtml += `<strong>Critical Failures:</strong><br>${feedback.criticalFails.map(f => `❌ ${f}`).join("<br>")}<br><br>`;
+  }
 
-  modal.style.display = 'block';
-  displayChatResponse(`📦 Scenario ended. Score: ${feedback.score}/48 (${Math.round((feedback.score / 48) * 100)}%)`);
+  breakdownHtml += `<strong>Grading Breakdown:</strong><br><ul style="margin-left: 20px;">`;
+  feedback.allItems.forEach(item => {
+    breakdownHtml += `<li>${item.earned ? '✅' : '❌'} ${item.label} (${item.points} pt${item.points !== 1 ? 's' : ''})</li>`;
+  });
+  breakdownHtml += `</ul><br>`;
+
+  breakdownHtml += `<strong>What You Did Well:</strong><br>${feedback.positives.map(p => `✅ ${p}`).join("<br>")}<br><br>`;
+  breakdownHtml += `<strong>Improvement Tips:</strong><br>${feedback.improvementTips.map(t => `💡 ${t}`).join("<br>")}<br><br>`;
+  breakdownHtml += `<strong>Personalized Feedback:</strong><br>${feedback.gptFeedback}<br>`;
+
+  displayChatResponse(`📦 Scenario ended. Here's your performance summary:<br><br>${breakdownHtml}`);
 };
 
 async function loadDispatchInfo() {
