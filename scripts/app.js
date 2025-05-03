@@ -27,13 +27,16 @@ async function speak(text, speaker = "patient", audioUrl = null) {
   }
 }
 
-async function displayChatResponse(response, question = "", role = "", audioUrl = null) {
+async function displayChatResponse(response, question = "", role = "", audioUrl = null, mediaTrigger = null) {
   const chatBox = document.getElementById("chat-box");
   const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
+
   chatBox.innerHTML += `
     ${question ? `<div class="question">🗣️ <b>You:</b> ${question}</div>` : ""}
     <div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>
+    ${mediaTrigger ? `<div class="image-block"><img src="/media/${mediaTrigger}" alt="Media" style="max-width: 100%; border: 1px solid #ccc; margin: 10px 0;" /></div>` : ""}
   `;
+
   chatBox.scrollTop = chatBox.scrollHeight;
   speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient", audioUrl);
 }
@@ -76,7 +79,13 @@ async function processUserMessage(message) {
 
   const hardcoded = checkHardcodedResponse(message);
   if (hardcoded?.aiResponse) {
-    return displayChatResponse(hardcoded.aiResponse, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient", hardcoded.audioUrl || null);
+    return displayChatResponse(
+      hardcoded.aiResponse,
+      message,
+      role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient",
+      hardcoded.audioUrl || null,
+      hardcoded.mediaTrigger || null
+    );
   }
 
   const vector = await getVectorResponse(message);
@@ -139,9 +148,7 @@ window.endScenario = async function () {
 
   const feedback = await gradeScenario();
 
-  // Full breakdown to display in chat
   let breakdownHtml = `<strong>Final Score:</strong> ${feedback.score} / 48 (${Math.round((feedback.score / 48) * 100)}%)<br><br>`;
-
   if (feedback.criticalFails.length > 0) {
     breakdownHtml += `<strong>Critical Failures:</strong><br>${feedback.criticalFails.map(f => `❌ ${f}`).join("<br>")}<br><br>`;
   }
