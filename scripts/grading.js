@@ -45,49 +45,53 @@ export function updateScoreTracker(input) {
 
 export async function gradeScenario() {
   const missedItems = Object.keys(gradingTemplate).filter(k => !scoreTracker.completed.has(k));
-  const totalPossible = Object.values(gradingTemplate).reduce((sum, item) => sum + item.points, 0);
   const totalScore = scoreTracker.points;
-
   const passedItems = Array.from(scoreTracker.completed).map(k => gradingTemplate[k]?.label);
   const criticals = findCriticalFailures(scoreTracker.userInputs);
 
   const prompt = `
-You are a certified NREMT evaluator. A student just completed a medical patient assessment simulation.
+You are an NREMT evaluator. Generate professional but supportive feedback for a student.
 
-Give them personalized performance feedback based on the following:
-
-Score: ${totalScore} out of ${totalPossible}
-
-Things they did well:
-${passedItems.length ? passedItems.map(i => "- " + i).join("\n") : "None"}
-
-Things they missed:
-${missedItems.length ? missedItems.map(k => "- " + gradingTemplate[k]?.label).join("\n") : "None"}
-
+Score: ${totalScore} / 48
+Successes:
+${passedItems.map(i => "- " + i).join("\n") || "None"}
+Missed:
+${missedItems.map(k => "- " + gradingTemplate[k]?.label).join("\n") || "None"}
 Critical Failures:
 ${criticals.length ? criticals.map(f => "- " + f).join("\n") : "None"}
 
-Please respond in this format:
-**Summary:** (Brief summary of how they did)  
-**What You Did Well:** (3–5 things)  
-**Improvement Tips:** (2–3 specific tips)  
-${criticals.length ? "**Critical Failures:** (List and short explanation)" : ""}
-Use a professional and encouraging tone.
+Format response with: Summary, What You Did Well, Improvement Tips.
+Do NOT repeat the word 'score'.
 `;
 
+  let gptFeedback = "";
   try {
     const res = await fetch('/api/gpt4-turbo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: prompt })
     });
-
     const data = await res.json();
-    return data.reply || `Score: ${totalScore} / ${totalPossible} (AI feedback unavailable)`;
+    gptFeedback = data.reply || "(No GPT feedback returned)";
   } catch (e) {
     console.error("GPT feedback error:", e.message);
-    return `Score: ${totalScore} / ${totalPossible} (Feedback system offline)`;
+    gptFeedback = "(GPT feedback unavailable)";
   }
+
+  // Try pulling tips from improvementTips too
+  const tips = missedItems
+    .map(k => improvementTips[k])
+    .filter(Boolean)
+    .flat()
+    .slice(0, 3);
+
+  return {
+    score: totalScore,
+    positives: passedItems,
+    improvementTips: tips.length ? tips : ["Review OPQRST thoroughly.", "Ensure scene safety and PPE are clearly stated."],
+    criticalFails: criticals,
+    gptFeedback
+  };
 }
 
 function normalize(text) {
@@ -96,12 +100,8 @@ function normalize(text) {
 
 function findCriticalFailures(inputs) {
   const found = [];
-
   for (const rule of criticalFailures) {
-    if (rule.keywords.length === 0 && rule.id === "timeout") {
-      continue;
-    }
-
+    if (rule.keywords.length === 0 && rule.id === "timeout") continue;
     for (const userInput of inputs) {
       const match = rule.keywords.some(keyword => userInput.includes(keyword.toLowerCase()));
       if (match) {
@@ -110,6 +110,5 @@ function findCriticalFailures(inputs) {
       }
     }
   }
-
   return found;
 }
