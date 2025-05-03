@@ -6,15 +6,15 @@ const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
 let hardcodedResponses = {};
 let gradingTemplate = {};
-let scoreTracker = {};
+let scenarioStarted = false;
 
-// Load hardcoded responses from Firebase
+// Load hardcoded responses
 firebase.database().ref('hardcodedResponses').once('value').then(snapshot => {
   hardcodedResponses = snapshot.val() || {};
   console.log("✅ Loaded hardcodedResponses:", hardcodedResponses);
 });
 
-// Load grading template dynamically based on scenario config
+// Load grading template
 async function loadGradingTemplate(type = "medical") {
   const file = `grading_templates/${type}_assessment.json`;
   const res = await fetch(file);
@@ -22,14 +22,10 @@ async function loadGradingTemplate(type = "medical") {
   initializeScoreTracker();
 }
 
-// Speak via TTS or play audio
+// TTS
 async function speak(text, speaker = "patient", audioUrl = null) {
   try {
-    if (audioUrl) {
-      const player = new Audio(audioUrl);
-      player.play();
-      return;
-    }
+    if (audioUrl) return new Audio(audioUrl).play();
     const res = await fetch("/.netlify/functions/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -37,14 +33,13 @@ async function speak(text, speaker = "patient", audioUrl = null) {
     });
     const { audio } = await res.json();
     const audioBlob = new Blob([Uint8Array.from(atob(audio), c => c.charCodeAt(0))], { type: "audio/mpeg" });
-    const url = URL.createObjectURL(audioBlob);
-    new Audio(url).play();
+    new Audio(URL.createObjectURL(audioBlob)).play();
   } catch (err) {
     console.error("TTS playback error:", err);
   }
 }
 
-// Display response
+// Chat display
 async function displayChatResponse(response, question = "", role = "", audioUrl = null) {
   const chatBox = document.getElementById("chat-box");
   const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
@@ -88,26 +83,23 @@ async function getAIResponseGPT4Turbo(message) {
   }
 }
 
-// Main message handler
+// User input processor
 async function processUserMessage(message) {
   const proctorKeywords = ['scene safe', 'bsi', 'blood pressure', 'pulse', 'respiratory rate', 'oxygen', 'splint', 'epinephrine'];
   const role = proctorKeywords.some(k => message.toLowerCase().includes(k)) ? "proctor" : "patient";
 
   updateScoreTracker(message);
 
-  // 1. Hardcoded response
   const hardcoded = checkHardcodedResponse(message, hardcodedResponses);
   if (hardcoded?.aiResponse) {
     return displayChatResponse(hardcoded.aiResponse, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient", hardcoded.audioUrl || null);
   }
 
-  // 2. Vector fallback
   const vector = await getVectorResponse(message);
   if (vector) {
     return displayChatResponse(vector, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient");
   }
 
-  // 3. GPT fallback
   const gpt = await getAIResponseGPT4Turbo(message);
   if (gpt) {
     firebase.database().ref('unknownQuestions').push({ userQuestion: message, aiResponse: gpt, role, reviewed: false, timestamp: Date.now() });
@@ -120,17 +112,18 @@ async function processUserMessage(message) {
 
 // Start scenario
 window.startScenario = async function () {
+  if (scenarioStarted) return;
+  scenarioStarted = true;
   console.log("Start Scenario Triggered");
   try {
     const configRes = await fetch(`${scenarioPath}config.json`);
     const config = await configRes.json();
     const gradingType = config.grading || "medical";
-
     await loadGradingTemplate(gradingType);
 
     const dispatch = await loadDispatchInfo();
     patientContext = await loadPatientInfo();
-    displayChatResponse(`🚑 Dispatch: ${dispatch}`);
+    displayChatResponse(`🚑  ${dispatch}`);
   } catch (err) {
     logErrorToDatabase("startScenario error: " + err.message);
     displayChatResponse("❌ Failed to load scenario. Check for missing grading or config files.");
@@ -139,11 +132,17 @@ window.startScenario = async function () {
 
 // End scenario
 window.endScenario = function () {
+  const chatBox = document.getElementById("chat-box");
+  // Remove old grading outputs if present
+  chatBox.querySelectorAll(".response").forEach(el => {
+    if (el.innerHTML.includes("Final Score:")) el.remove();
+  });
+
   const feedback = gradeScenario();
   displayChatResponse("📦 Scenario ended. Here's your performance summary:<br><br>" + feedback);
 };
 
-// Load scenario files
+// Supporting file loaders
 async function loadDispatchInfo() {
   try {
     const res = await fetch(`${scenarioPath}dispatch.txt`);
@@ -164,7 +163,7 @@ async function loadPatientInfo() {
   }
 }
 
-// Error logger
+// Firebase error logger
 function logErrorToDatabase(errorInfo) {
   console.error("🔴 Error:", errorInfo);
   firebase.database().ref('error_logs').push({
@@ -173,7 +172,7 @@ function logErrorToDatabase(errorInfo) {
   });
 }
 
-// DOM setup
+// DOM Setup
 document.addEventListener('DOMContentLoaded', () => {
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
@@ -181,13 +180,31 @@ document.addEventListener('DOMContentLoaded', () => {
   const endBtn = document.getElementById('end-button');
   const micBtn = document.getElementById('mic-button');
 
-  sendBtn?.addEventListener('click', () => {
-    const message = input.value.trim();
-    if (message) {
-      processUserMessage(message);
-      input.value = '';
-    }
-  });
+  if (!startBtn.dataset.bound) {
+    startBtn.addEventListener('click', () => window.startScenario?.());
+    startBtn.dataset.bound = "true";
+  }
+
+  if (!endBtn.dataset.bound) {
+    endBtn.addEventListener('click', () => window.endScenario?.());
+    endBtn.dataset.bound = "true";
+  }
+
+  if (!micBtn.dataset.bound) {
+    micBtn.addEventListener('click', () => startVoiceRecognition?.());
+    micBtn.dataset.bound = "true";
+  }
+
+  if (!sendBtn.dataset.bound) {
+    sendBtn.addEventListener('click', () => {
+      const message = input.value.trim();
+      if (message) {
+        processUserMessage(message);
+        input.value = '';
+      }
+    });
+    sendBtn.dataset.bound = "true";
+  }
 
   input?.addEventListener('keypress', e => {
     if (e.key === 'Enter') {
@@ -195,8 +212,4 @@ document.addEventListener('DOMContentLoaded', () => {
       sendBtn.click();
     }
   });
-
-  startBtn?.addEventListener('click', () => window.startScenario?.());
-  endBtn?.addEventListener('click', () => window.endScenario?.());
-  micBtn?.addEventListener('click', () => startVoiceRecognition());
 });
