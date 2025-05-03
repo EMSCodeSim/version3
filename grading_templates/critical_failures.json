@@ -1,0 +1,47 @@
+[
+  {
+    "id": "noPPE",
+    "keywords": ["no ppe", "forgot gloves", "no body substance isolation"],
+    "reason": "Did not take or verbalize PPE precautions"
+  },
+  {
+    "id": "unsafeScene",
+    "keywords": ["scene not safe", "walk into danger", "no scene safety"],
+    "reason": "Did not ensure the scene was safe before patient contact"
+  },
+  {
+    "id": "noOxygen",
+    "keywords": ["no oxygen", "should give oxygen", "forgot oxygen"],
+    "reason": "Failed to provide appropriate oxygen therapy"
+  },
+  {
+    "id": "noAirway",
+    "keywords": ["no airway check", "forgot airway", "blocked airway"],
+    "reason": "Did not manage airway, breathing, or circulation threats"
+  },
+  {
+    "id": "noTransportDecision",
+    "keywords": ["no transport plan", "forgot transport", "no decision"],
+    "reason": "Failed to determine the need for immediate transport"
+  },
+  {
+    "id": "didPhysicalBeforeABC",
+    "keywords": ["full assessment before airway", "delayed airway", "full exam before abc"],
+    "reason": "Performed detailed physical exam before addressing life threats"
+  },
+  {
+    "id": "wrongIntervention",
+    "keywords": ["dangerous treatment", "wrong drug", "inappropriate action"],
+    "reason": "Ordered a dangerous or inappropriate intervention"
+  },
+  {
+    "id": "noSpineProtection",
+    "keywords": ["no c-spine", "missed spinal protection"],
+    "reason": "Failed to protect the spine when indicated"
+  },
+  {
+    "id": "timeout",
+    "keywords": [],
+    "reason": "Failed to initiate transport or complete assessment within 15 minutes"
+  }
+]
