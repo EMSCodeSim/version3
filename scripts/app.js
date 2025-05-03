@@ -1,3 +1,4 @@
+import { initializeScoreTracker, updateScoreTracker, gradeScenario } from './grading.js';
 const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
 let hardcodedResponses = {};
