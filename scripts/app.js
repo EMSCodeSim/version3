@@ -147,3 +147,20 @@ document.addEventListener('DOMContentLoaded', () => {
   endBtn?.addEventListener('click', () => window.endScenario());
   micBtn?.addEventListener('click', () => window.startVoiceRecognition?.());
 });
+
+console.log("App.js loaded ✅");
+
+document.addEventListener('DOMContentLoaded', () => {
+  console.log("DOM ready");
+
+  const startBtn = document.getElementById("start-button");
+  if (!startBtn) {
+    console.error("❌ start-button not found in DOM");
+  } else {
+    console.log("✅ Found start-button");
+    startBtn.addEventListener('click', () => {
+      console.log("Start button clicked");
+      window.startScenario();
+    });
+  }
+});
