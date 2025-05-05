@@ -1,33 +1,37 @@
 // router.js
 
 import { getRephrasedInput } from './gpt3_rephrase.js';
-import { hardcodedResponses } from './hardcodedResponses.js';
-import { getGPTResponse } from './gpt_fallback.js'; // fallback GPT (e.g., 4-turbo or 3.5)
+import { fetchHardcodedResponses } from './firebase_helpers.js';
+import { getGPTResponse } from './gpt_fallback.js';
 
-// Main router function
+let hardcodedCache = {}; // in-memory cache
+
+// Call this once on startup
+export async function loadHardcodedResponses() {
+  hardcodedCache = await fetchHardcodedResponses();
+  console.log("Loaded hardcoded responses:", Object.keys(hardcodedCache).length);
+}
+
 export async function routeUserInput(userInput, context) {
-  // Step 1: Rephrase input using GPT-3.5
   const rephrasedInput = await getRephrasedInput(userInput);
+  const key = rephrasedInput.toLowerCase();
 
-  // Step 2: Try exact match
-  if (hardcodedResponses[rephrasedInput.toLowerCase()]) {
+  if (hardcodedCache[key]) {
     return {
-      response: hardcodedResponses[rephrasedInput.toLowerCase()],
+      response: hardcodedCache[key].reply,
       source: 'hardcoded'
     };
   }
 
-  // Step 3: Try fuzzy match (contains key)
-  for (let key in hardcodedResponses) {
-    if (rephrasedInput.toLowerCase().includes(key.toLowerCase())) {
+  for (let k in hardcodedCache) {
+    if (key.includes(k)) {
       return {
-        response: hardcodedResponses[key],
+        response: hardcodedCache[k].reply,
         source: 'hardcoded (fuzzy match)'
       };
     }
   }
 
-  // Step 4: Fallback to GPT if no match
   const fallbackResponse = await getGPTResponse(rephrasedInput, context);
   return {
     response: fallbackResponse,
