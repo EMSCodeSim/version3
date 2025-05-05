@@ -1,5 +1,6 @@
 import { initializeScoreTracker, updateScoreTracker, gradeScenario } from './grading.js';
 import { startVoiceRecognition } from './mic.js';
+import { routeUserInput } from './router.js';
 
 const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
@@ -67,7 +68,7 @@ function checkHardcodedResponse(message) {
   return null;
 }
 
-// Determine if proctor should answer
+// Proctor or Patient detection
 function isProctorQuestion(message) {
   const normalized = message.toLowerCase();
   const proctorPhrases = [
@@ -80,89 +81,60 @@ function isProctorQuestion(message) {
   return proctorPhrases.some(phrase => normalized.includes(phrase));
 }
 
-// Main message handler
+// Main chat handler
 async function processUserMessage(message) {
-  const role = isProctorQuestion(message) ? "proctor" : "patient";
-  updateScoreTracker(message);
+  if (!message) return;
 
-  let source = "unknown";
-  let response = null;
+  const role = isProctorQuestion(message) ? "Proctor" : "Patient";
 
-  const hardcoded = checkHardcodedResponse(message);
-  if (hardcoded?.aiResponse) {
-    response = hardcoded.aiResponse;
-    source = "hardcoded";
+  try {
+    const { response, source } = await routeUserInput(message, { scenarioId: scenarioPath, role: role.toLowerCase() });
+    displayChatResponse(response, message, `${role} (${source})`);
+  } catch (err) {
+    logErrorToDatabase("processUserMessage error: " + err.message);
+    displayChatResponse("❌ AI response failed. Try again.");
   }
-
-  if (!response) {
-    const vectorMatch = await getVectorResponse(message);
-    if (vectorMatch) {
-      response = vectorMatch;
-      source = "vector";
-    }
-  }
-
-  if (!response) {
-    response = await getAIResponseGPT4Turbo(message);
-    source = "gpt-4";
-  }
-
-  if (!response) {
-    response = "I'm not sure how to respond to that.";
-    source = "fallback";
-  }
-
-  displayChatResponse(response, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient", source);
 }
 
-// Display response with tag
-function displayChatResponse(response, userMessage, responder, sourceTag = "") {
-  const chatBox = document.getElementById("chatBox");
-
-  const userDiv = document.createElement("div");
-  userDiv.innerHTML = `<strong>🧑 You:</strong> ${userMessage}`;
-  chatBox.appendChild(userDiv);
-
-  const botDiv = document.createElement("div");
-  botDiv.innerHTML = `<strong>${responder} (${sourceTag}):</strong> ${response}`;
-  chatBox.appendChild(botDiv);
-
+// Chat display
+async function displayChatResponse(response, question = "", role = "", audioUrl = null) {
+  const chatBox = document.getElementById("chat-box");
+  const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
+  chatBox.innerHTML += `
+    ${question ? `<div class="question">🗣️ <b>You:</b> ${question}</div>` : ""}
+    <div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>
+  `;
   chatBox.scrollTop = chatBox.scrollHeight;
+  speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient", audioUrl);
 }
 
-// DOM interaction
-document.getElementById("sendButton").addEventListener("click", () => {
-  const input = document.getElementById("userInput");
-  const msg = input.value.trim();
-  if (msg) {
-    processUserMessage(msg);
-    input.value = "";
-  }
-});
+// Error logger
+function logErrorToDatabase(errorInfo) {
+  console.error("🔴", errorInfo);
+  firebase.database().ref('error_logs').push({ error: errorInfo, timestamp: Date.now() });
+}
 
-document.getElementById("userInput").addEventListener("keypress", e => {
-  if (e.key === "Enter") {
-    const msg = e.target.value.trim();
-    if (msg) {
-      processUserMessage(msg);
-      e.target.value = "";
-    }
+// Scenario file loaders
+async function loadDispatchInfo() {
+  try {
+    const res = await fetch(`${scenarioPath}dispatch.txt`);
+    return await res.text();
+  } catch (e) {
+    logErrorToDatabase("Dispatch load failed: " + e.message);
+    return "Dispatch not available.";
   }
-});
-
-document.getElementById("startButton").addEventListener("click", async () => {
-  if (!scenarioStarted) {
-    scenarioStarted = true;
-    await loadGradingTemplate();
-    displayChatResponse("You are dispatched to a call...", "📟 Dispatch", "📟 Dispatch", "system");
+}
+async function loadPatientInfo() {
+  try {
+    const res = await fetch(`${scenarioPath}patient.txt`);
+    return await res.text();
+  } catch (e) {
+    logErrorToDatabase("Patient info load failed: " + e.message);
+    return "Patient info not available.";
   }
-});
+}
 
-document.getElementById("endButton").addEventListener("click", () => {
-  const score = gradeScenario(scoreTracker);
-  alert("Simulation Complete. Score: " + score.total + "/" + score.max);
-});
-// Start scenario (linked to Start Button)
+// Start and End buttons
 window.startScenario = async function () {
   if (scenarioStarted) return;
   scenarioStarted = true;
@@ -179,14 +151,13 @@ window.startScenario = async function () {
   }
 };
 
-// End scenario (linked to End Button)
 window.endScenario = function () {
   const feedback = gradeScenario();
   displayChatResponse("📦 Scenario ended. Here's your performance summary:<br><br>" + feedback);
   scenarioStarted = false;
 };
 
-// Set up all button event listeners once DOM is ready
+// DOM bindings
 document.addEventListener('DOMContentLoaded', () => {
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
