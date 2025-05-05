@@ -1,52 +1,36 @@
-import { checkHardcodedResponse } from './hardcoded.js';
-import { getVectorResponse } from './vector.js';
-import { getAIResponseGPT4Turbo } from './gpt.js';
+// router.js
 
-const proctorKeywords = [
-  "scene safe", "bsi", "gloves", "ppe", "mechanism of injury", "nature of illness", "noi", "moi",
-  "how many patients", "additional resources", "call for help", "c-spine", "spinal immobilization",
-  "blood pressure", "pulse", "respiratory rate", "respiratory quality", "pulse ox", "oxygen saturation",
-  "blood glucose", "temperature", "avpu",
-  "administering oxygen", "starting cpr", "using aed", "administering", "asa", "epipen", "glucose",
-  "splint", "tourniquet", "dressing", "transport decision", "time elapsed"
-];
+import { getRephrasedInput } from './gpt3_rephrase.js';
+import { hardcodedResponses } from './hardcodedResponses.js';
+import { getGPTResponse } from './gpt_fallback.js'; // fallback GPT (e.g., 4-turbo or 3.5)
 
-function normalize(text) {
-  return text.trim().toLowerCase().replace(/[^\w\s]/g, '');
-}
+// Main router function
+export async function routeUserInput(userInput, context) {
+  // Step 1: Rephrase input using GPT-3.5
+  const rephrasedInput = await getRephrasedInput(userInput);
 
-function isProctorQuestion(message) {
-  const norm = normalize(message);
-  return proctorKeywords.some(kw => norm.includes(kw));
-}
-
-export async function routeMessage(message, displayChatResponse) {
-  const role = isProctorQuestion(message) ? "🧑‍⚕️ Proctor" : "🧍 Patient";
-
-  // 1. Hardcoded
-  const hardcoded = checkHardcodedResponse(message);
-  if (hardcoded?.aiResponse) {
-    return displayChatResponse(hardcoded.aiResponse, message, role, hardcoded.audioUrl || null);
+  // Step 2: Try exact match
+  if (hardcodedResponses[rephrasedInput.toLowerCase()]) {
+    return {
+      response: hardcodedResponses[rephrasedInput.toLowerCase()],
+      source: 'hardcoded'
+    };
   }
 
-  // 2. Vector
-  const vector = await getVectorResponse(message);
-  if (vector) {
-    return displayChatResponse(vector, message, role);
+  // Step 3: Try fuzzy match (contains key)
+  for (let key in hardcodedResponses) {
+    if (rephrasedInput.toLowerCase().includes(key.toLowerCase())) {
+      return {
+        response: hardcodedResponses[key],
+        source: 'hardcoded (fuzzy match)'
+      };
+    }
   }
 
-  // 3. GPT fallback
-  const gpt = await getAIResponseGPT4Turbo(message);
-  if (gpt) {
-    firebase.database().ref('unknownQuestions').push({
-      userQuestion: message,
-      aiResponse: gpt,
-      role,
-      reviewed: false,
-      timestamp: Date.now()
-    });
-    return displayChatResponse(gpt, message, role);
-  }
-
-  return displayChatResponse("I'm not sure how to answer that right now. Your question has been logged for review.", message, role);
+  // Step 4: Fallback to GPT if no match
+  const fallbackResponse = await getGPTResponse(rephrasedInput, context);
+  return {
+    response: fallbackResponse,
+    source: 'gpt_fallback'
+  };
 }
