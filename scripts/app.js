@@ -139,6 +139,9 @@ async function loadPatientInfo() {
 window.startScenario = async function () {
   if (scenarioStarted) return;
   scenarioStarted = true;
+
+  await loadHardcodedResponses();
+
   try {
     const configRes = await fetch(`${scenarioPath}config.json`);
     const config = await configRes.json();
