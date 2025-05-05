@@ -1,12 +1,10 @@
-// /netlify/functions/gpt3_rephrase.js
-
 import { OpenAI } from 'openai';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-export default async (req, res) => {
+export async function handler(event, context) {
   try {
-    const { message } = req.body;
+    const { message } = JSON.parse(event.body);
 
     const prompt = `Rephrase this EMS student question to its most basic version:\n"${message}"`;
 
@@ -18,9 +16,16 @@ export default async (req, res) => {
 
     const rephrased = completion.choices[0].message.content.trim();
 
-    return res.status(200).json({ rephrased });
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ rephrased })
+    };
+
   } catch (err) {
     console.error("GPT-3.5 rephrase failed:", err.message);
-    return res.status(500).json({ error: "Rephrase failed." });
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Rephrase failed", message: err.message })
+    };
   }
-};
+}
