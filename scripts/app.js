@@ -1,5 +1,7 @@
 import { initializeScoreTracker, updateScoreTracker, gradeScenario } from './grading.js';
 import { startVoiceRecognition } from './mic.js';
+import { routeUserInput, loadHardcodedResponses } from './router.js';
+
 
 const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
