@@ -11,46 +11,18 @@ export async function loadHardcodedResponses() {
   }
 }
 
-// Main router function
-export async function routeUserInput(userInput, context = {}) {
-  const input = userInput.trim().toLowerCase();
-
-  // 1. Exact match
-  console.log("🔍 Checking exact match for:", input);
-  const exact = findHardcodedMatch(input);
-  if (exact) {
-    console.log("✅ Exact match found.");
-    return { response: exact, source: "hardcoded" };
-  }
-
-  // 2. Rephrase with GPT-3.5
-  console.log("🔁 Trying GPT-3.5 rephrase for:", input);
-  const rephrased = await rephraseWithGPT35(input);
-  console.log("📝 Rephrased to:", rephrased);
-  if (rephrased) {
-    const matched = findHardcodedMatch(rephrased.toLowerCase());
-    if (matched) {
-      console.log("✅ Rephrased match found.");
-      return { response: matched, source: "rephrased" };
-    }
-  }
-
-  // 3. GPT-4 fallback
-  console.log("⚠️ No match found, using GPT-4 fallback.");
-  const fallback = await getAIResponseGPT4Turbo(input, context);
-  if (fallback) {
-    logGPTResponseToDatabase(input, fallback, context);
-    return { response: fallback, source: "gpt-4" };
-  }
-
-  return { response: "I'm not sure how to respond to that.", source: "fallback" };
+// Normalize input and stored strings
+function normalize(text) {
+  return text.trim().toLowerCase().replace(/[^\w\s]/g, '');
 }
 
-// Internal match finder
+// Internal match finder using normalized text
 function findHardcodedMatch(input) {
+  const normInput = normalize(input);
   for (const key in hardcodedResponses) {
     const stored = hardcodedResponses[key];
-    if (stored?.userQuestion?.trim().toLowerCase() === input) {
+    const normStored = normalize(stored?.userQuestion || '');
+    if (normStored === normInput) {
       return stored.aiResponse;
     }
   }
@@ -99,4 +71,39 @@ function logGPTResponseToDatabase(input, reply, context) {
     context: context
   };
   logRef.set(entry);
+}
+
+// Main router function
+export async function routeUserInput(userInput, context = {}) {
+  const input = userInput.trim();
+
+  // 1. Exact match
+  console.log("🔍 Checking exact match for:", input);
+  const exact = findHardcodedMatch(input);
+  if (exact) {
+    console.log("✅ Exact match found.");
+    return { response: exact, source: "hardcoded" };
+  }
+
+  // 2. Rephrase with GPT-3.5
+  console.log("🔁 Trying GPT-3.5 rephrase for:", input);
+  const rephrased = await rephraseWithGPT35(input);
+  console.log("📝 Rephrased to:", rephrased);
+  if (rephrased) {
+    const matched = findHardcodedMatch(rephrased);
+    if (matched) {
+      console.log("✅ Rephrased match found.");
+      return { response: matched, source: "rephrased" };
+    }
+  }
+
+  // 3. GPT-4 fallback
+  console.log("⚠️ No match found, using GPT-4 fallback.");
+  const fallback = await getAIResponseGPT4Turbo(input, context);
+  if (fallback) {
+    logGPTResponseToDatabase(input, fallback, context);
+    return { response: fallback, source: "gpt-4" };
+  }
+
+  return { response: "I'm not sure how to respond to that.", source: "fallback" };
 }
