@@ -162,3 +162,54 @@ document.getElementById("endButton").addEventListener("click", () => {
   const score = gradeScenario(scoreTracker);
   alert("Simulation Complete. Score: " + score.total + "/" + score.max);
 });
+// Start scenario (linked to Start Button)
+window.startScenario = async function () {
+  if (scenarioStarted) return;
+  scenarioStarted = true;
+  try {
+    const configRes = await fetch(`${scenarioPath}config.json`);
+    const config = await configRes.json();
+    await loadGradingTemplate(config.grading || "medical");
+    const dispatch = await loadDispatchInfo();
+    patientContext = await loadPatientInfo();
+    displayChatResponse(`🚑 Dispatch: ${dispatch}`);
+  } catch (err) {
+    logErrorToDatabase("startScenario error: " + err.message);
+    displayChatResponse("❌ Failed to load scenario. Missing config or files.");
+  }
+};
+
+// End scenario (linked to End Button)
+window.endScenario = function () {
+  const feedback = gradeScenario();
+  displayChatResponse("📦 Scenario ended. Here's your performance summary:<br><br>" + feedback);
+  scenarioStarted = false;
+};
+
+// Set up all button event listeners once DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  const sendBtn = document.getElementById('send-button');
+  const input = document.getElementById('user-input');
+  const startBtn = document.getElementById('start-button');
+  const endBtn = document.getElementById('end-button');
+  const micBtn = document.getElementById('mic-button');
+
+  sendBtn?.addEventListener('click', () => {
+    const message = input.value.trim();
+    if (message) {
+      processUserMessage(message);
+      input.value = '';
+    }
+  });
+
+  input?.addEventListener('keypress', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendBtn.click();
+    }
+  });
+
+  startBtn?.addEventListener('click', () => window.startScenario?.());
+  endBtn?.addEventListener('click', () => window.endScenario?.());
+  micBtn?.addEventListener('click', () => startVoiceRecognition?.());
+});
