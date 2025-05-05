@@ -61,7 +61,7 @@ async function getAIResponseGPT4Turbo(input, context) {
   }
 }
 
-// Log to Firebase for admin review
+// Log GPT-4 fallback to Firebase for admin review
 function logGPTResponseToDatabase(input, reply, context) {
   const logRef = firebase.database().ref("unmatchedLog").push();
   const entry = {
@@ -93,6 +93,15 @@ export async function routeUserInput(userInput, context = {}) {
     const matched = findHardcodedMatch(rephrased);
     if (matched) {
       console.log("✅ Rephrased match found.");
+
+      // ✅ Save the rephrased input to Firebase
+      const newRef = firebase.database().ref("hardcodedResponses").push();
+      newRef.set({
+        userQuestion: rephrased,
+        aiResponse: matched
+      });
+      console.log("💾 Rephrased entry saved to Firebase:", rephrased);
+
       return { response: matched, source: "rephrased" };
     }
   }
