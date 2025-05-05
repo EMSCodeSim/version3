@@ -2,7 +2,7 @@
 
 import { saveToHardcodeApprovalQueue } from './hardcode_logger.js';
 
-export async function getGPTResponse(cleanInput, context) {
+export async function getGPTResponse(cleanInput, context = {}) {
   const apiKey = process.env.OPENAI_API_KEY;
 
   const payload = {
@@ -10,7 +10,7 @@ export async function getGPTResponse(cleanInput, context) {
     messages: [
       {
         role: "system",
-        content: "You are simulating a realistic EMS patient or proctor. Respond as the appropriate character based on context. Be brief, accurate, and realistic. Do not explain procedures unless asked."
+        content: "You are simulating a realistic EMS patient or NREMT proctor. Respond in character based on context. Do not explain procedures unless asked. Be brief, accurate, and realistic."
       },
       {
         role: "user",
@@ -31,9 +31,9 @@ export async function getGPTResponse(cleanInput, context) {
   });
 
   const data = await response.json();
-  const gptReply = data.choices?.[0]?.message?.content?.trim() || "Sorry, I didn’t catch that.";
+  const gptReply = data.choices?.[0]?.message?.content?.trim() || "I'm not sure how to respond to that.";
 
-  // Send GPT result to hardcode approval system
+  // Log for future hardcoding
   await saveToHardcodeApprovalQueue(cleanInput, gptReply, context);
 
   return gptReply;
