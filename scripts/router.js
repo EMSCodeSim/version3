@@ -54,7 +54,7 @@ function findHardcodedMatch(input) {
 // GPT-3.5 rephrase call
 async function rephraseWithGPT35(input) {
   try {
-    const res = await fetch('/.netlify/functions/gpt-3.5-rephrase', {
+    const res = await fetch('/netlify/functions/gpt-3.5-rephrase', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: input })
