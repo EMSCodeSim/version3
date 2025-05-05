@@ -3,27 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>EMS Code Sim</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>EMS Simulator</title>
+  <link rel="stylesheet" href="styles/style.css" />
 </head>
 <body>
-  <div id="container">
-    <h1>EMS Code Simulator</h1>
 
-    <!-- ✅ Updated button IDs to match app.js -->
+  <!-- Header -->
+  <header style="padding: 10px; display: flex; justify-content: center; gap: 10px;">
     <button id="startButton">Start Scenario</button>
     <button id="endButton">End Scenario</button>
+    <a href="admin_home.html" style="position: absolute; top: 10px; right: 10px; padding: 10px 20px; background: #0077cc; color: white; text-decoration: none; border-radius: 5px;">Admin</a>
+  </header>
 
-    <div id="chatBox" class="chat-box"></div>
+  <!-- Chat Display -->
+  <div id="chatBox" style="height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin: 20px;"></div>
 
-    <div style="display: flex; margin-top: 10px;">
-      <input type="text" id="userInput" placeholder="Type your message..." style="flex: 1; padding: 10px; font-size: 16px;">
-      <button id="sendButton" style="margin-left: 10px;">Send</button>
-      <button id="micButton" style="margin-left: 10px;">Mic</button>
-    </div>
+  <!-- Input & Controls -->
+  <div style="display: flex; align-items: center; margin: 20px;">
+    <input type="text" id="userInput" placeholder="Type your message..." style="flex: 1; padding: 10px; font-size: 16px;">
+    <button id="sendButton" style="margin-left: 10px;">Send</button>
+    <button id="micButton" style="margin-left: 10px;">Mic</button>
   </div>
 
-  <!-- ✅ Firebase SDKs -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <script>
@@ -32,7 +34,7 @@
       authDomain: "ems-code-sim.firebaseapp.com",
       databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
       projectId: "ems-code-sim",
-      storageBucket: "ems-code-sim.firebasestorage.app",
+      storageBucket: "ems-code-sim.appspot.com",
       messagingSenderId: "190498607578",
       appId: "1:190498607578:web:4cf6c8e999b027956070e3",
       measurementId: "G-2Q3ZT01YT1"
@@ -40,14 +42,8 @@
     firebase.initializeApp(firebaseConfig);
   </script>
 
-  <!-- ✅ App Logic (type=module enables imports) -->
+  <!-- App Logic -->
   <script type="module" src="scripts/app.js"></script>
 
-  <!-- ✅ Score Modal -->
-  <div id="scoreModal" class="modal" style="display:none; position:fixed; top:10%; left:50%; transform:translateX(-50%); background:white; border:1px solid #ccc; padding:20px; width:90%; max-width:600px; z-index:9999;">
-    <h2>Performance Summary</h2>
-    <div id="scoreDetails"></div>
-    <button onclick="document.getElementById('scoreModal').style.display='none'" style="margin-top:10px;">Close</button>
-  </div>
 </body>
 </html>
