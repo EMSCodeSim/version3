@@ -6,7 +6,14 @@ export async function handler(event, context) {
   try {
     const { message } = JSON.parse(event.body);
 
-    const prompt = `Rephrase this EMS student question to its most basic version:\n"${message}"`;
+    const prompt = `
+Simplify this EMS question so that it matches a basic training format.
+Do not explain or change the meaning — just turn it into a standard training phrase.
+Respond with just the rephrased sentence.
+
+Original: "${message}"
+`;
+
 
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
