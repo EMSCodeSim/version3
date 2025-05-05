@@ -1,8 +1,12 @@
+console.log("✅ app.js file loaded");
+
 import { startScenario, endScenario } from './scenario.js';
 import { speakText } from './tts.js';
 import { routeUserInput, loadHardcodedResponses } from './router.js';
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, push, set } from 'firebase/database';
+console.log("✅ Firebase config loaded");
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
