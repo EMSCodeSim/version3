@@ -5,7 +5,14 @@ import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, push, set } from 'firebase/database';
 
 const firebaseConfig = {
-  // YOUR FIREBASE CONFIG HERE
+  apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
+  authDomain: "ems-code-sim.firebaseapp.com",
+  databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+  projectId: "ems-code-sim",
+  storageBucket: "ems-code-sim.appspot.com",
+  messagingSenderId: "190498607578",
+  appId: "1:190498607578:web:4cf6c8e999b027956070e3",
+  measurementId: "G-2Q3ZT01YT1"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -15,38 +22,46 @@ let scenarioPath = "";
 let chatLog = [];
 let patientImageShown = false;
 
-document.getElementById("startButton").addEventListener("click", async () => {
-  await loadHardcodedResponses();
-  startScenario();
-  scenarioPath = await fetchScenarioPath();
-  displayChatMessage("📟 Dispatch", "You are dispatched to a call...");
-  patientImageShown = false;
-});
+window.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("startButton").addEventListener("click", async () => {
+    console.log("✅ Start button clicked");
+    try {
+      await loadHardcodedResponses();
+      startScenario();
+      scenarioPath = await fetchScenarioPath();
+      displayChatMessage("📟 Dispatch", "You are dispatched to a call...");
+      patientImageShown = false;
+    } catch (e) {
+      console.error("Error in Start Scenario:", e);
+    }
+  });
 
-document.getElementById("endButton").addEventListener("click", async () => {
-  endScenario();
-  await saveChatLog();
-  chatLog = [];
-});
+  document.getElementById("endButton").addEventListener("click", async () => {
+    console.log("🛑 End button clicked");
+    endScenario();
+    await saveChatLog();
+    chatLog = [];
+  });
 
-document.getElementById("sendButton").addEventListener("click", async () => {
-  const inputBox = document.getElementById("userInput");
-  const userMessage = inputBox.value.trim();
-  if (userMessage) {
-    inputBox.value = "";
-    await processUserMessage(userMessage);
-  }
-});
-
-document.getElementById("userInput").addEventListener("keypress", async (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    const userMessage = e.target.value.trim();
+  document.getElementById("sendButton").addEventListener("click", async () => {
+    const inputBox = document.getElementById("userInput");
+    const userMessage = inputBox.value.trim();
     if (userMessage) {
-      e.target.value = "";
+      inputBox.value = "";
       await processUserMessage(userMessage);
     }
-  }
+  });
+
+  document.getElementById("userInput").addEventListener("keypress", async (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const userMessage = e.target.value.trim();
+      if (userMessage) {
+        e.target.value = "";
+        await processUserMessage(userMessage);
+      }
+    }
+  });
 });
 
 async function processUserMessage(message) {
