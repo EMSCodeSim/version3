@@ -1,112 +1,164 @@
-import { startScenario, endScenario } from './scenario.js';
-import { speakText } from './tts.js';
-import { routeUserInput, loadHardcodedResponses } from './router.js';
-import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, set } from 'firebase/database';
+import { initializeScoreTracker, updateScoreTracker, gradeScenario } from './grading.js';
+import { startVoiceRecognition } from './mic.js';
 
-console.log("✅ app.js file loaded");
+const scenarioPath = 'scenarios/chest_pain_002/';
+let patientContext = "";
+let hardcodedResponses = {};
+let gradingTemplate = {};
+let scoreTracker = {};
+let scenarioStarted = false;
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
-  authDomain: "ems-code-sim.firebaseapp.com",
-  databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
-  projectId: "ems-code-sim",
-  storageBucket: "ems-code-sim.appspot.com",
-  messagingSenderId: "190498607578",
-  appId: "1:190498607578:web:4cf6c8e999b027956070e3",
-  measurementId: "G-2Q3ZT01YT1"
-};
-
-const app = initializeApp(firebaseConfig);
-const database = getDatabase(app);
-
-let scenarioPath = "";
-let chatLog = [];
-let patientImageShown = false;
-
-window.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("startButton").addEventListener("click", async () => {
-    console.log("✅ Start button clicked");
-    await loadHardcodedResponses();
-    startScenario();
-    scenarioPath = await fetchScenarioPath();
-    displayChatMessage("📟 Dispatch", "You are dispatched to a call...");
-    patientImageShown = false;
-  });
-
-  document.getElementById("endButton").addEventListener("click", async () => {
-    console.log("🛑 End button clicked");
-    endScenario();
-    await saveChatLog();
-    chatLog = [];
-  });
-
-  document.getElementById("sendButton").addEventListener("click", async () => {
-    const inputBox = document.getElementById("userInput");
-    const userMessage = inputBox.value.trim();
-    if (userMessage) {
-      inputBox.value = "";
-      await processUserMessage(userMessage);
-    }
-  });
-
-  document.getElementById("userInput").addEventListener("keypress", async (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      const userMessage = e.target.value.trim();
-      if (userMessage) {
-        e.target.value = "";
-        await processUserMessage(userMessage);
-      }
-    }
-  });
+// Load hardcoded responses from Firebase
+firebase.database().ref('hardcodedResponses').once('value').then(snapshot => {
+  hardcodedResponses = snapshot.val() || {};
+  console.log("✅ Loaded hardcodedResponses");
 });
 
+// Load grading template dynamically
+async function loadGradingTemplate(type = "medical") {
+  const file = `grading_templates/${type}_assessment.json`;
+  const res = await fetch(file);
+  gradingTemplate = await res.json();
+  initializeScoreTracker(gradingTemplate);
+}
+
+// GPT fallback
+async function getAIResponseGPT4Turbo(message) {
+  try {
+    const res = await fetch('/api/gpt4-turbo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: message })
+    });
+    const data = await res.json();
+    return data.reply || null;
+  } catch (e) {
+    logErrorToDatabase("GPT fallback failed: " + e.message);
+    return null;
+  }
+}
+
+// Vector fallback
+async function getVectorResponse(message) {
+  try {
+    const res = await fetch('/api/vector-search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: message })
+    });
+    const data = await res.json();
+    return data.match || null;
+  } catch (e) {
+    logErrorToDatabase("Vector search failed: " + e.message);
+    return null;
+  }
+}
+
+// Hardcoded match
+function checkHardcodedResponse(message) {
+  if (!hardcodedResponses) return null;
+  const normalized = message.trim().toLowerCase();
+  for (const key in hardcodedResponses) {
+    const stored = hardcodedResponses[key];
+    if (stored?.userQuestion?.trim().toLowerCase() === normalized) {
+      return stored;
+    }
+  }
+  return null;
+}
+
+// Determine if proctor should answer
+function isProctorQuestion(message) {
+  const normalized = message.toLowerCase();
+  const proctorPhrases = [
+    "scene safe", "bsi", "mechanism of injury", "nature of illness", "number of patients",
+    "additional resources", "c-spine", "blood pressure", "pulse", "respiratory rate", "oxygen",
+    "pulse ox", "blood glucose", "temperature", "avpu", "i’m giving oxygen", "starting cpr",
+    "applying splint", "applying dressing", "applying tourniquet", "administering",
+    "making a transport decision", "how long", "time elapsed"
+  ];
+  return proctorPhrases.some(phrase => normalized.includes(phrase));
+}
+
+// Main message handler
 async function processUserMessage(message) {
-  displayChatMessage("🧑 You", message);
-  chatLog.push({ role: "user", content: message });
+  const role = isProctorQuestion(message) ? "proctor" : "patient";
+  updateScoreTracker(message);
 
-  const isProctor = isProctorQuestion(message);
-  const context = {
-    scenarioId: scenarioPath,
-    role: isProctor ? "proctor" : "patient"
-  };
+  let source = "unknown";
+  let response = null;
 
-  const { response, source } = await routeUserInput(message, context);
+  const hardcoded = checkHardcodedResponse(message);
+  if (hardcoded?.aiResponse) {
+    response = hardcoded.aiResponse;
+    source = "hardcoded";
+  }
 
-  const responder = isProctor ? "🧑‍⚕️ Proctor" : "🧍 Patient";
-  const labeledName = `${responder} (${source})`; // tag the source
+  if (!response) {
+    const vectorMatch = await getVectorResponse(message);
+    if (vectorMatch) {
+      response = vectorMatch;
+      source = "vector";
+    }
+  }
 
-  displayChatMessage(labeledName, response);
-  chatLog.push({ role: "assistant", content: response });
+  if (!response) {
+    response = await getAIResponseGPT4Turbo(message);
+    source = "gpt-4";
+  }
 
-  if (responder.includes("Patient")) speakText(response, "onyx");
-  if (responder.includes("Proctor")) speakText(response, "shimmer");
+  if (!response) {
+    response = "I'm not sure how to respond to that.";
+    source = "fallback";
+  }
+
+  displayChatResponse(response, message, role === "proctor" ? "🧑‍⚕️ Proctor" : "🧍 Patient", source);
 }
 
-function isProctorQuestion(text) {
-  const keywords = ["blood pressure", "pulse", "respiratory", "scene safe", "BSI", "PPE", "MOI", "NOI"];
-  return keywords.some((kw) => text.toLowerCase().includes(kw));
-}
-
-function displayChatMessage(name, text) {
+// Display response with tag
+function displayChatResponse(response, userMessage, responder, sourceTag = "") {
   const chatBox = document.getElementById("chatBox");
-  const msgDiv = document.createElement("div");
-  msgDiv.innerHTML = `<strong>${name}:</strong> ${text}`;
-  chatBox.appendChild(msgDiv);
+
+  const userDiv = document.createElement("div");
+  userDiv.innerHTML = `<strong>🧑 You:</strong> ${userMessage}`;
+  chatBox.appendChild(userDiv);
+
+  const botDiv = document.createElement("div");
+  botDiv.innerHTML = `<strong>${responder} (${sourceTag}):</strong> ${response}`;
+  chatBox.appendChild(botDiv);
+
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-async function fetchScenarioPath() {
-  const response = await fetch("/currentScenarioPath.txt");
-  const path = await response.text();
-  return path.trim();
-}
+// DOM interaction
+document.getElementById("sendButton").addEventListener("click", () => {
+  const input = document.getElementById("userInput");
+  const msg = input.value.trim();
+  if (msg) {
+    processUserMessage(msg);
+    input.value = "";
+  }
+});
 
-async function saveChatLog() {
-  const logRef = ref(database, "chatLogs/" + Date.now());
-  await set(logRef, {
-    scenario: scenarioPath,
-    log: chatLog
-  });
-}
+document.getElementById("userInput").addEventListener("keypress", e => {
+  if (e.key === "Enter") {
+    const msg = e.target.value.trim();
+    if (msg) {
+      processUserMessage(msg);
+      e.target.value = "";
+    }
+  }
+});
+
+document.getElementById("startButton").addEventListener("click", async () => {
+  if (!scenarioStarted) {
+    scenarioStarted = true;
+    await loadGradingTemplate();
+    displayChatResponse("You are dispatched to a call...", "📟 Dispatch", "📟 Dispatch", "system");
+  }
+});
+
+document.getElementById("endButton").addEventListener("click", () => {
+  const score = gradeScenario(scoreTracker);
+  alert("Simulation Complete. Score: " + score.total + "/" + score.max);
+});
