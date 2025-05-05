@@ -1,40 +1,81 @@
 // router.js
 
-import { getRephrasedInput } from './gpt3_rephrase.js';
-import { fetchHardcodedResponses } from './firebase_helpers.js';
-import { getGPTResponse } from './gpt_fallback.js';
+let hardcodedResponses = {};
 
-let hardcodedCache = {}; // in-memory cache
-
-// Call this once on startup
 export async function loadHardcodedResponses() {
-  hardcodedCache = await fetchHardcodedResponses();
-  console.log("Loaded hardcoded responses:", Object.keys(hardcodedCache).length);
+  try {
+    const snapshot = await firebase.database().ref('hardcodedResponses').once('value');
+    hardcodedResponses = snapshot.val() || {};
+    console.log("✅ Hardcoded responses loaded");
+  } catch (error) {
+    console.error("❌ Failed to load hardcoded responses:", error);
+  }
 }
 
-export async function routeUserInput(userInput, context) {
-  const rephrasedInput = await getRephrasedInput(userInput);
-  const key = rephrasedInput.toLowerCase();
+export async function routeUserInput(userInput, context = {}) {
+  const input = userInput.trim().toLowerCase();
 
-  if (hardcodedCache[key]) {
-    return {
-      response: hardcodedCache[key].reply,
-      source: 'hardcoded'
-    };
+  // 🔍 1. Exact hardcode match
+  if (hardcodedResponses[input]) {
+    return { response: hardcodedResponses[input], source: "hardcoded-exact" };
   }
 
-  for (let k in hardcodedCache) {
-    if (key.includes(k)) {
-      return {
-        response: hardcodedCache[k].reply,
-        source: 'hardcoded (fuzzy match)'
-      };
-    }
+  // 🔄 2. GPT-3.5 rephrase + retry hardcoded match
+  const rephrased = await rephraseWithGPT35(input);
+  if (rephrased && hardcodedResponses[rephrased.toLowerCase()]) {
+    return { response: hardcodedResponses[rephrased.toLowerCase()], source: "hardcoded-rephrased" };
   }
 
-  const fallbackResponse = await getGPTResponse(rephrasedInput, context);
-  return {
-    response: fallbackResponse,
-    source: 'gpt_fallback'
+  // 💬 3. GPT-4 Turbo fallback
+  const aiResponse = await getAIResponseGPT4Turbo(input, context);
+  if (aiResponse) {
+    logGPTResponseToDatabase(input, aiResponse, context);
+    return { response: aiResponse, source: "gpt-4-fallback" };
+  }
+
+  return { response: "I'm not sure how to respond to that.", source: "fallback" };
+}
+
+// 🔁 GPT-3.5 rephrasing
+async function rephraseWithGPT35(input) {
+  try {
+    const res = await fetch('/api/gpt-3.5-rephrase', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: input })
+    });
+    const data = await res.json();
+    return data.rephrased || null;
+  } catch (e) {
+    console.error("❌ GPT-3.5 rephrase failed:", e);
+    return null;
+  }
+}
+
+// 🤖 GPT-4 Turbo fallback
+async function getAIResponseGPT4Turbo(input, context) {
+  try {
+    const res = await fetch('/api/gpt4-turbo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: input, context })
+    });
+    const data = await res.json();
+    return data.reply || null;
+  } catch (e) {
+    console.error("❌ GPT-4 fallback failed:", e);
+    return null;
+  }
+}
+
+// 🧠 Log unmatched input and GPT reply for review
+function logGPTResponseToDatabase(input, reply, context) {
+  const logRef = firebase.database().ref("unmatchedLog").push();
+  const entry = {
+    timestamp: Date.now(),
+    userInput: input,
+    gptReply: reply,
+    context
   };
+  setTimeout(() => logRef.set(entry), 1000); // slight delay in case DB isn't ready
 }
