@@ -11,12 +11,10 @@ export async function loadHardcodedResponses() {
   }
 }
 
-// Normalize input and stored strings
 function normalize(text) {
   return text.trim().toLowerCase().replace(/[^\w\s]/g, '');
 }
 
-// Internal match finder using normalized text
 function findHardcodedMatch(input) {
   const normInput = normalize(input);
   for (const key in hardcodedResponses) {
@@ -29,7 +27,6 @@ function findHardcodedMatch(input) {
   return null;
 }
 
-// GPT-3.5 rephrase call
 async function rephraseWithGPT35(input) {
   try {
     const res = await fetch('/.netlify/functions/gpt3_rephrase', {
@@ -45,7 +42,33 @@ async function rephraseWithGPT35(input) {
   }
 }
 
-// GPT-4 Turbo fallback call
+async function classifyIntentWithGPT35(input) {
+  try {
+    const res = await fetch('/.netlify/functions/gpt3_intent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: input })
+    });
+    const data = await res.json();
+    return data.intent || null;
+  } catch (e) {
+    console.error("❌ GPT-3.5 intent classification failed:", e);
+    return null;
+  }
+}
+
+async function getApprovedMatchByIntent(intent) {
+  const snapshot = await firebase.database().ref("hardcodedResponses").once("value");
+  const data = snapshot.val();
+  for (const key in data) {
+    const entry = data[key];
+    if (entry.approved && entry.tags && entry.tags.includes(intent)) {
+      return entry.aiResponse;
+    }
+  }
+  return null;
+}
+
 async function getAIResponseGPT4Turbo(input, context) {
   try {
     const res = await fetch('/api/gpt4-turbo', {
@@ -61,7 +84,6 @@ async function getAIResponseGPT4Turbo(input, context) {
   }
 }
 
-// Log GPT-4 fallback to Firebase for admin review
 function logGPTResponseToDatabase(input, reply, context) {
   const logRef = firebase.database().ref("unmatchedLog").push();
   const entry = {
@@ -73,11 +95,11 @@ function logGPTResponseToDatabase(input, reply, context) {
   logRef.set(entry);
 }
 
-// Main router function
+// Main router
 export async function routeUserInput(userInput, context = {}) {
   const input = userInput.trim();
 
-  // 1. Exact match
+  // 1. Check exact match
   console.log("🔍 Checking exact match for:", input);
   const exact = findHardcodedMatch(input);
   if (exact) {
@@ -85,28 +107,32 @@ export async function routeUserInput(userInput, context = {}) {
     return { response: exact, source: "hardcoded" };
   }
 
-  // 2. Rephrase with GPT-3.5
-  console.log("🔁 Trying GPT-3.5 rephrase for:", input);
+  // 2. Try rephrasing for a match
+  console.log("🔁 Rephrasing...");
   const rephrased = await rephraseWithGPT35(input);
   console.log("📝 Rephrased to:", rephrased);
   if (rephrased) {
-    const matched = findHardcodedMatch(rephrased);
-    if (matched) {
-      console.log("✅ Rephrased match found.");
-
-      // ✅ Save the rephrased input to Firebase
-      const newRef = firebase.database().ref("hardcodedResponses").push();
-      newRef.set({
-        userQuestion: rephrased,
-        aiResponse: matched
-      });
-      console.log("💾 Rephrased entry saved to Firebase:", rephrased);
-
-      return { response: matched, source: "rephrased" };
+    const match = findHardcodedMatch(rephrased);
+    if (match) {
+      const ref = firebase.database().ref("hardcodedResponses").push();
+      ref.set({ userQuestion: rephrased, aiResponse: match, approved: false });
+      console.log("💾 Rephrased saved for review:", rephrased);
+      return { response: match, source: "rephrased" };
     }
   }
 
-  // 3. GPT-4 fallback
+  // 3. Try GPT-3.5 intent redirect
+  console.log("🧠 Checking intent...");
+  const intent = await classifyIntentWithGPT35(input);
+  if (intent) {
+    const approvedMatch = await getApprovedMatchByIntent(intent);
+    if (approvedMatch) {
+      console.log("✅ Found approved match via intent:", intent);
+      return { response: approvedMatch, source: `intent-${intent}` };
+    }
+  }
+
+  // 4. Fallback to GPT-4
   console.log("⚠️ No match found, using GPT-4 fallback.");
   const fallback = await getAIResponseGPT4Turbo(input, context);
   if (fallback) {
