@@ -1,0 +1,32 @@
+[
+  {
+    "userQuestion": "what is the blood pressure",
+    "aiResponse": "The patient's blood pressure is 128/72.",
+    "approved": true,
+    "tags": ["vitals", "bp", "assessment"]
+  },
+  {
+    "userQuestion": "can I give aspirin",
+    "aiResponse": "Yes, if the patient has chest pain and no known allergy or recent GI bleed.",
+    "approved": true,
+    "tags": ["aspirin", "meds", "protocol"]
+  },
+  {
+    "userQuestion": "is nitro safe now",
+    "aiResponse": "Nitro may be given if systolic BP is over 100 and no ED meds were taken within 48 hours.",
+    "approved": true,
+    "tags": ["nitro", "meds", "bp", "contraindications"]
+  },
+  {
+    "userQuestion": "what's the respiratory rate",
+    "aiResponse": "The respiratory rate is 22 breaths per minute.",
+    "approved": true,
+    "tags": ["respiratory", "vitals"]
+  },
+  {
+    "userQuestion": "can I check pupils",
+    "aiResponse": "Yes, pupil assessment is part of the secondary exam. Check for size, equality, and reactivity.",
+    "approved": true,
+    "tags": ["neuro", "assessment", "pupils"]
+  }
+]
