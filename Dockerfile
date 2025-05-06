@@ -13,7 +13,8 @@ RUN pip install chromadb openai
 
 # Copy your script and data into the container
 COPY chroma_setup.py .
-COPY hardcoded_responses.json .
+COPY hardcode_responses.json .
+
 
 # Default command
 CMD ["python", "chroma_setup.py"]
