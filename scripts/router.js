@@ -1,6 +1,6 @@
 let hardcodedResponses = {};
 
-// Load all hardcoded responses from Firebase once at start
+// Load hardcoded responses from Firebase
 export async function loadHardcodedResponses() {
   try {
     const snapshot = await firebase.database().ref('hardcodedResponses').once('value');
@@ -11,25 +11,56 @@ export async function loadHardcodedResponses() {
   }
 }
 
-function normalize(text) {
-  return text.trim().toLowerCase().replace(/[^\w\s]/g, '');
+// Main router logic
+export async function routeUserInput(userInput, context = {}) {
+  const input = userInput.trim().toLowerCase();
+
+  // 1. Exact match
+  const exact = findHardcodedMatch(input);
+  if (exact) {
+    return { response: exact, source: "hardcoded" };
+  }
+
+  // 2. GPT-3.5 rephrase + match
+  const rephrased = await rephraseWithGPT35(input);
+  if (rephrased) {
+    const matched = findHardcodedMatch(rephrased.toLowerCase());
+    if (matched) {
+      return { response: matched, source: "rephrased" };
+    }
+  }
+
+  // 3. Vector search
+  const vectorMatch = await getVectorResponse(input);
+  if (vectorMatch) {
+    return { response: vectorMatch, source: "vector" };
+  }
+
+  // 4. GPT-4 fallback
+  const fallback = await getAIResponseGPT4Turbo(input, context);
+  if (fallback) {
+    logGPTResponseToDatabase(input, fallback, context);
+    return { response: fallback, source: "gpt-4" };
+  }
+
+  return { response: "I'm not sure how to respond to that.", source: "none" };
 }
 
+// Check for hardcoded match
 function findHardcodedMatch(input) {
-  const normInput = normalize(input);
   for (const key in hardcodedResponses) {
     const stored = hardcodedResponses[key];
-    const normStored = normalize(stored?.userQuestion || '');
-    if (normStored === normInput) {
+    if (stored?.userQuestion?.trim().toLowerCase() === input) {
       return stored.aiResponse;
     }
   }
   return null;
 }
 
+// GPT-3.5 rephrase call
 async function rephraseWithGPT35(input) {
   try {
-    const res = await fetch('/.netlify/functions/gpt3_rephrase', {
+    const res = await fetch('/.netlify/functions/gpt-3.5-rephrase', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: input })
@@ -42,33 +73,23 @@ async function rephraseWithGPT35(input) {
   }
 }
 
-async function classifyIntentWithGPT35(input) {
+// Vector search call to external server
+async function getVectorResponse(input) {
   try {
-    const res = await fetch('/.netlify/functions/gpt3_intent', {
+    const res = await fetch('https://super-duper-carnival-q76675jxj9p5h6495-5000.app.github.dev/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: input })
+      body: JSON.stringify({ query: input })
     });
     const data = await res.json();
-    return data.intent || null;
+    return data.matched_question || null;
   } catch (e) {
-    console.error("❌ GPT-3.5 intent classification failed:", e);
+    console.error("❌ Vector search failed:", e);
     return null;
   }
 }
 
-async function getApprovedMatchByIntent(intent) {
-  const snapshot = await firebase.database().ref("hardcodedResponses").once("value");
-  const data = snapshot.val();
-  for (const key in data) {
-    const entry = data[key];
-    if (entry.approved && entry.tags && entry.tags.includes(intent)) {
-      return entry.aiResponse;
-    }
-  }
-  return null;
-}
-
+// GPT-4 Turbo fallback
 async function getAIResponseGPT4Turbo(input, context) {
   try {
     const res = await fetch('/api/gpt4-turbo', {
@@ -84,6 +105,7 @@ async function getAIResponseGPT4Turbo(input, context) {
   }
 }
 
+// Logging fallback GPT answers for approval
 function logGPTResponseToDatabase(input, reply, context) {
   const logRef = firebase.database().ref("unmatchedLog").push();
   const entry = {
@@ -93,52 +115,4 @@ function logGPTResponseToDatabase(input, reply, context) {
     context: context
   };
   logRef.set(entry);
-}
-
-// Main router
-export async function routeUserInput(userInput, context = {}) {
-  const input = userInput.trim();
-
-  // 1. Check exact match
-  console.log("🔍 Checking exact match for:", input);
-  const exact = findHardcodedMatch(input);
-  if (exact) {
-    console.log("✅ Exact match found.");
-    return { response: exact, source: "hardcoded" };
-  }
-
-  // 2. Try rephrasing for a match
-  console.log("🔁 Rephrasing...");
-  const rephrased = await rephraseWithGPT35(input);
-  console.log("📝 Rephrased to:", rephrased);
-  if (rephrased) {
-    const match = findHardcodedMatch(rephrased);
-    if (match) {
-      const ref = firebase.database().ref("hardcodedResponses").push();
-      ref.set({ userQuestion: rephrased, aiResponse: match, approved: false });
-      console.log("💾 Rephrased saved for review:", rephrased);
-      return { response: match, source: "rephrased" };
-    }
-  }
-
-  // 3. Try GPT-3.5 intent redirect
-  console.log("🧠 Checking intent...");
-  const intent = await classifyIntentWithGPT35(input);
-  if (intent) {
-    const approvedMatch = await getApprovedMatchByIntent(intent);
-    if (approvedMatch) {
-      console.log("✅ Found approved match via intent:", intent);
-      return { response: approvedMatch, source: `intent-${intent}` };
-    }
-  }
-
-  // 4. Fallback to GPT-4
-  console.log("⚠️ No match found, using GPT-4 fallback.");
-  const fallback = await getAIResponseGPT4Turbo(input, context);
-  if (fallback) {
-    logGPTResponseToDatabase(input, fallback, context);
-    return { response: fallback, source: "gpt-4" };
-  }
-
-  return { response: "I'm not sure how to respond to that.", source: "fallback" };
 }
