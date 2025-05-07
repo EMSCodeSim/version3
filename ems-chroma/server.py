@@ -8,10 +8,12 @@ app = Flask(__name__)
 client = chromadb.Client()
 collection = client.get_or_create_collection("default")
 
+# Home route to verify server is running
 @app.route("/", methods=["GET"])
 def home():
     return "Vector search server is live."
 
+# Search route
 @app.route("/search", methods=["POST"])
 def search():
     try:
@@ -23,8 +25,8 @@ def search():
             n_results=1
         )
 
-        matched_question = result["documents"][0][0]
-        metadata = result["metadatas"][0][0]
+        matched_question = result["documents"][0][0] if result["documents"] else "No match found"
+        metadata = result["metadatas"][0][0] if result["metadatas"] else {}
 
         return jsonify({
             "matched_question": matched_question,
