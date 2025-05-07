@@ -1,26 +1,34 @@
 from flask import Flask, request, jsonify
 import chromadb
+import os
 
 app = Flask(__name__)
 
+# Setup Chroma client
 client = chromadb.Client()
 collection = client.get_or_create_collection("default")
 
-# Optional home route for testing
-@app.route("/")
+@app.route("/", methods=["GET"])
 def home():
     return "Vector search server is live."
 
 @app.route("/search", methods=["POST"])
 def search():
     try:
-        query = request.json["query"]
-        result = collection.query(query_texts=[query], n_results=1)
+        data = request.get_json()
+        query = data.get("query", "")
+
+        result = collection.query(
+            query_texts=[query],
+            n_results=1
+        )
+
         matched_question = result["documents"][0][0]
         metadata = result["metadatas"][0][0]
+
         return jsonify({
             "matched_question": matched_question,
-            "response": metadata["response"]
+            "metadata": metadata
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
