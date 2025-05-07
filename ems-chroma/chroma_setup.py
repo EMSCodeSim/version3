@@ -23,7 +23,7 @@ def embed_text(text):
     return result["data"][0]["embedding"]
 
 # Clear old vectors if needed
-collection.delete(where={})   # Deletes all documents
+collection.delete(where={"approved": {"$exists": True}})
 
 # Loop through each response and add to Chroma
 for i, item in enumerate(responses):
