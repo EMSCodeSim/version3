@@ -2,13 +2,14 @@ import { initializeScoreTracker, updateScoreTracker, gradeScenario } from './gra
 import { startVoiceRecognition } from './mic.js';
 import { routeUserInput, loadHardcodedResponses } from './router.js';
 
-
 const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
 let hardcodedResponses = {};
 let gradingTemplate = {};
 let scoreTracker = {};
 let scenarioStarted = false;
+
+const VECTOR_SERVER_URL = "https://super-duper-carnival-q76675jxj9p5h6495-5000.app.github.dev";
 
 // Load hardcoded responses from Firebase
 firebase.database().ref('hardcodedResponses').once('value').then(snapshot => {
@@ -43,13 +44,13 @@ async function getAIResponseGPT4Turbo(message) {
 // Vector fallback
 async function getVectorResponse(message) {
   try {
-    const res = await fetch('/api/vector-search', {
+    const res = await fetch(`${VECTOR_SERVER_URL}/search`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: message })
     });
     const data = await res.json();
-    return data.match || null;
+    return data.matched_question || null;
   } catch (e) {
     logErrorToDatabase("Vector search failed: " + e.message);
     return null;
@@ -89,7 +90,11 @@ async function processUserMessage(message) {
   const role = isProctorQuestion(message) ? "Proctor" : "Patient";
 
   try {
-    const { response, source } = await routeUserInput(message, { scenarioId: scenarioPath, role: role.toLowerCase() });
+    const { response, source } = await routeUserInput(message, {
+      scenarioId: scenarioPath,
+      role: role.toLowerCase(),
+      getVectorResponse: getVectorResponse,
+    });
     displayChatResponse(response, message, `${role} (${source})`);
   } catch (err) {
     logErrorToDatabase("processUserMessage error: " + err.message);
