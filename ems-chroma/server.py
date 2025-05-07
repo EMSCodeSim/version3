@@ -34,6 +34,14 @@ def search():
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+@app.route("/seed", methods=["POST"])
+def seed():
+    collection.add(
+        documents=["The pulse rate is the number of heartbeats per minute."],
+        metadatas=[{"source": "basic_info"}],
+        ids=["pulse001"]
+    )
+    return jsonify({"status": "seeded"})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
