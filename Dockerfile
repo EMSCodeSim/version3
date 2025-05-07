@@ -1,20 +1,19 @@
-# Use an official Python image with SQLite ≥ 3.35
 FROM python:3.10-slim
 
-# Set working directory
 WORKDIR /app
 
-# Install dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y build-essential curl
 
 # Install Python packages
 RUN pip install --upgrade pip
 RUN pip install chromadb openai
 
-# Copy your script and data into the container
+# Copy project files
 COPY chroma_setup.py .
-COPY hardcode_responses.json .
+COPY vector_search.py .
+COPY hardcoded_responses.json .
 
+# Set default command to launch search after setup
+CMD python chroma_setup.py && echo "Setup complete. Starting search..." && python vector_search.py
 
-# Default command
-CMD ["python", "chroma_setup.py"]
