@@ -1,24 +1,46 @@
-# Use a lightweight Python base image
-FROM python:3.10-slim
+from flask import Flask, request, jsonify
+import chromadb
+import os
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y build-essential curl sqlite3 libsqlite3-dev
+app = Flask(__name__)
 
-# Install Python packages
-RUN pip install --upgrade pip
-RUN pip install openai chromadb flask
+# Setup Chroma client
+client = chromadb.Client()
+collection = client.get_or_create_collection("default")
 
-# Set work directory
-WORKDIR /app
+# Home route to verify server is running
+@app.route("/", methods=["GET"])
+def home():
+    return "Vector search server is live."
 
-# Copy project files
-COPY chroma_setup.py .
-COPY vector_search.py .
-COPY hardcoded_responses.json .
-COPY server.py .
+# Seed route
+@app.route("/seed", methods=["POST"])
+def seed():
+    collection.add(
+        documents=["The pulse rate is the number of heartbeats per minute."],
+        metadatas=[{"source": "basic_info"}],
+        ids=["pulse001"]
+    )
+    return jsonify({"status": "seeded"})
 
-# Expose Flask port
-EXPOSE 5000
+# Search route
+@app.route("/search", methods=["POST"])
+def search():
+    try:
+        query = request.json["query"]
+        n_results = 1
+        result = collection.query(
+            query_texts=[query],
+            n_results=n_results
+        )
+        matched_question = result["documents"][0][0] if result["documents"] else "No match found"
+        metadata = result["metadatas"][0][0] if result["metadatas"] else {}
+        return jsonify({
+            "matched_question": matched_question,
+            "metadata": metadata
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-# Run the Flask server
-CMD ["python", "server.py"]
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
