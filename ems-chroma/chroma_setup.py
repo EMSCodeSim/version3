@@ -1,15 +1,16 @@
 import chromadb
 import openai
 import os
+import json
 
-# Set your OpenAI API key
+# Initialize OpenAI client
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Setup ChromaDB
+# Initialize Chroma client and collection
 chroma_client = chromadb.Client()
 collection = chroma_client.get_or_create_collection("ems_responses")
 
-# Embed using new API
+# Embed user input using OpenAI
 def embed_text(text):
     response = client.embeddings.create(
         input=[text],
@@ -17,36 +18,37 @@ def embed_text(text):
     )
     return response.data[0].embedding
 
-# Optional: Flatten nested metadata
-def flatten_metadata(item):
-    def flatten(d, parent_key="", sep="_"):
-        items = []
-        for k, v in d.items():
-            new_key = f"{parent_key}{sep}{k}" if parent_key else k
-            if isinstance(v, dict):
-                items.extend(flatten(v, new_key, sep=sep).items())
-            else:
-                items.append((new_key, v))
-        return dict(items)
-    return flatten(item)
+# Flatten metadata (ensures everything is str/int/float/bool)
+def flatten_metadata(data, parent_key="", sep="_"):
+    flat = {}
+    for k, v in data.items():
+        new_key = f"{parent_key}{sep}{k}" if parent_key else k
+        if isinstance(v, dict):
+            flat.update(flatten_metadata(v, new_key, sep=sep))
+        elif isinstance(v, (str, int, float, bool)):
+            flat[new_key] = v
+        else:
+            # Convert unsupported types (e.g., list, None) to string
+            flat[new_key] = str(v)
+    return flat
 
 # Load responses
-import json
 with open("hardcoded_responses.json", "r") as f:
     responses = json.load(f)
 
-# Clear all vectors
+# Clear previous documents
 collection.delete(where={"approved": True})
 
-# Add responses to Chroma
+# Embed and add to Chroma
 for i, item in enumerate(responses):
     if not item.get("userQuestion") or not item.get("aiResponse"):
         continue
     embedding = embed_text(item["userQuestion"])
+    metadata = flatten_metadata(item)
     collection.add(
         documents=[item["userQuestion"]],
         ids=[f"id_{i}"],
-        metadatas=[flatten_metadata(item)]
+        metadatas=[metadata]
     )
 
 print("Embedding setup complete.")
