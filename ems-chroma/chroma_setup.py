@@ -1,51 +1,48 @@
 import chromadb
 import openai
 import os
-import json
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Set your OpenAI API key
+client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Initialize Chroma client and collection
-client = chromadb.Client()
-collection = client.get_or_create_collection("ems_responses")
+# Setup ChromaDB
+chroma_client = chromadb.Client()
+collection = chroma_client.get_or_create_collection("ems_responses")
 
-
+# Embed using new API
 def embed_text(text):
-    result = openai.Embedding.create(
+    response = client.embeddings.create(
         input=[text],
         model="text-embedding-3-small"
     )
-    return result["data"][0]["embedding"]
+    return response.data[0].embedding
 
-
-# Safely flatten metadata values for Chroma
+# Optional: Flatten nested metadata
 def flatten_metadata(item):
-    def flatten_value(value):
-        if isinstance(value, (str, int, float, bool)):
-            return value
-        elif isinstance(value, list):
-            return ", ".join(map(str, value))
-        elif isinstance(value, dict):
-            return json.dumps(value)
-        else:
-            return str(value)
-    return {k: flatten_value(v) for k, v in item.items() if k != "userQuestion"}
+    def flatten(d, parent_key="", sep="_"):
+        items = []
+        for k, v in d.items():
+            new_key = f"{parent_key}{sep}{k}" if parent_key else k
+            if isinstance(v, dict):
+                items.extend(flatten(v, new_key, sep=sep).items())
+            else:
+                items.append((new_key, v))
+        return dict(items)
+    return flatten(item)
 
-
-# Load hardcoded responses
+# Load responses
+import json
 with open("hardcoded_responses.json", "r") as f:
     responses = json.load(f)
 
-# Clear old vectors if needed (adjust filter as needed or remove this line to keep previous data)
+# Clear all vectors
 collection.delete(where={"approved": True})
 
-# Loop through and add embeddings
+# Add responses to Chroma
 for i, item in enumerate(responses):
     if not item.get("userQuestion") or not item.get("aiResponse"):
         continue
-
     embedding = embed_text(item["userQuestion"])
-
     collection.add(
         documents=[item["userQuestion"]],
         ids=[f"id_{i}"],
