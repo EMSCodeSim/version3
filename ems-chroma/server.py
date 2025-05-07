@@ -13,15 +13,15 @@ collection = client.get_or_create_collection("default")
 def home():
     return "Vector search server is live."
 
-# Search route
-@app.route("/search", methods=["POST"])
-def search():
-    try:
-        data = request.get_json()
-        query = data.get("query", "")
+@app.route("/seed", methods=["POST"])
+def seed():
+    collection.add(
+        documents=["The pulse rate is the number of heartbeats per minute."],
+        metadatas=[{"source": "basic_info"}],
+        ids=["pulse001"]
+    )
+    return jsonify({"status": "seeded"})
 
-        result = collection.query(
-            query_texts=[query],
             n_results=1
         )
 
