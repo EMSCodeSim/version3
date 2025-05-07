@@ -1,31 +1,29 @@
+from openai import OpenAI
 import chromadb
 import json
 import os
-import openai
 
-# Set your OpenAI key
-openai.api_key = os.getenv("OPENAI_API_KEY")  # or replace with key string
+# Initialize OpenAI client and Chroma
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+chroma_client = chromadb.Client()
+collection = chroma_client.get_or_create_collection("ems_responses")
 
-# Initialize ChromaDB client
-client = chromadb.Client()
-collection = client.get_or_create_collection("ems_responses")
-
-# Load hardcoded responses from local JSON
+# Load hardcoded responses
 with open("hardcoded_responses.json", "r") as f:
     responses = json.load(f)
 
-# Function to embed a user question using OpenAI
+# Embed a single string
 def embed_text(text):
-    result = openai.Embedding.create(
-        input=[text],
-        model="text-embedding-3-small"
+    response = client.embeddings.create(
+        model="text-embedding-3-small",
+        input=[text]
     )
-    return result["data"][0]["embedding"]
+    return response.data[0].embedding
 
-# Clear old vectors if needed
+# Delete all existing entries marked as approved
 collection.delete(where={"approved": True})
 
-# Loop through each response and add to Chroma
+# Add all responses
 for i, item in enumerate(responses):
     if not item.get("userQuestion") or not item.get("aiResponse"):
         continue
@@ -43,4 +41,4 @@ for i, item in enumerate(responses):
         embeddings=[embedding]
     )
 
-print(f"✅ Added {len(responses)} entries to Chroma.")
+print(f"✅ Added {len(responses)} items to Chroma.")
