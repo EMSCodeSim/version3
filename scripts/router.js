@@ -1,6 +1,6 @@
 let hardcodedResponses = {};
 
-// Load all hardcoded responses from Firebase once at start
+// Load hardcoded responses from Firebase once at start
 export async function loadHardcodedResponses() {
   try {
     const snapshot = await firebase.database().ref('hardcodedResponses').once('value');
@@ -21,7 +21,7 @@ export async function routeUserInput(userInput, context = {}) {
     return { response: exact, source: "hardcoded" };
   }
 
-  // 2. Rephrase with GPT-3.5
+  // 2. Rephrase with GPT-3.5 and check again
   const rephrased = await rephraseWithGPT35(input);
   if (rephrased) {
     const matched = findHardcodedMatch(rephrased.toLowerCase());
@@ -73,7 +73,7 @@ async function rephraseWithGPT35(input) {
   }
 }
 
-// ✅ Vector search call
+// ✅ Vector search logic
 async function getVectorResponse(input) {
   try {
     const res = await fetch('/api/vector-search', {
@@ -89,7 +89,7 @@ async function getVectorResponse(input) {
   }
 }
 
-// GPT-4 Turbo fallback call
+// GPT-4 fallback logic
 async function getAIResponseGPT4Turbo(input, context) {
   try {
     const res = await fetch('/api/gpt4-turbo', {
@@ -105,7 +105,7 @@ async function getAIResponseGPT4Turbo(input, context) {
   }
 }
 
-// Log GPT-4 fallback responses for admin review
+// Log fallback to Firebase for future approval
 function logGPTResponseToDatabase(input, reply, context) {
   const logRef = firebase.database().ref("unmatchedLog").push();
   const entry = {
