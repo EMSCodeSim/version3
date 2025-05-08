@@ -9,7 +9,7 @@ export async function handler(event, context) {
     const prompt = `
 Simplify this EMS question so that it matches a basic training format.
 Do not explain or change the meaning — just turn it into a standard training phrase.
-Respond with just the rephrased sentence.
+Respond with just the rephrased sentence.  Fix any spelling or typos.
 
 Original: "${message}"
 `;
