@@ -11,17 +11,17 @@ export async function loadHardcodedResponses() {
   }
 }
 
-// Main router function
+// Main routing logic
 export async function routeUserInput(userInput, context = {}) {
   const input = userInput.trim().toLowerCase();
 
-  // 1. Exact match
+  // 1. Hardcoded exact match
   const exact = findHardcodedMatch(input);
   if (exact) {
     return { response: exact, source: "hardcoded" };
   }
 
-  // 2. Rephrase with GPT-3.5 and check again
+  // 2. Rephrase using GPT-3.5 and retry hardcoded
   const rephrased = await rephraseWithGPT35(input);
   if (rephrased) {
     const matched = findHardcodedMatch(rephrased.toLowerCase());
@@ -30,7 +30,7 @@ export async function routeUserInput(userInput, context = {}) {
     }
   }
 
-  // ✅ 3. Vector search
+  // 3. Vector search fallback
   const vector = await getVectorResponse(input);
   if (vector) {
     return { response: vector, source: "vector" };
@@ -43,10 +43,10 @@ export async function routeUserInput(userInput, context = {}) {
     return { response: fallback, source: "gpt-4" };
   }
 
-  return { response: "I'm not sure how to respond to that.", source: "fallback" };
+  return { response: "No response available.", source: "none" };
 }
 
-// Internal match finder
+// Match finder
 function findHardcodedMatch(input) {
   for (const key in hardcodedResponses) {
     const stored = hardcodedResponses[key];
@@ -60,7 +60,6 @@ function findHardcodedMatch(input) {
 // GPT-3.5 rephrase call
 async function rephraseWithGPT35(input) {
   try {
-    console.log("Rephrasing with GPT-3.5:", input);
     const res = await fetch('/.netlify/functions/gpt3_rephrase', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -74,11 +73,10 @@ async function rephraseWithGPT35(input) {
   }
 }
 
-
-// ✅ Vector search logic
+// Vector search call
 async function getVectorResponse(input) {
   try {
-    const res = await fetch('/api/vector-search', {
+    const res = await fetch('/.netlify/functions/vector-search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: input })
@@ -91,10 +89,10 @@ async function getVectorResponse(input) {
   }
 }
 
-// GPT-4 fallback logic
+// GPT-4 Turbo fallback
 async function getAIResponseGPT4Turbo(input, context) {
   try {
-    const res = await fetch('/api/gpt4-turbo', {
+    const res = await fetch('/.netlify/functions/gpt4-turbo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: input, context })
@@ -107,7 +105,7 @@ async function getAIResponseGPT4Turbo(input, context) {
   }
 }
 
-// Log fallback to Firebase for future approval
+// Log fallback to Firebase
 function logGPTResponseToDatabase(input, reply, context) {
   const logRef = firebase.database().ref("unmatchedLog").push();
   const entry = {
