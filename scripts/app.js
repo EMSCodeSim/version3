@@ -7,7 +7,6 @@ let patientContext = "";
 let gradingTemplate = {};
 let scenarioStarted = false;
 
-// Load grading template dynamically
 async function loadGradingTemplate(type = "medical") {
   const file = `grading_templates/${type}_assessment.json`;
   const res = await fetch(file);
@@ -15,7 +14,6 @@ async function loadGradingTemplate(type = "medical") {
   initializeScoreTracker(gradingTemplate);
 }
 
-// Detect proctor-type questions
 function isProctorQuestion(message) {
   const normalized = message.toLowerCase();
   const proctorPhrases = [
@@ -28,9 +26,9 @@ function isProctorQuestion(message) {
   return proctorPhrases.some(phrase => normalized.includes(phrase));
 }
 
-// Main message handler
 async function processUserMessage(message) {
   if (!message) return;
+
   const role = isProctorQuestion(message) ? "Proctor" : "Patient";
 
   try {
@@ -45,19 +43,29 @@ async function processUserMessage(message) {
   }
 }
 
-// Display to chat UI
+// ✅ Updated to show [SOURCE] tags
 async function displayChatResponse(response, question = "", role = "", audioUrl = null) {
   const chatBox = document.getElementById("chat-box");
-  const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
+
+  // Extract source (e.g., “(vector)” → “VECTOR”)
+  const tagMatch = role.match(/\((.*?)\)/);
+  const sourceTag = tagMatch ? tagMatch[1].toUpperCase() : "";
+  const roleClean = role.replace(/\s?\(.*?\)/, "");
+
+  const roleClass = roleClean.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
+
   chatBox.innerHTML += `
     ${question ? `<div class="question">🗣️ <b>You:</b> ${question}</div>` : ""}
-    <div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>
+    <div class="response ${roleClass}">
+      ${roleClean ? `<b>${roleClean}:</b> ` : ""}
+      <span style="font-weight:bold;">[${sourceTag}]</span> ${response}
+    </div>
   `;
+
   chatBox.scrollTop = chatBox.scrollHeight;
-  speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient", audioUrl);
+  speak(response, roleClean.toLowerCase().includes("proctor") ? "proctor" : "patient", audioUrl);
 }
 
-// TTS
 async function speak(text, speaker = "patient", audioUrl = null) {
   try {
     if (audioUrl) {
@@ -78,13 +86,11 @@ async function speak(text, speaker = "patient", audioUrl = null) {
   }
 }
 
-// Error logger
 function logErrorToDatabase(errorInfo) {
   console.error("🔴", errorInfo);
   firebase.database().ref('error_logs').push({ error: errorInfo, timestamp: Date.now() });
 }
 
-// Load files
 async function loadDispatchInfo() {
   try {
     const res = await fetch(`${scenarioPath}dispatch.txt`);
@@ -104,7 +110,6 @@ async function loadPatientInfo() {
   }
 }
 
-// Start and End buttons
 window.startScenario = async function () {
   if (scenarioStarted) return;
   scenarioStarted = true;
@@ -130,7 +135,6 @@ window.endScenario = function () {
   scenarioStarted = false;
 };
 
-// DOM bindings
 document.addEventListener('DOMContentLoaded', () => {
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
