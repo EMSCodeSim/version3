@@ -25,10 +25,10 @@ async function loadGradingTemplate(type = "medical") {
   initializeScoreTracker(gradingTemplate);
 }
 
-// GPT fallback
+// ✅ GPT fallback with corrected Netlify path
 async function getAIResponseGPT4Turbo(message) {
   try {
-    const res = await fetch('/api/gpt4-turbo', {
+    const res = await fetch('/.netlify/functions/gpt4-turbo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: message })
@@ -94,6 +94,7 @@ async function processUserMessage(message) {
       scenarioId: scenarioPath,
       role: role.toLowerCase(),
       getVectorResponse: getVectorResponse,
+      getAIResponseGPT4Turbo: getAIResponseGPT4Turbo
     });
     displayChatResponse(response, message, `${role} (${source})`);
   } catch (err) {
