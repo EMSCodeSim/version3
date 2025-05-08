@@ -92,7 +92,7 @@ async function getVectorResponse(input) {
 // GPT-4 Turbo fallback
 async function getAIResponseGPT4Turbo(input, context) {
   try {
-    const res = await fetch('/api/gpt4-turbo', {
+    const res = await fetch('/.netlify/functions/gpt4-turbo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: input, context })
