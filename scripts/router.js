@@ -11,7 +11,7 @@ export async function loadHardcodedResponses() {
   }
 }
 
-// Main routing logic
+// Main router logic
 export async function routeUserInput(userInput, context = {}) {
   const input = userInput.trim().toLowerCase();
 
@@ -21,7 +21,7 @@ export async function routeUserInput(userInput, context = {}) {
     return { response: exact, source: "hardcoded" };
   }
 
-  // 2. Rephrase using GPT-3.5 and retry hardcoded
+  // 2. Rephrase and retry hardcoded
   const rephrased = await rephraseWithGPT35(input);
   if (rephrased) {
     const matched = findHardcodedMatch(rephrased.toLowerCase());
@@ -30,23 +30,24 @@ export async function routeUserInput(userInput, context = {}) {
     }
   }
 
-  // 3. Vector search fallback
+  // 3. Vector fallback
   const vector = await getVectorResponse(input);
   if (vector) {
+    logUnapprovedGPTAnswer(input, vector, "vector");
     return { response: vector, source: "vector" };
   }
 
-  // 4. GPT-4 Turbo fallback
+  // 4. GPT-4 fallback
   const fallback = await getAIResponseGPT4Turbo(input, context);
   if (fallback) {
-    logGPTResponseToDatabase(input, fallback, context);
+    logUnapprovedGPTAnswer(input, fallback, "gpt-4");
     return { response: fallback, source: "gpt-4" };
   }
 
   return { response: "No response available.", source: "none" };
 }
 
-// Match finder
+// Hardcoded matcher
 function findHardcodedMatch(input) {
   for (const key in hardcodedResponses) {
     const stored = hardcodedResponses[key];
@@ -57,7 +58,7 @@ function findHardcodedMatch(input) {
   return null;
 }
 
-// GPT-3.5 rephrase call
+// Rephrase with GPT-3.5
 async function rephraseWithGPT35(input) {
   try {
     const res = await fetch('/.netlify/functions/gpt3_rephrase', {
@@ -73,7 +74,7 @@ async function rephraseWithGPT35(input) {
   }
 }
 
-// Vector search call
+// Vector search
 async function getVectorResponse(input) {
   try {
     const res = await fetch('/.netlify/functions/vector-search', {
@@ -105,14 +106,14 @@ async function getAIResponseGPT4Turbo(input, context) {
   }
 }
 
-// Log fallback to Firebase
-function logGPTResponseToDatabase(input, reply, context) {
-  const logRef = firebase.database().ref("unmatchedLog").push();
-  const entry = {
-    timestamp: Date.now(),
-    userInput: input,
-    gptReply: reply,
-    context: context
-  };
-  logRef.set(entry);
+// Log GPT-based answers to review queue
+function logUnapprovedGPTAnswer(input, response, source) {
+  const ref = firebase.database().ref("hardcodedReview").push();
+  ref.set({
+    userQuestion: input,
+    aiResponse: response,
+    approved: false,
+    source: source,
+    timestamp: Date.now()
+  });
 }
