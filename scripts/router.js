@@ -60,7 +60,8 @@ function findHardcodedMatch(input) {
 // GPT-3.5 rephrase call
 async function rephraseWithGPT35(input) {
   try {
-    const res = await fetch('/.netlify/functions/gpt-3.5-rephrase', {
+    console.log("Rephrasing with GPT-3.5:", input);
+    const res = await fetch('/.netlify/functions/gpt3_rephrase', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: input })
@@ -72,6 +73,7 @@ async function rephraseWithGPT35(input) {
     return null;
   }
 }
+
 
 // ✅ Vector search logic
 async function getVectorResponse(input) {
