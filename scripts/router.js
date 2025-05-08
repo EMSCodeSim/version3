@@ -30,7 +30,13 @@ export async function routeUserInput(userInput, context = {}) {
     }
   }
 
-  // 3. GPT-4 fallback
+  // ✅ 3. Vector search
+  const vector = await getVectorResponse(input);
+  if (vector) {
+    return { response: vector, source: "vector" };
+  }
+
+  // 4. GPT-4 Turbo fallback
   const fallback = await getAIResponseGPT4Turbo(input, context);
   if (fallback) {
     logGPTResponseToDatabase(input, fallback, context);
@@ -67,6 +73,22 @@ async function rephraseWithGPT35(input) {
   }
 }
 
+// ✅ Vector search call
+async function getVectorResponse(input) {
+  try {
+    const res = await fetch('/api/vector-search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: input })
+    });
+    const data = await res.json();
+    return data.match || null;
+  } catch (e) {
+    console.error("❌ Vector search failed:", e);
+    return null;
+  }
+}
+
 // GPT-4 Turbo fallback call
 async function getAIResponseGPT4Turbo(input, context) {
   try {
@@ -83,7 +105,7 @@ async function getAIResponseGPT4Turbo(input, context) {
   }
 }
 
-// Log to Firebase for admin review
+// Log GPT-4 fallback responses for admin review
 function logGPTResponseToDatabase(input, reply, context) {
   const logRef = firebase.database().ref("unmatchedLog").push();
   const entry = {
