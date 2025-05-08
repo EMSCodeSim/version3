@@ -30,7 +30,7 @@ export async function routeUserInput(userInput, context = {}) {
     }
   }
 
-  // 3. GPT-4 fallback
+  // 3. GPT-4 Turbo fallback
   const fallback = await getAIResponseGPT4Turbo(input, context);
   if (fallback) {
     logGPTResponseToDatabase(input, fallback, context);
@@ -67,10 +67,10 @@ async function rephraseWithGPT35(input) {
   }
 }
 
-// GPT-4 Turbo fallback call
+// ✅ Corrected GPT-4 Turbo fallback call
 async function getAIResponseGPT4Turbo(input, context) {
   try {
-    const res = await fetch('/api/gpt4-turbo', {
+    const res = await fetch('/.netlify/functions/gpt4-turbo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: input, context })
