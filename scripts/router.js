@@ -1,32 +1,66 @@
-import { handleGpt4Turbo } from './netlify/functions/gpt4-turbo';
-import { searchVectorDB } from './netlify/functions/vector-search';
-import { rephraseWithGPT35 } from './netlify/functions/gpt3_rephrase';
+let hardcodedResponses = {};
 
-const chatLog = document.getElementById('chat-log');
-const inputField = document.getElementById('user-input');
-const sendButton = document.getElementById('send-button');
-
-// Hardcoded responses
-import hardcoded from './hardcoded_responses.json';
-
-function displayMessage(message, sender, tag = "") {
-  const div = document.createElement('div');
-  div.className = sender;
-  div.innerHTML = `<strong>${sender} ${tag ? `(${tag})` : ''}:</strong> ${message}`;
-  chatLog.appendChild(div);
-  chatLog.scrollTop = chatLog.scrollHeight;
+// Load hardcoded responses from Firebase once at start
+export async function loadHardcodedResponses() {
+  try {
+    const snapshot = await firebase.database().ref('hardcodedResponses').once('value');
+    hardcodedResponses = snapshot.val() || {};
+    console.log("✅ Hardcoded responses loaded.");
+  } catch (error) {
+    console.error("❌ Error loading hardcoded responses:", error);
+  }
 }
 
+// Main router function
+export async function routeUserInput(userInput, context = {}) {
+  const input = userInput.trim().toLowerCase();
+
+  // 1. Exact match
+  const exact = findHardcodedMatch(input);
+  if (exact) {
+    return { response: exact, source: "hardcoded" };
+  }
+
+  // 2. Rephrase with GPT-3.5 and check again
+  const rephrased = await rephraseWithGPT35(input);
+  if (rephrased) {
+    const matched = findHardcodedMatch(rephrased.toLowerCase());
+    if (matched) {
+      return { response: matched, source: "rephrased" };
+    }
+  }
+
+  // ✅ 3. Vector search
+  const vector = await getVectorResponse(input);
+  if (vector) {
+    return { response: vector, source: "vector" };
+  }
+
+  // 4. GPT-4 Turbo fallback
+  const fallback = await getAIResponseGPT4Turbo(input, context);
+  if (fallback) {
+    logGPTResponseToDatabase(input, fallback, context);
+    return { response: fallback, source: "gpt-4" };
+  }
+
+  return { response: "I'm not sure how to respond to that.", source: "fallback" };
+}
+
+// Internal match finder
 function findHardcodedMatch(input) {
-  const cleanedInput = input.trim().toLowerCase();
-  return hardcoded[cleanedInput] || null;
+  for (const key in hardcodedResponses) {
+    const stored = hardcodedResponses[key];
+    if (stored?.userQuestion?.trim().toLowerCase() === input) {
+      return stored.aiResponse;
+    }
+  }
+  return null;
 }
 
-// Rephrase using GPT-3.5
+// GPT-3.5 rephrase call
 async function rephraseWithGPT35(input) {
   try {
-    console.log("Calling rephrase...");
-    const res = await fetch('/.netlify/functions/gpt3_rephrase', {
+    const res = await fetch('/.netlify/functions/gpt-3.5-rephrase', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: input })
@@ -39,80 +73,46 @@ async function rephraseWithGPT35(input) {
   }
 }
 
-// Vector similarity search
-async function searchVector(input) {
+// ✅ Vector search logic
+async function getVectorResponse(input) {
   try {
-    const res = await fetch('/.netlify/functions/vector-search', {
+    const res = await fetch('/api/vector-search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: input })
     });
     const data = await res.json();
-    return data.result || null;
+    return data.match || null;
   } catch (e) {
     console.error("❌ Vector search failed:", e);
     return null;
   }
 }
 
-// GPT-4 Turbo fallback
-async function fallbackGPT(input) {
+// GPT-4 fallback logic
+async function getAIResponseGPT4Turbo(input, context) {
   try {
-    const res = await fetch('/.netlify/functions/gpt4-turbo', {
+    const res = await fetch('/api/gpt4-turbo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: input })
+      body: JSON.stringify({ content: input, context })
     });
     const data = await res.json();
     return data.reply || null;
   } catch (e) {
-    console.error("❌ GPT-4 Turbo failed:", e);
+    console.error("❌ GPT-4 fallback failed:", e);
     return null;
   }
 }
 
-// Full AI logic
-async function processInput(userInput) {
-  displayMessage(userInput, 'You');
-
-  // 1. Hardcoded match
-  const hardcoded = findHardcodedMatch(userInput);
-  if (hardcoded) {
-    displayMessage(hardcoded, 'Patient', 'hardcoded');
-    return;
-  }
-
-  // 2. Rephrase
-  const rephrased = await rephraseWithGPT35(userInput);
-  if (rephrased) {
-    const reHardcoded = findHardcodedMatch(rephrased);
-    if (reHardcoded) {
-      displayMessage(reHardcoded, 'Patient', 'rephrased');
-      return;
-    }
-  }
-
-  // 3. Vector search
-  const vectorMatch = await searchVector(userInput);
-  if (vectorMatch) {
-    displayMessage(vectorMatch, 'Patient', 'vector');
-    return;
-  }
-
-  // 4. GPT-4 Turbo fallback
-  const gptResponse = await fallbackGPT(userInput);
-  if (gptResponse) {
-    displayMessage(gptResponse, 'Patient', 'chatgpt');
-    return;
-  }
-
-  displayMessage("AI response failed. Try again.", 'System');
+// Log fallback to Firebase for future approval
+function logGPTResponseToDatabase(input, reply, context) {
+  const logRef = firebase.database().ref("unmatchedLog").push();
+  const entry = {
+    timestamp: Date.now(),
+    userInput: input,
+    gptReply: reply,
+    context: context
+  };
+  logRef.set(entry);
 }
-
-// UI Event Handling
-sendButton.addEventListener('click', () => {
-  const input = inputField.value.trim();
-  if (!input) return;
-  inputField.value = '';
-  processInput(input);
-});
