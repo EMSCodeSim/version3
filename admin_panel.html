@@ -1,166 +1,103 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>EMS Code Sim – Admin Panel</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background: #f4f4f4;
-    }
-    header {
-      background-color: #00796b;
-      color: white;
-      padding: 20px;
-      text-align: center;
-      font-size: 24px;
-    }
-    nav {
-      display: flex;
-      justify-content: center;
-      background-color: #004d40;
-    }
-    nav button {
-      background: none;
-      border: none;
-      color: white;
-      padding: 14px 20px;
-      font-size: 18px;
-      cursor: pointer;
-    }
-    nav button.active {
-      background-color: #00695c;
-    }
-    .content {
-      padding: 20px;
-    }
-    .response {
-      background: white;
-      margin-bottom: 15px;
-      padding: 15px;
-      border-radius: 5px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    textarea {
-      width: 100%;
-      height: 80px;
-      margin-top: 5px;
-      font-size: 14px;
-    }
-    .controls {
-      margin-top: 10px;
-    }
-    .controls button, .controls select {
-      margin-right: 10px;
-      padding: 6px 12px;
-      font-size: 14px;
-    }
-  </style>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-</head>
-<body>
-  <header>EMS Code Sim – Admin Panel</header>
-  <nav>
-    <button onclick="showTab('approved')" id="tab-approved" class="active">✔️ Approved</button>
-    <button onclick="showTab('review')" id="tab-review">🔍 Review</button>
-  </nav>
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
-  <div class="content" id="approved" style="display:block;">
-    <div id="approved-content">Loading approved responses...</div>
-  </div>
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
+  authDomain: "ems-code-sim.firebaseapp.com",
+  databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+  projectId: "ems-code-sim",
+  storageBucket: "ems-code-sim.firebasestorage.app",
+  messagingSenderId: "190498607578",
+  appId: "1:190498607578:web:4cf6c8e999b027956070e3",
+  measurementId: "G-2Q3ZT01YT1"
+};
 
-  <div class="content" id="review" style="display:none;">
-    <div id="review-content">Loading review responses...</div>
-  </div>
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-  <script>
-    const firebaseConfig = {
-      databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+// Load and render responses
+const container = document.getElementById("responsesContainer");
+const responsesRef = ref(db, 'hardcodedResponses');
 
-    function showTab(tab) {
-      document.getElementById('approved').style.display = tab === 'approved' ? 'block' : 'none';
-      document.getElementById('review').style.display = tab === 'review' ? 'block' : 'none';
-      document.getElementById('tab-approved').classList.toggle('active', tab === 'approved');
-      document.getElementById('tab-review').classList.toggle('active', tab === 'review');
+onValue(responsesRef, (snapshot) => {
+  const data = snapshot.val();
+  container.innerHTML = '';
+
+  if (!data) {
+    container.innerHTML = '<p>No responses found.</p>';
+    return;
+  }
+
+  Object.entries(data).forEach(([key, entry]) => {
+    const div = document.createElement('div');
+    div.className = 'response-block';
+    div.innerHTML = `
+      <p><strong>Q:</strong> ${entry.question || 'N/A'}</p>
+      <textarea id="response-${key}">${entry.response || ''}</textarea>
+      <select id="role-${key}">
+        <option value="Patient" ${entry.role === 'Patient' ? 'selected' : ''}>Patient</option>
+        <option value="Proctor" ${entry.role === 'Proctor' ? 'selected' : ''}>Proctor</option>
+      </select>
+      <button onclick="saveEntry('${key}')">💾 Save</button>
+      <button onclick="deleteEntry('${key}')">🗑️ Delete</button>
+    `;
+    container.appendChild(div);
+  });
+});
+
+// Save response and generate TTS
+window.saveEntry = async function(key) {
+  const textEl   = document.getElementById(`response-${key}`);
+  const roleEl   = document.getElementById(`role-${key}`);
+  const text     = textEl.value.trim();
+  const speaker  = roleEl.value;
+
+  if (!text) {
+    alert("Response text can’t be empty.");
+    return;
+  }
+
+  try {
+    const ttsRes = await fetch("/.netlify/functions/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, speaker: speaker.toLowerCase() })
+    });
+
+    const ttsJson = await ttsRes.json();
+    if (!ttsRes.ok) {
+      console.error("TTS error details:", ttsJson.details || ttsJson.error);
+      throw new Error(ttsJson.error || "TTS API error");
     }
 
-    function renderResponse(container, key, data, sourceRef) {
-      const div = document.createElement('div');
-      div.className = 'response';
-      const answer = data.aiResponse || '';
-      const role = data.role || 'patient';
-
-      div.innerHTML = `
-        <p><strong>Q:</strong> ${data.userQuestion || 'N/A'}</p>
-        <textarea id="answer-${key}">${answer}</textarea>
-        <div class="controls">
-          <select id="role-${key}">
-            <option value="patient" ${role === 'patient' ? 'selected' : ''}>Patient</option>
-            <option value="proctor" ${role === 'proctor' ? 'selected' : ''}>Proctor</option>
-          </select>
-          <button onclick="saveResponse('${key}', '${sourceRef}')">💾 Save</button>
-          <button onclick="deleteResponse('${key}', '${sourceRef}')">🗑 Delete</button>
-        </div>
-      `;
-      container.appendChild(div);
+    const base64Audio = ttsJson.audio;
+    if (!base64Audio) {
+      throw new Error("No audio returned from TTS.");
     }
 
-    function displayResponses(container, snapshot, refName) {
-      container.innerHTML = '';
-      if (!snapshot.exists()) {
-        container.innerHTML = '<p>No responses found.</p>';
-        return;
-      }
-      snapshot.forEach(child => {
-        renderResponse(container, child.key, child.val(), refName);
-      });
-    }
+    const updates = {};
+    updates[`hardcodedResponses/${key}/response`] = text;
+    updates[`hardcodedResponses/${key}/role`]     = speaker;
+    updates[`hardcodedResponses/${key}/ttsAudio`] = base64Audio;
 
-    function loadResponses(refName, containerId) {
-      const container = document.getElementById(containerId);
-      db.ref(refName).once('value')
-        .then(snapshot => displayResponses(container, snapshot, refName))
-        .catch(err => {
-          container.innerHTML = '<p>Error loading data.</p>';
-        });
-    }
+    await update(ref(db), updates);
+    alert("Saved and TTS audio generated!");
 
-    function saveResponse(key, refName) {
-      const text = document.getElementById(`answer-${key}`).value;
-      const role = document.getElementById(`role-${key}`).value;
+  } catch (err) {
+    console.error("SaveEntry failed:", err);
+    alert("Save failed: " + err.message);
+  }
+};
 
-      fetch('/.netlify/functions/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voice: role === 'patient' ? 'onyx' : 'shimmer' })
-      })
-      .then(res => res.json())
-      .then(data => {
-        const update = {
-          aiResponse: text,
-          role: role,
-          ttsAudio: data.base64
-        };
-        db.ref(`${refName}/${key}`).update(update);
-        alert("Saved and TTS updated!");
-      })
-      .catch(err => alert("TTS generation failed."));
-    }
+// Delete entry
+window.deleteEntry = async function(key) {
+  if (!confirm("Delete this response?")) return;
 
-    function deleteResponse(key, refName) {
-      if (confirm("Delete this response?")) {
-        db.ref(`${refName}/${key}`).remove();
-        alert("Deleted. Reloading...");
-        location.reload();
-      }
-    }
-
-    loadResponses('hardcodedResponses', 'approved-content');
-    loadResponses('hardcodedReview', 'review-content');
-  </script>
-</body>
-</html>
+  const updates = {};
+  updates[`hardcodedResponses/${key}`] = null;
+  await update(ref(db), updates);
+  alert("Entry deleted.");
+};
