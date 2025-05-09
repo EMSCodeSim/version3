@@ -5,33 +5,56 @@
   <title>EMS Code Sim - Admin Home</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial, sans-serif; padding: 40px; background: #f0f8ff; text-align: center; }
-    h1 { margin-bottom: 30px; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      padding: 2rem;
+      background: #eef6f9;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 2rem;
+      color: #0f172a;
+    }
+
+    .admin-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+    }
+
     .admin-link {
       display: inline-block;
-      margin: 10px;
-      padding: 15px 25px;
-      font-size: 18px;
+      width: 240px;
+      padding: 1rem;
+      font-size: 16px;
       text-decoration: none;
       color: white;
-      background-color: #0077cc;
+      background-color: #0f766e;
       border-radius: 8px;
       transition: background-color 0.3s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
+
     .admin-link:hover {
-      background-color: #005fa3;
+      background-color: #0d5f58;
     }
   </style>
 </head>
 <body>
 
-<h1>EMS Simulator Admin Home</h1>
+<h1>EMS Simulator Admin Panel</h1>
 
-<a href="admin_dashboard.html" class="admin-link">View Admin Dashboard</a><br>
-<a href="create_scenario.html" class="admin-link">Create New Scenario</a><br>
-<a href="hardcode_manager.html" class="admin-link">Manage Hardcoded Responses</a><br>
-<a href="admin_errors.html" class="admin-link">View Error Logs</a><br>
-<a href="index.html" class="admin-link">Return to Simulator</a>
+<div class="admin-grid">
+  <a href="admin_dashboard.html" class="admin-link">📊 Admin Dashboard</a>
+  <a href="create_scenario.html" class="admin-link">🛠 Create New Scenario</a>
+  <a href="hardcode_manager.html" class="admin-link">💬 Manage Hardcoded Responses</a>
+  <a href="review_manager.html" class="admin-link">🕵️ Review GPT Responses</a>
+  <a href="approved_manager.html" class="admin-link">✅ Approved Manager</a>
+  <a href="admin_errors.html" class="admin-link">🚨 Error Logs</a>
+  <a href="index.html" class="admin-link">🏠 Return to Simulator</a>
+</div>
 
 </body>
 </html>
