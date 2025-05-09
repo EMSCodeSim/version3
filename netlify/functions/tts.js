@@ -1,68 +1,51 @@
 const fetch = require('node-fetch');
 
-exports.handler = async (event) => {
-  let text, speaker;
-
-  // Safely parse request body
+exports.handler = async function(event) {
   try {
-    const body = JSON.parse(event.body || '{}');
-    text = body.text || "Hello, this is a test message.";
-    speaker = body.speaker || "patient";
-    console.log("Incoming TTS Request:", { text, speaker });
-  } catch (err) {
-    console.error("TTS JSON parse error:", err);
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: "Invalid JSON input" })
-    };
-  }
+    const { text, speaker } = JSON.parse(event.body);
+    const voice = speaker === 'proctor' ? 'shimmer' : 'onyx'; // adjust as needed
 
-  const voice = speaker === "proctor" ? "shimmer" : "onyx";
-  const speed = speaker === "patient" ? 1.3 : 1.1; // Speed up patient voice
+    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "No text provided" })
+      };
+    }
 
-  try {
-    const response = await fetch("https://api.openai.com/v1/audio/speech", {
-      method: "POST",
+    const response = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
       headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json"
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: "tts-1",
+        model: 'tts-1',
         input: text,
         voice: voice,
-        speed: speed,
-        response_format: "mp3"
+        response_format: 'base64'
       })
     });
 
     if (!response.ok) {
-      const errText = await response.text();
-      console.error("OpenAI TTS API Error:", errText);
+      const errorText = await response.text();
+      console.error("OpenAI TTS API Error:", errorText);
       return {
-        statusCode: response.status,
-        body: JSON.stringify({ error: "TTS API error", detail: errText })
+        statusCode: 500,
+        body: JSON.stringify({ error: "TTS API call failed", details: errorText })
       };
     }
 
-    const audioBuffer = await response.arrayBuffer();
-    const base64Audio = Buffer.from(audioBuffer).toString('base64');
-
+    const result = await response.json();
     return {
       statusCode: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*"
-      },
-      body: JSON.stringify({ audio: base64Audio }),
-      isBase64Encoded: false
+      body: JSON.stringify({ audio: result.audio })
     };
+
   } catch (err) {
-    console.error("TTS Handler Exception:", err);
+    console.error("Unhandled error:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Internal server error", detail: err.message })
+      body: JSON.stringify({ error: "Internal server error", details: err.message })
     };
   }
 };
-
