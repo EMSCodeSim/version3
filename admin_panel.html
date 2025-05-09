@@ -1,174 +1,127 @@
+
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
   <title>EMS Code Sim – Admin Panel</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    body { font-family: sans-serif; margin: 0; background: #f0f4f8; }
-    header { background: #0f766e; color: white; padding: 1rem; text-align: center; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f4f4;
+    }
+    header {
+      background-color: #00796b;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 24px;
+    }
     nav {
-      display: flex; background: #134e4a;
-      justify-content: center; gap: 1rem; padding: 0.5rem;
+      display: flex;
+      justify-content: center;
+      background-color: #004d40;
     }
     nav button {
-      background: none; border: none; color: white;
-      font-weight: bold; font-size: 1rem; cursor: pointer;
-    }
-    nav button.active { text-decoration: underline; }
-
-    .tab-content { display: none; padding: 2rem; }
-    .tab-content.active { display: block; }
-
-    .entry {
-      background: white; border: 1px solid #ccc;
-      padding: 1rem; margin-bottom: 1.5rem; border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-
-    textarea, input[type="text"], select {
-      width: 100%; padding: 0.5rem; margin-bottom: 0.5rem;
-      border-radius: 6px; border: 1px solid #ccc;
-    }
-
-    button {
-      padding: 0.5rem 1rem; margin: 0.3rem;
-      border: none; border-radius: 5px; font-weight: bold;
+      background: none;
+      border: none;
+      color: white;
+      padding: 14px 20px;
+      font-size: 18px;
       cursor: pointer;
     }
-
-    .approve { background: #16a34a; color: white; }
-    .delete  { background: #dc2626; color: white; }
-    .save    { background: #0f766e; color: white; }
+    nav button.active {
+      background-color: #00695c;
+    }
+    .content {
+      padding: 20px;
+    }
+    .response {
+      background: white;
+      margin-bottom: 10px;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .response p {
+      margin: 5px 0;
+    }
+    .loading {
+      font-size: 18px;
+      color: #555;
+    }
   </style>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
 <body>
-
-  <header>
-    <h1>EMS Code Sim – Admin Panel</h1>
-  </header>
-
+  <header>EMS Code Sim – Admin Panel</header>
   <nav>
-    <button id="tab-approved" class="active" onclick="showTab('approved')">✅ Approved</button>
-    <button id="tab-review" onclick="showTab('review')">🕒 Review</button>
+    <button onclick="showTab('approved')" id="tab-approved" class="active">✔️ Approved</button>
+    <button onclick="showTab('review')" id="tab-review">🔍 Review</button>
   </nav>
 
-  <div id="approved" class="tab-content active">
-    <h2>Approved Hardcoded Responses</h2>
-    <div id="approved-list">Loading approved...</div>
+  <div class="content" id="approved" style="display:block;">
+    <div id="approved-content" class="loading">Loading approved responses...</div>
   </div>
 
-  <div id="review" class="tab-content">
-    <h2>Review GPT-Generated Answers</h2>
-    <div id="review-list">Loading review...</div>
+  <div class="content" id="review" style="display:none;">
+    <div id="review-content" class="loading">Loading review responses...</div>
   </div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyD53M2XqkVWJ_0EXAMPLE",
-      authDomain: "emscodesim.firebaseapp.com",
-      databaseURL: "https://emscodesim-default-rtdb.firebaseio.com",
-      projectId: "emscodesim",
-      storageBucket: "emscodesim.appspot.com",
-      messagingSenderId: "744528493942",
-      appId: "1:744528493942:web:dc13e7f737e7d263f10f4a"
+      databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-  </script>
 
-  <script>
-    function showTab(tabId) {
-      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-      document.querySelector(`#${tabId}`).classList.add('active');
-      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-      document.querySelector(`#tab-${tabId}`).classList.add('active');
-    }
+    const approvedContainer = document.getElementById('approved-content');
+    const reviewContainer = document.getElementById('review-content');
 
-    function renderReview(snapshot) {
-      const container = document.getElementById("review-list");
-      container.innerHTML = "";
+    function displayResponses(container, snapshot) {
+      container.innerHTML = '';
       if (!snapshot.exists()) {
-        container.innerHTML = "No review entries found.";
+        container.innerHTML = '<div class="loading">No responses found.</div>';
         return;
       }
       snapshot.forEach(child => {
         const data = child.val();
-        const key = child.key;
-        const div = document.createElement("div");
-        div.className = "entry";
-
-        const q = document.createElement("textarea");
-        q.value = data.userQuestion || "";
-
-        const a = document.createElement("textarea");
-        a.value = data.aiResponse || "";
-
-        const delBtn = document.createElement("button");
-        delBtn.textContent = "Delete 🗑";
-        delBtn.className = "delete";
-        delBtn.onclick = async () => {
-          await db.ref("hardcodedReview").child(key).remove();
-          alert("Deleted.");
-          location.reload();
-        };
-
-        div.appendChild(q);
-        div.appendChild(a);
-        div.appendChild(delBtn);
+        const div = document.createElement('div');
+        div.className = 'response';
+        div.innerHTML = `
+          <p><strong>Q:</strong> ${data.userQuestion || 'N/A'}</p>
+          <p><strong>A:</strong> ${data.aiResponse || 'N/A'}</p>
+          <p><strong>Tag:</strong> ${data.tag || 'none'} | <strong>Source:</strong> ${data.source || 'n/a'}</p>
+        `;
         container.appendChild(div);
       });
     }
 
-    function renderApproved(snapshot) {
-      const container = document.getElementById("approved-list");
-      container.innerHTML = "";
-      if (!snapshot.exists()) {
-        container.innerHTML = "No approved responses found.";
-        return;
-      }
-      snapshot.forEach(child => {
-        const data = child.val();
-        const key = child.key;
-        const div = document.createElement("div");
-        div.className = "entry";
-
-        const q = document.createElement("textarea");
-        q.value = data.userQuestion || "";
-
-        const a = document.createElement("textarea");
-        a.value = data.aiResponse || "";
-
-        const delBtn = document.createElement("button");
-        delBtn.textContent = "Delete 🗑";
-        delBtn.className = "delete";
-        delBtn.onclick = async () => {
-          await db.ref("hardcodedResponses").child(key).remove();
-          alert("Deleted.");
-          location.reload();
-        };
-
-        div.appendChild(q);
-        div.appendChild(a);
-        div.appendChild(delBtn);
-        container.appendChild(div);
-      });
+    function loadApproved() {
+      db.ref('hardcodedResponses').once('value')
+        .then(snapshot => displayResponses(approvedContainer, snapshot))
+        .catch(() => {
+          approvedContainer.innerHTML = '<div class="loading">Failed to load approved responses.</div>';
+        });
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      db.ref("hardcodedReview").once("value").then(renderReview).catch(err => {
-        document.getElementById("review-list").innerText = "❌ Error loading review: " + err.message;
-        console.error(err);
-      });
+    function loadReview() {
+      db.ref('hardcodedReview').once('value')
+        .then(snapshot => displayResponses(reviewContainer, snapshot))
+        .catch(() => {
+          reviewContainer.innerHTML = '<div class="loading">Failed to load review responses.</div>';
+        });
+    }
 
-      db.ref("hardcodedResponses").once("value").then(renderApproved).catch(err => {
-        document.getElementById("approved-list").innerText = "❌ Error loading approved: " + err.message;
-        console.error(err);
-      });
-    });
+    function showTab(tab) {
+      document.getElementById('approved').style.display = tab === 'approved' ? 'block' : 'none';
+      document.getElementById('review').style.display = tab === 'review' ? 'block' : 'none';
+      document.getElementById('tab-approved').classList.toggle('active', tab === 'approved');
+      document.getElementById('tab-review').classList.toggle('active', tab === 'review');
+    }
+
+    loadApproved();
+    loadReview();
   </script>
 </body>
 </html>
