@@ -1,113 +1,96 @@
-// approved_manager.html (updated)
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Approved Hardcoded Responses</title>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+  <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyBUBUQwzEtzvZ8cTqgYIX-QJ2CEBzStfqs",
-      authDomain: "ems-code-sim.firebaseapp.com",
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
       databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
-      projectId: "ems-code-sim",
-      storageBucket: "ems-code-sim.appspot.com",
-      messagingSenderId: "544711095564",
-      appId: "1:544711095564:web:b5e41972fd5100e568fcb4"
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
     };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    async function loadResponses() {
+      const container = document.getElementById("responsesContainer");
+      container.innerHTML = "Loading approved responses...";
+      const snapshot = await db.ref("hardcodedResponses").once("value");
+      const data = snapshot.val();
 
-    const container = document.getElementById("responses");
+      if (!data) {
+        container.innerHTML = "No responses found.";
+        return;
+      }
 
-    async function generateTTS(text, voice) {
-      const response = await fetch("/.netlify/functions/tts", {
+      container.innerHTML = "";
+      Object.entries(data).forEach(([key, entry]) => {
+        const div = document.createElement("div");
+        div.className = "entry";
+        const roleOptions = `
+          <select id="role-${key}" class="role-select">
+            <option value="patient" ${entry.role === 'patient' ? 'selected' : ''}>Patient</option>
+            <option value="proctor" ${entry.role === 'proctor' ? 'selected' : ''}>Proctor</option>
+          </select>
+        `;
+        div.innerHTML = `
+          <strong>Question:</strong> <span>${entry.question || 'undefined'}</span><br/>
+          ${roleOptions}<br/>
+          <textarea id="text-${key}" rows="3">${entry.text || 'undefined'}</textarea><br/>
+          <button onclick="saveResponse('${key}')">Save</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    async function saveResponse(key) {
+      const newText = document.getElementById(`text-${key}`).value;
+      const newRole = document.getElementById(`role-${key}`).value;
+
+      const voice = newRole === "proctor" ? "shimmer" : "onyx";
+      const response = await fetch("https://api.openai.com/v1/audio/speech", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voice })
+        headers: {
+          "Authorization": `Bearer YOUR_OPENAI_API_KEY`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "tts-1",
+          input: newText,
+          voice,
+          response_format: "base64"
+        })
       });
-      const data = await response.json();
-      return data.audio_base64;
+
+      const result = await response.json();
+
+      await db.ref("hardcodedResponses/" + key).update({
+        text: newText,
+        role: newRole,
+        ttsAudio: result.audio
+      });
+
+      alert("Response updated.");
     }
 
-    function loadResponses() {
-      container.innerHTML = "<p>Loading approved responses...</p>";
-      const responsesRef = ref(db, "hardcodedResponses");
-      onValue(responsesRef, async snapshot => {
-        if (!snapshot.exists()) {
-          container.innerHTML = "<p>No approved responses found.</p>";
-          return;
-        }
-        container.innerHTML = "";
-        const data = snapshot.val();
-        Object.entries(data).forEach(([key, entry]) => {
-          const card = document.createElement("div");
-          card.className = "card";
-          const textArea = document.createElement("textarea");
-          textArea.value = entry.answer;
-          const saveButton = document.createElement("button");
-          saveButton.textContent = "Save";
-          saveButton.onclick = async () => {
-            const updatedAnswer = textArea.value;
-            const ttsVoice = entry.role === "proctor" ? "shimmer" : "onyx";
-            const ttsAudio = await generateTTS(updatedAnswer, ttsVoice);
-            await set(ref(db, `hardcodedResponses/${key}`), {
-              ...entry,
-              answer: updatedAnswer,
-              ttsAudio
-            });
-            alert("Saved and updated TTS");
-          };
-          card.innerHTML = `<h3>${entry.role}</h3><p><strong>Question:</strong> ${entry.question}</p>`;
-          card.appendChild(textArea);
-          card.appendChild(saveButton);
-          container.appendChild(card);
-        });
-      });
-    }
-
-    loadResponses();
+    window.onload = loadResponses;
   </script>
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-      background-color: #f9f9f9;
-    }
-    .card {
-      background: white;
-      border: 1px solid #ccc;
-      padding: 15px;
-      margin-bottom: 15px;
-      border-radius: 8px;
-      box-shadow: 1px 1px 5px rgba(0,0,0,0.1);
-    }
-    textarea {
-      width: 100%;
-      height: 60px;
-      margin-top: 10px;
-    }
-    button {
-      margin-top: 10px;
-      background: #00796b;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-    button:hover {
-      background: #004d40;
-    }
+    body { font-family: Arial; padding: 20px; background: #f2f2f2; }
+    .entry { background: #fff; border: 1px solid #ccc; padding: 15px; margin-bottom: 15px; }
+    textarea { width: 100%; margin-top: 5px; }
+    .role-select { margin: 10px 0; }
   </style>
 </head>
 <body>
-  <h1>Approved Hardcoded Responses</h1>
-  <div id="responses"></div>
+  <h2>Approved Hardcoded Responses</h2>
+  <div id="responsesContainer">Loading approved responses...</div>
 </body>
 </html>
