@@ -1,65 +1,127 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
   <title>EMS Code Sim – Admin Panel</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f4f4f4;
       margin: 0;
+      background: #f4f4f4;
     }
     header {
       background-color: #00796b;
       color: white;
       padding: 20px;
-      font-size: 24px;
       text-align: center;
+      font-size: 24px;
+    }
+    nav {
+      display: flex;
+      justify-content: center;
+      background-color: #004d40;
+    }
+    nav button {
+      background: none;
+      border: none;
+      color: white;
+      padding: 14px 20px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    nav button.active {
+      background-color: #00695c;
     }
     .content {
       padding: 20px;
     }
     .response {
       background: white;
+      margin-bottom: 10px;
       padding: 15px;
-      margin-bottom: 15px;
-      border-radius: 6px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    textarea {
-      width: 100%;
-      height: 80px;
+    .response p {
+      margin: 5px 0;
     }
-    select, button {
-      margin-top: 10px;
-      margin-right: 10px;
-      padding: 6px 12px;
-    }
-    audio {
-      margin-top: 10px;
-    }
-    .upgrade-btn {
-      background-color: #2196F3;
-      color: white;
-      font-size: 16px;
-      border: none;
-      padding: 10px 16px;
-      margin: 20px auto;
-      display: block;
-      border-radius: 6px;
-      cursor: pointer;
+    .loading {
+      font-size: 18px;
+      color: #555;
     }
   </style>
-
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
 <body>
-
   <header>EMS Code Sim – Admin Panel</header>
-  <button class="upgrade-btn" onclick="upgradeMissingTTS()">🔄 Upgrade Missing TTS</button>
-  <div class="content" id="responsesContainer">Loading responses...</div>
+  <nav>
+    <button onclick="showTab('approved')" id="tab-approved" class="active">✔️ Approved</button>
+    <button onclick="showTab('review')" id="tab-review">🔍 Review</button>
+  </nav>
 
-  <script src="admin_panel.js"></script>
+  <div class="content" id="approved" style="display:block;">
+    <div id="approved-content" class="loading">Loading approved responses...</div>
+  </div>
+
+  <div class="content" id="review" style="display:none;">
+    <div id="review-content" class="loading">Loading review responses...</div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const approvedContainer = document.getElementById('approved-content');
+    const reviewContainer = document.getElementById('review-content');
+
+    function displayResponses(container, snapshot) {
+      container.innerHTML = '';
+      if (!snapshot.exists()) {
+        container.innerHTML = '<div class="loading">No responses found.</div>';
+        return;
+      }
+      snapshot.forEach(child => {
+        const data = child.val();
+        const div = document.createElement('div');
+        div.className = 'response';
+        div.innerHTML = `
+          <p><strong>Q:</strong> ${data.userQuestion || 'N/A'}</p>
+          <p><strong>A:</strong> ${data.aiResponse || 'N/A'}</p>
+          <p><strong>Tag:</strong> ${data.tag || 'none'} | <strong>Source:</strong> ${data.source || 'n/a'}</p>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function loadApproved() {
+      db.ref('hardcodedResponses').once('value')
+        .then(snapshot => displayResponses(approvedContainer, snapshot))
+        .catch(() => {
+          approvedContainer.innerHTML = '<div class="loading">Failed to load approved responses.</div>';
+        });
+    }
+
+    function loadReview() {
+      db.ref('hardcodedReview').once('value')
+        .then(snapshot => displayResponses(reviewContainer, snapshot))
+        .catch(() => {
+          reviewContainer.innerHTML = '<div class="loading">Failed to load review responses.</div>';
+        });
+    }
+
+    function showTab(tab) {
+      document.getElementById('approved').style.display = tab === 'approved' ? 'block' : 'none';
+      document.getElementById('review').style.display = tab === 'review' ? 'block' : 'none';
+      document.getElementById('tab-approved').classList.toggle('active', tab === 'approved');
+      document.getElementById('tab-review').classList.toggle('active', tab === 'review');
+    }
+
+    loadApproved();
+    loadReview();
+  </script>
 </body>
 </html>
