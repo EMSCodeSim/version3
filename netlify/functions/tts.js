@@ -3,7 +3,7 @@ const fetch = require('node-fetch');
 exports.handler = async function(event) {
   try {
     const { text, speaker } = JSON.parse(event.body);
-    const voice = speaker === 'proctor' ? 'shimmer' : 'onyx'; // adjust as needed
+    const voice = speaker === 'proctor' ? 'shimmer' : 'onyx';
 
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
       return {
@@ -22,7 +22,7 @@ exports.handler = async function(event) {
         model: 'tts-1',
         input: text,
         voice: voice,
-        response_format: 'base64'
+        response_format: 'mp3'  // Correct format!
       })
     });
 
@@ -35,10 +35,12 @@ exports.handler = async function(event) {
       };
     }
 
-    const result = await response.json();
+    const audioBuffer = await response.arrayBuffer();
+    const base64Audio = Buffer.from(audioBuffer).toString('base64');
+
     return {
       statusCode: 200,
-      body: JSON.stringify({ audio: result.audio })
+      body: JSON.stringify({ audio: base64Audio })
     };
 
   } catch (err) {
