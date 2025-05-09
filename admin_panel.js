@@ -19,10 +19,9 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const responsesRef = ref(db, 'hardcodedResponses');
 
-// Get container
+// Load and render responses
 const container = document.getElementById("responsesContainer");
 
-// Load and render responses
 onValue(responsesRef, (snapshot) => {
   const data = snapshot.val();
   container.innerHTML = '';
@@ -34,7 +33,7 @@ onValue(responsesRef, (snapshot) => {
 
   Object.entries(data).forEach(([key, entry]) => {
     const question = entry.question || 'N/A';
-    const response = entry.response || '';
+    const response = entry.response !== undefined ? entry.response : '';
     const role = entry.role || 'Patient';
     const ttsAudio = entry.ttsAudio || null;
 
