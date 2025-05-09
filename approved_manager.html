@@ -1,96 +1,86 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Approved Hardcoded Responses</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script>
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_AUTH_DOMAIN",
-      databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_STORAGE_BUCKET",
-      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-      appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
+  authDomain: "ems-code-sim.firebaseapp.com",
+  databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+  projectId: "ems-code-sim",
+  storageBucket: "ems-code-sim.firebasestorage.app",
+  messagingSenderId: "190498607578",
+  appId: "1:190498607578:web:4cf6c8e999b027956070e3",
+  measurementId: "G-2Q3ZT01YT1"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
-    async function loadResponses() {
-      const container = document.getElementById("responsesContainer");
-      container.innerHTML = "Loading approved responses...";
-      const snapshot = await db.ref("hardcodedResponses").once("value");
-      const data = snapshot.val();
-
-      if (!data) {
-        container.innerHTML = "No responses found.";
-        return;
-      }
-
-      container.innerHTML = "";
-      Object.entries(data).forEach(([key, entry]) => {
-        const div = document.createElement("div");
-        div.className = "entry";
-        const roleOptions = `
-          <select id="role-${key}" class="role-select">
-            <option value="patient" ${entry.role === 'patient' ? 'selected' : ''}>Patient</option>
-            <option value="proctor" ${entry.role === 'proctor' ? 'selected' : ''}>Proctor</option>
-          </select>
-        `;
-        div.innerHTML = `
-          <strong>Question:</strong> <span>${entry.question || 'undefined'}</span><br/>
-          ${roleOptions}<br/>
-          <textarea id="text-${key}" rows="3">${entry.text || 'undefined'}</textarea><br/>
-          <button onclick="saveResponse('${key}')">Save</button>
-        `;
-        container.appendChild(div);
-      });
-    }
-
-    async function saveResponse(key) {
-      const newText = document.getElementById(`text-${key}`).value;
-      const newRole = document.getElementById(`role-${key}`).value;
-
-      const voice = newRole === "proctor" ? "shimmer" : "onyx";
-      const response = await fetch("https://api.openai.com/v1/audio/speech", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer YOUR_OPENAI_API_KEY`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "tts-1",
-          input: newText,
-          voice,
-          response_format: "base64"
-        })
-      });
-
-      const result = await response.json();
-
-      await db.ref("hardcodedResponses/" + key).update({
-        text: newText,
-        role: newRole,
-        ttsAudio: result.audio
-      });
-
-      alert("Response updated.");
-    }
-
-    window.onload = loadResponses;
   </script>
   <style>
-    body { font-family: Arial; padding: 20px; background: #f2f2f2; }
-    .entry { background: #fff; border: 1px solid #ccc; padding: 15px; margin-bottom: 15px; }
-    textarea { width: 100%; margin-top: 5px; }
-    .role-select { margin: 10px 0; }
+    body { font-family: Arial; padding: 20px; }
+    .entry { margin-bottom: 20px; border: 1px solid #ccc; padding: 10px; border-radius: 8px; }
+    textarea { width: 100%; height: 60px; }
+    select, button { margin-top: 10px; }
   </style>
 </head>
 <body>
   <h2>Approved Hardcoded Responses</h2>
-  <div id="responsesContainer">Loading approved responses...</div>
+  <div id="responseList">Loading approved responses...</div>
+
+  <script>
+    async function fetchApproved() {
+      const ref = db.ref("hardcodedResponses");
+      ref.once("value", async (snapshot) => {
+        const data = snapshot.val();
+        const container = document.getElementById("responseList");
+        container.innerHTML = "";
+
+        if (!data) return container.innerText = "No responses found.";
+
+        Object.entries(data).forEach(([key, value]) => {
+          if (value.approved) {
+            const div = document.createElement("div");
+            div.className = "entry";
+            div.innerHTML = `
+              <strong>Question:</strong> ${value.question || "N/A"}<br>
+              <label>Role: 
+                <select id="role-${key}">
+                  <option value="patient" ${value.role === 'patient' ? 'selected' : ''}>Patient</option>
+                  <option value="proctor" ${value.role === 'proctor' ? 'selected' : ''}>Proctor</option>
+                </select>
+              </label><br>
+              <textarea id="response-${key}">${value.answer || ""}</textarea><br>
+              <button onclick="saveResponse('${key}')">Save</button>
+            `;
+            container.appendChild(div);
+          }
+        });
+      });
+    }
+
+    async function saveResponse(id) {
+      const answer = document.getElementById(`response-${id}`).value;
+      const role = document.getElementById(`role-${id}`).value;
+
+      const voice = role === 'patient' ? 'onyx' : 'shimmer';
+      const ttsRes = await fetch("/.netlify/functions/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: answer, voice })
+      });
+      const ttsData = await ttsRes.json();
+
+      await db.ref(`hardcodedResponses/${id}`).update({
+        answer,
+        role,
+        ttsAudio: ttsData.base64
+      });
+      alert("Saved!");
+    }
+
+    fetchApproved();
+  </script>
 </body>
 </html>
