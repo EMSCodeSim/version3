@@ -1,46 +1,123 @@
+
 <!DOCTYPE html>
+
 <html>
 <head>
-  <title>Approved Response Manager</title>
-  <style>
-    body { font-family: sans-serif; padding: 1rem; background: #f4f4f4; }
-    .entry { background: white; border: 1px solid #ccc; padding: 1rem; margin-bottom: 1rem; }
-    textarea { width: 100%; height: 60px; margin-bottom: 0.5rem; }
-    select, input[type="text"] { margin-bottom: 0.5rem; width: 100%; }
-    button { margin-right: 0.5rem; }
-    audio { display: block; margin-top: 0.5rem; }
+<title>EMS Code Sim – Admin Panel</title>
+<style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f4f4;
+    }
+    header {
+      background-color: #00796b;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 24px;
+    }
+    nav {
+      display: flex;
+      justify-content: center;
+      background-color: #004d40;
+    }
+    nav button {
+      background: none;
+      border: none;
+      color: white;
+      padding: 14px 20px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    nav button.active {
+      background-color: #00695c;
+    }
+    .content {
+      padding: 20px;
+    }
+    .response {
+      background: white;
+      margin-bottom: 10px;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .response p {
+      margin: 5px 0;
+    }
+    .loading {
+      font-size: 18px;
+      color: #555;
+    }
   </style>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
 <body>
-  <h2>Approved Hardcoded Responses</h2>
-  <div id="approved-list">Loading...</div>
-
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-  <script>
+<header>EMS Code Sim – Admin Panel</header>
+<nav>
+<button class="active" id="tab-approved" onclick="showTab('approved')">✔️ Approved</button>
+<button id="tab-review" onclick="showTab('review')">🔍 Review</button>
+</nav>
+<div class="content" id="approved" style="display:block;"><h2>Approved GPT-Generated Answers</h2><div id="approved-list">Loading approved responses...</div></div>
+<div class="content" id="review" style="display:none;">
+<div class="loading" id="review-content">Loading review responses...</div>
+</div>
+<script>
     const firebaseConfig = {
-      apiKey: "AIzaSyD53M2XqkVWJ_0EXAMPLE",
-      authDomain: "emscodesim.firebaseapp.com",
-      databaseURL: "https://emscodesim-default-rtdb.firebaseio.com",
-      projectId: "emscodesim",
-      storageBucket: "emscodesim.appspot.com",
-      messagingSenderId: "744528493942",
-      appId: "1:744528493942:web:dc13e7f737e7d263f10f4a"
+      databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    async function generateTTS(text, voice) {
-      const res = await fetch('/.netlify/functions/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, speaker: voice })
+    const approvedContainer = document.getElementById('approved-content');
+    const reviewContainer = document.getElementById('review-content');
+
+    function displayResponses(container, snapshot) {
+      container.innerHTML = '';
+      if (!snapshot.exists()) {
+        container.innerHTML = '<div class="loading">No responses found.</div>';
+        return;
+      }
+      snapshot.forEach(child => {
+        const data = child.val();
+        const div = document.createElement('div');
+        div.className = 'response';
+        div.innerHTML = `
+          <p><strong>Q:</strong> ${data.userQuestion || 'N/A'}</p>
+          <p><strong>A:</strong> ${data.aiResponse || 'N/A'}</p>
+          <p><strong>Tag:</strong> ${data.tag || 'none'} | <strong>Source:</strong> ${data.source || 'n/a'}</p>
+        `;
+        container.appendChild(div);
       });
-      const data = await res.json();
-      return data.audio || "";
     }
 
-    function detectVoiceType(question) {
-      const proctorWords = ["scene", "safe", "bsi", "vitals", "pulse", "respiratory", "blood", "oxygen"];
-      return proctorWords.some(word => question.toLowerCase().includes(word)) ? "shimmer" : "onyx";
-   
+    function loadApproved() {
+      db.ref('hardcodedResponses').once('value')
+        .then(snapshot => displayResponses(approvedContainer, snapshot))
+        .catch(() => {
+          approvedContainer.innerHTML = '<div class="loading">Failed to load approved responses.</div>';
+        });
+    }
+
+    function loadReview() {
+      db.ref('hardcodedReview').once('value')
+        .then(snapshot => displayResponses(reviewContainer, snapshot))
+        .catch(() => {
+          reviewContainer.innerHTML = '<div class="loading">Failed to load review responses.</div>';
+        });
+    }
+
+    function showTab(tab) {
+      document.getElementById('approved').style.display = tab === 'approved' ? 'block' : 'none';
+      document.getElementById('review').style.display = tab === 'review' ? 'block' : 'none';
+      document.getElementById('tab-approved').classList.toggle('active', tab === 'approved');
+      document.getElementById('tab-review').classList.toggle('active', tab === 'review');
+    }
+
+    loadApproved();
+    loadReview();
+  </script>
+</body>
+</html>
