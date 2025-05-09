@@ -1,68 +1,89 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>EMS Code Sim – Admin Panel</title>
+  <title>Approved Manager – EMS Code Sim</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f4f4f4;
+    body { font-family: sans-serif; background: #f4f4f4; padding: 20px; }
+    h2 { color: #00796b; }
+    #reloadBtn {
+      background-color: #0f766e; color: white; border: none;
+      padding: 10px 20px; font-weight: bold; cursor: pointer;
+      margin-bottom: 20px; border-radius: 6px;
     }
+    #reloadBtn:hover { background-color: #0d5e55; }
 
-    header {
-      background: #00695c;
-      color: white;
-      padding: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+    .entry {
+      background: white; border: 1px solid #ccc;
+      padding: 1rem; margin-bottom: 1.5rem; border-radius: 8px;
     }
-
-    header h1 {
-      margin: 0;
+    textarea { width: 100%; height: 60px; margin-bottom: 0.5rem; }
+    input, select { width: 100%; margin-bottom: 0.5rem; padding: 0.5rem; }
+    button {
+      background: #0f766e; color: white; border: none;
+      padding: 0.5rem 1rem; margin-right: 0.5rem; cursor: pointer;
     }
-
-    .tabs {
-      display: flex;
-      gap: 20px;
-    }
-
-    .tabs a {
-      color: white;
-      text-decoration: none;
-      padding: 8px 12px;
-      border-radius: 4px;
-      background: #004d40;
-      transition: background 0.3s;
-    }
-
-    .tabs a:hover {
-      background: #00332e;
-    }
-
-    .tabs a.active {
-      background: #00796b;
-    }
-
-    main {
-      padding: 30px;
-    }
+    button:hover { background: #0d5e55; }
   </style>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
 <body>
-  <header>
-    <h1>EMS Code Sim – Admin Panel</h1>
-    <nav class="tabs">
-      <a href="approved_manager.html">✅ Approved</a>
-      <a href="review_manager.html">🕵️ Review</a>
-      <a href="admin_panel.html">🛠️ Admin Panel</a>
-    </nav>
-  </header>
-  <main>
-    <p>Welcome to the EMS Code Sim admin home page. Use the tabs above to manage hardcoded responses.</p>
-  </main>
+  <h2>Approved Hardcoded Responses</h2>
+  <button id="reloadBtn" onclick="loadApproved()">🔄 Reload Responses</button>
+  <div id="approved-list">Loading approved responses...</div>
+
+  <script>
+    const firebaseConfig = {
+      databaseURL: "https://emscodesim-default-rtdb.firebaseio.com"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function loadApproved() {
+      const container = document.getElementById("approved-list");
+      container.innerHTML = "Loading approved responses...";
+
+      db.ref("hardcodedResponses").once("value").then(snapshot => {
+        container.innerHTML = "";
+        if (!snapshot.exists()) {
+          container.innerHTML = "<p>No approved responses found.</p>";
+          return;
+        }
+
+        snapshot.forEach(child => {
+          const data = child.val();
+          const key = child.key;
+
+          const div = document.createElement("div");
+          div.className = "entry";
+
+          const q = document.createElement("textarea");
+          q.value = data.userQuestion || "";
+
+          const a = document.createElement("textarea");
+          a.value = data.aiResponse || "";
+
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "Delete";
+          delBtn.onclick = async () => {
+            await db.ref("hardcodedResponses").child(key).remove();
+            alert("Deleted.");
+            loadApproved();
+          };
+
+          div.appendChild(q);
+          div.appendChild(a);
+          div.appendChild(delBtn);
+          container.appendChild(div);
+        });
+      }).catch(err => {
+        container.innerHTML = `<p>❌ Failed to load: ${err.message}</p>`;
+        console.error("Firebase error:", err);
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", loadApproved);
+  </script>
 </body>
 </html>
