@@ -43,7 +43,7 @@ function loadResponses() {
             <option value="Proctor" ${role === 'Proctor' ? 'selected' : ''}>Proctor</option>
           </select>
           ${currentTab === 'review' 
-            ? `<button onclick="approveEntry('${key}', \`${question.replace(/`/g, '\`')}\`)">✅ Approve</button>` 
+            ? `<button onclick="approveEntry('${key}', \`${question.replace(/`/g, '\\`')}\`)">✅ Approve</button>` 
             : `<button onclick="saveEntry('${key}')">💾 Save</button>
                <button onclick="deleteEntry('${key}')">🗑️ Delete</button>`}
           ${ttsAudio ? `<br><audio controls src="data:audio/mp3;base64,${ttsAudio}"></audio>` : ''}
