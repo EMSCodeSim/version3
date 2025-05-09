@@ -1,10 +1,11 @@
 const fetch = require('node-fetch');
 const admin = require('firebase-admin');
 
-// ✅ Initialize Firebase Admin SDK
+// ✅ Use service account from environment variable
 if (!admin.apps.length) {
+  const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK);
   admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
+    credential: admin.credential.cert(serviceAccount),
     databaseURL: 'https://ems-code-sim-default-rtdb.firebaseio.com'
   });
 }
@@ -23,7 +24,7 @@ exports.handler = async function(event, context) {
 
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-    // ✅ Determine if question should go to Proctor
+    // ✅ Detect if prompt is Proctor-related
     const proctorKeywords = [
       'scene safe', 'bsi', 'scene', 'blood pressure', 'pulse', 'respiratory rate', 'saO2',
       'skin color', 'bgl', 'blood sugar', 'breath sounds', 'lung sounds', 'oxygen', 'NRB',
@@ -35,7 +36,7 @@ exports.handler = async function(event, context) {
 
     const role = proctorKeywords.some(k => content.toLowerCase().includes(k)) ? 'Proctor' : 'Patient';
 
-    // ✅ Call GPT-4
+    // ✅ Send request to OpenAI API
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -56,7 +57,7 @@ exports.handler = async function(event, context) {
 
     const gptResponse = result.choices[0].message.content;
 
-    // ✅ Save to Firebase hardcodedReview
+    // ✅ Log to Firebase under /hardcodedReview
     const hash = Buffer.from(content).toString('base64').slice(0, 16);
     await db.ref(`hardcodedReview/${hash}`).set({
       userQuestion: content,
