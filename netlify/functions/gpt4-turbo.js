@@ -24,26 +24,24 @@ exports.handler = async function(event, context) {
 
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-    // Determine who should respond
     const proctorKeywords = [
       'scene safe', 'bsi', 'scene', 'blood pressure', 'pulse', 'respiratory rate', 'saO2',
       'skin color', 'bgl', 'blood sugar', 'breath sounds', 'lung sounds', 'oxygen', 'NRB',
       'nasal cannula', 'splint', 'transport', 'stretcher', 'spinal immobilization', 'move patient',
       'position patient', 'load and go', 'procedure', 'place patient', 'emergent transport',
-      'administer', 'give aspirin', 'give nitro', 'asa', 'oral glucose', 'epinephrine', 'splint',
-      'immobilize', 'check pupils', 'response to painful stimuli'
+      'administer', 'give aspirin', 'give nitro', 'asa', 'oral glucose', 'epinephrine',
+      'check pupils', 'immobilize'
     ];
 
     const lowerContent = content.toLowerCase();
-    const isProctorQuestion = proctorKeywords.some(keyword => lowerContent.includes(keyword));
-    const responder = isProctorQuestion ? 'Proctor' : 'Patient';
+    const isProctor = proctorKeywords.some(k => lowerContent.includes(k));
+    const role = isProctor ? 'Proctor' : 'Patient';
 
     let systemPrompt = '';
-
-    if (responder === 'Patient') {
-      systemPrompt = "You are playing the role of a 62-year-old male experiencing chest pain at a public park. Respond realistically as the patient, based only on symptoms, history, or how you feel.";
+    if (role === 'Patient') {
+      systemPrompt = "You are a patient in a realistic EMS scenario. Answer emotionally and from the patient's perspective.";
     } else {
-      systemPrompt = "You are acting as a certified NREMT Proctor for an EMT Basic exam. You are not the patient. Only respond with scene information, vitals, physical findings, or acknowledge procedures. If asked something the patient would know, say 'Refer to the patient.'";
+      systemPrompt = "You are a certified NREMT Proctor responding only with exam-related facts, vitals, or procedural confirmations.";
     }
 
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -70,12 +68,12 @@ exports.handler = async function(event, context) {
 
     const aiReply = openaiData.choices[0].message.content.trim();
 
-    // ✅ Save to Firebase /hardcodedReview
+    // ✅ Log to Firebase under /hardcodedReview
     const hash = Buffer.from(content).toString('base64').slice(0, 16);
     await db.ref(`hardcodedReview/${hash}`).set({
       userQuestion: content,
       aiResponse: aiReply,
-      role: responder
+      role: role
     });
 
     return {
