@@ -15,9 +15,6 @@
       text-align: center;
       color: #333;
     }
-<button onclick="upgradeMissingTTS()" style="margin-bottom: 20px; font-size: 16px;">
-  🔄 Upgrade Missing TTS
-</button>
 
     .response-block {
       background: white;
@@ -32,7 +29,7 @@
       height: 80px;
       padding: 10px;
       font-size: 14px;
-      margin-top: 8px;
+      margin-top: 10px;
       border-radius: 4px;
       border: 1px solid #ccc;
     }
@@ -44,29 +41,42 @@
       font-size: 14px;
     }
 
-    button {
-      cursor: pointer;
-    }
-
     .save-btn {
       background-color: #4CAF50;
       color: white;
       border: none;
+      cursor: pointer;
     }
 
     .delete-btn {
       background-color: #e53935;
       color: white;
       border: none;
+      cursor: pointer;
+    }
+
+    .upgrade-btn {
+      background-color: #2196F3;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      font-size: 15px;
+      cursor: pointer;
+      display: block;
+      margin: 10px auto 30px auto;
+      border-radius: 6px;
     }
   </style>
 </head>
 <body>
 
   <h1>Approved Hardcoded Responses</h1>
+
+  <button class="upgrade-btn" onclick="upgradeMissingTTS()">🔄 Upgrade Missing TTS Audio</button>
+
   <div id="responsesContainer">Loading...</div>
 
-  <!-- Firebase + TTS Manager Script -->
+  <!-- Firebase & Logic -->
   <script type="module" src="./admin_panel.js"></script>
 
 </body>
