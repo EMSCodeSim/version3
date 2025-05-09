@@ -1,152 +1,120 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getDatabase, ref, onValue, update, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
-
-// Firebase config
 const firebaseConfig = {
-  apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
-  authDomain: "ems-code-sim.firebaseapp.com",
-  databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
-  projectId: "ems-code-sim",
-  storageBucket: "ems-code-sim.firebasestorage.app",
-  messagingSenderId: "190498607578",
-  appId: "1:190498607578:web:4cf6c8e999b027956070e3",
-  measurementId: "G-2Q3ZT01YT1"
+  databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com"
 };
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-// Init Firebase
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const responsesRef = ref(db, 'hardcodedResponses');
-
-// Load and render responses
 const container = document.getElementById("responsesContainer");
 
-onValue(responsesRef, (snapshot) => {
-  const data = snapshot.val();
-  container.innerHTML = '';
+function loadResponses() {
+  db.ref('hardcodedResponses').once('value')
+    .then(snapshot => {
+      container.innerHTML = '';
+      if (!snapshot.exists()) {
+        container.innerHTML = '<div>No responses found.</div>';
+        return;
+      }
 
-  if (!data) {
-    container.innerHTML = '<p>No responses found.</p>';
-    return;
-  }
+      snapshot.forEach(child => {
+        const key = child.key;
+        const entry = child.val();
 
-  Object.entries(data).forEach(([key, entry]) => {
-    const question = entry.question || 'N/A';
-    const response = entry.response !== undefined ? entry.response : '';
-    const role = entry.role || 'Patient';
-    const ttsAudio = entry.ttsAudio || null;
+        const question = entry.question || 'N/A';
+        const response = entry.response || '';
+        const role = entry.role || 'Patient';
+        const ttsAudio = entry.ttsAudio || null;
 
-    const div = document.createElement('div');
-    div.className = 'response-block';
-    div.innerHTML = `
-      <p><strong>Q:</strong> ${question}</p>
-      <textarea id="response-${key}">${response}</textarea>
-      <select id="role-${key}">
-        <option value="Patient" ${role === 'Patient' ? 'selected' : ''}>Patient</option>
-        <option value="Proctor" ${role === 'Proctor' ? 'selected' : ''}>Proctor</option>
-      </select>
-      <button class="save-btn" onclick="saveEntry('${key}')">💾 Save</button>
-      <button class="delete-btn" onclick="deleteEntry('${key}')">🗑️ Delete</button>
-      ${ttsAudio ? `<audio controls src="data:audio/mp3;base64,${ttsAudio}"></audio>` : ''}
-    `;
-    container.appendChild(div);
-  });
-});
+        const div = document.createElement('div');
+        div.className = 'response';
+        div.innerHTML = `
+          <p><strong>Q:</strong> ${question}</p>
+          <textarea id="response-${key}">${response}</textarea><br>
+          <select id="role-${key}">
+            <option value="Patient" ${role === 'Patient' ? 'selected' : ''}>Patient</option>
+            <option value="Proctor" ${role === 'Proctor' ? 'selected' : ''}>Proctor</option>
+          </select>
+          <button onclick="saveEntry('${key}')">💾 Save</button>
+          <button onclick="deleteEntry('${key}')">🗑️ Delete</button>
+          ${ttsAudio ? `<br><audio controls src="data:audio/mp3;base64,${ttsAudio}"></audio>` : ''}
+        `;
+        container.appendChild(div);
+      });
+    })
+    .catch(err => {
+      console.error("Firebase load error:", err);
+      container.innerHTML = '<div>Error loading responses.</div>';
+    });
+}
 
-// Save response and generate TTS
 window.saveEntry = async function(key) {
-  const textEl = document.getElementById(`response-${key}`);
-  const roleEl = document.getElementById(`role-${key}`);
-  const text = textEl.value.trim();
-  const speaker = roleEl.value;
+  const text = document.getElementById(`response-${key}`).value.trim();
+  const role = document.getElementById(`role-${key}`).value;
 
-  if (!text) {
-    alert("Response text can’t be empty.");
-    return;
-  }
+  if (!text) return alert("Response cannot be empty.");
 
   try {
-    const ttsRes = await fetch("/.netlify/functions/tts", {
+    const res = await fetch("/.netlify/functions/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, speaker: speaker.toLowerCase() })
+      body: JSON.stringify({ text, speaker: role.toLowerCase() })
     });
 
-    const ttsJson = await ttsRes.json();
-    if (!ttsRes.ok || !ttsJson.audio) {
-      console.error("TTS error:", ttsJson.details || ttsJson.error);
-      throw new Error(ttsJson.error || "TTS API error");
-    }
+    const json = await res.json();
+    if (!res.ok || !json.audio) throw new Error(json.error || "TTS failed");
 
-    const updates = {
-      [`hardcodedResponses/${key}/response`]: text,
-      [`hardcodedResponses/${key}/role`]: speaker,
-      [`hardcodedResponses/${key}/ttsAudio`]: ttsJson.audio
-    };
+    await db.ref(`hardcodedResponses/${key}`).update({
+      response: text,
+      role: role,
+      ttsAudio: json.audio
+    });
 
-    await update(ref(db), updates);
-    alert("Saved and TTS audio generated!");
+    alert("Saved and TTS updated.");
+    loadResponses();
   } catch (err) {
-    console.error("SaveEntry failed:", err);
+    console.error("Save error:", err);
     alert("Save failed: " + err.message);
   }
 };
 
-// Delete entry
 window.deleteEntry = async function(key) {
   if (!confirm("Delete this response?")) return;
-  const updates = {};
-  updates[`hardcodedResponses/${key}`] = null;
-  await update(ref(db), updates);
-  alert("Entry deleted.");
+  await db.ref(`hardcodedResponses/${key}`).remove();
+  alert("Deleted.");
+  loadResponses();
 };
 
-// 🔄 Upgrade all missing TTS entries
 window.upgradeMissingTTS = async function() {
-  const snapshot = await get(ref(db, 'hardcodedResponses'));
+  const snapshot = await db.ref('hardcodedResponses').once('value');
   const data = snapshot.val();
-  if (!data) {
-    alert("No responses found.");
-    return;
-  }
+  if (!data) return alert("No responses found.");
 
-  const entriesToUpgrade = Object.entries(data).filter(
-    ([_, entry]) => entry.response && !entry.ttsAudio
-  );
+  const entries = Object.entries(data).filter(([_, v]) => v.response && !v.ttsAudio);
+  if (!entries.length) return alert("All entries have TTS already.");
 
-  if (entriesToUpgrade.length === 0) {
-    alert("All entries already have TTS audio.");
-    return;
-  }
+  if (!confirm(`Upgrade ${entries.length} entries?`)) return;
 
-  const confirmUpgrade = confirm(`Upgrade ${entriesToUpgrade.length} entries missing TTS audio?`);
-  if (!confirmUpgrade) return;
-
-  for (const [key, entry] of entriesToUpgrade) {
-    const text = entry.response.trim();
-    const speaker = (entry.role || "Patient").toLowerCase();
-
+  for (const [key, entry] of entries) {
     try {
-      const ttsRes = await fetch("/.netlify/functions/tts", {
+      const res = await fetch("/.netlify/functions/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, speaker })
+        body: JSON.stringify({ text: entry.response, speaker: (entry.role || "Patient").toLowerCase() })
       });
 
-      const ttsJson = await ttsRes.json();
-      if (!ttsRes.ok || !ttsJson.audio) {
-        console.warn(`Failed TTS for ${key}:`, ttsJson);
-        continue;
+      const json = await res.json();
+      if (res.ok && json.audio) {
+        await db.ref(`hardcodedResponses/${key}/ttsAudio`).set(json.audio);
+        console.log(`✅ Upgraded: ${key}`);
+      } else {
+        console.warn(`❌ Failed for ${key}:`, json.error);
       }
-
-      const updates = {};
-      updates[`hardcodedResponses/${key}/ttsAudio`] = ttsJson.audio;
-      await update(ref(db), updates);
-      console.log(`✅ Upgraded: ${key}`);
     } catch (err) {
       console.error(`❌ Error upgrading ${key}:`, err);
     }
   }
 
-  alert("Upgrade complete. Refresh the page to see updated audio.");
+  alert("Upgrade complete.");
+  loadResponses();
 };
+
+loadResponses();
