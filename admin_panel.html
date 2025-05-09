@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>EMS Code Sim – Admin Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { font-family: sans-serif; margin: 0; background: #f0f4f8; }
+    header { background: #0f766e; color: white; padding: 1rem; text-align: center; }
+    nav {
+      display: flex; background: #134e4a;
+      justify-content: center; gap: 1rem; padding: 0.5rem;
+    }
+    nav button {
+      background: none; border: none; color: white;
+      font-weight: bold; font-size: 1rem; cursor: pointer;
+    }
+    nav button.active { text-decoration: underline; }
+
+    .tab-content { display: none; padding: 2rem; }
+    .tab-content.active { display: block; }
+
+    .entry {
+      background: white; border: 1px solid #ccc;
+      padding: 1rem; margin-bottom: 1.5rem; border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    textarea, input[type="text"], select {
+      width: 100%; padding: 0.5rem; margin-bottom: 0.5rem;
+      border-radius: 6px; border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 0.5rem 1rem; margin: 0.3rem;
+      border: none; border-radius: 5px; font-weight: bold;
+      cursor: pointer;
+    }
+
+    .approve { background: #16a34a; color: white; }
+    .delete  { background: #dc2626; color: white; }
+    .save    { background: #0f766e; color: white; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>EMS Code Sim – Admin Panel</h1>
+  </header>
+
+  <nav>
+    <button id="tab-approved" class="active" onclick="showTab('approved')">✅ Approved Responses</button>
+    <button id="tab-review" onclick="showTab('review')">🕒 Review Queue</button>
+  </nav>
+
+  <div id="approved" class="tab-content active">
+    <h2>Approved Hardcoded Responses</h2>
+    <div id="approved-list">Loading...</div>
+  </div>
+
+  <div id="review" class="tab-content">
+    <h2>Review GPT-Generated Answers</h2>
+    <div id="review-list">Loading...</div>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyD53M2XqkVWJ_0EXAMPLE",
+      authDomain: "emscodesim.firebaseapp.com",
+      databaseURL: "https://emscodesim-default-rtdb.firebaseio.com",
+      projectId: "emscodesim",
+      storageBucket: "emscodesim.appspot.com",
+      messagingSenderId: "744528493942",
+      appId: "1:744528493942:web:dc13e7f737e7d263f10f4a"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+  </script>
+
+  <!-- TTS Helper -->
+  <script>
+    async function generateTTS(text, voice) {
+      const res = await fetch('/.netlify/functions/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, speaker: voice })
+      });
+      const data = await res.json();
+      return data.audio || "";
+    }
+
+    function detectVoice(question) {
+      const q = question.toLowerCase();
+      const proctorWords = ["scene", "bsi", "safe", "vitals", "oxygen", "pulse", "bp", "rate"];
+      return proctorWords.some(w => q.includes(w)) ? "shimmer" : "onyx";
+    }
+  </script>
+
+  <!-- Tab & Admin Logic -->
+  <script>
+    function showTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelector(`#${tabId}`).classList.add('active');
+      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+      document.querySelector(`#tab-${tabId}`).classList.add('active');
+    }
+
+    function renderReview(snapshot) {
+      const container = document.getElementById("review-list");
+      container.innerHTML = "";
+      snapshot.forEach(child => {
+        const data = child.val();
+        const key = child.key;
+
+        const div = document.createElement("div");
+        div.className = "entry";
+
+        const q = document.createElement("textarea");
+        q.value = data.userQuestion || "";
+
+        const a = document.createElement("textarea");
+        a.value = data.aiResponse || "";
+
+        const tType = document.createElement("select");
+        ["none", "image", "audio"].forEach(type => {
+          const opt = document.createElement("option");
+          opt.value = type;
+          opt.text = type;
+          tType.appendChild(opt);
+        });
+
+        const tFile = document.createElement("input");
+        tFile.type = "text"; tFile.placeholder = "trigger filename";
+
+        const approveBtn = document.createElement("button");
+        approveBtn.textContent = "Approve ✅";
+        approveBtn.className = "approve";
+        approveBtn.onclick = async () => {
+          const voice = detectVoice(q.value);
+          const ttsAudio = await generateTTS(a.value, voice);
+
+          const approved = {
+            userQuestion: q.value.trim(),
+            aiResponse: a.value.trim(),
+            ttsAudio: ttsAudio
+          };
+
+          if (tType.value !== "none") {
+            approved.trigger = { type: tType.value, file: tFile.value.trim() };
+          }
+
+          await db.ref("hardcodedResponses").push(approved);
+          await db.ref("hardcodedReview").child(key).remove();
+          alert("Approved and moved.");
+          location.reload();
+        };
+
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "Delete 🗑";
+        delBtn.className = "delete";
+        delBtn.onclick = async () => {
+          await db.ref("hardcodedReview").child(key).remove();
+          alert("Deleted.");
+          location.reload();
+        };
+
+        div.appendChild(q);
+        div.appendChild(a);
+        div.appendChild(tType);
+        div.appendChild(tFile);
+        div.appendChild(approveBtn);
+        div.appendChild(delBtn);
+        container.appendChild(div);
+      });
+    }
+
+    function renderApproved(snapshot) {
+      const container = document.getElementById("approved-list");
+      container.innerHTML = "";
+      snapshot.forEach(child => {
+        const data = child.val();
+        const key = child.key;
+
+        const div = document.createElement("div");
+        div.className = "entry";
+
+        const q = document.createElement("textarea");
+        q.value = data.userQuestion || "";
+
+        const a = document.createElement("textarea");
+        a.value = data.aiResponse || "";
+
+        const tType = document.createElement("input");
+        tType.type = "text"; tType.placeholder = "trigger type"; tType.value = data.trigger?.type || "";
+
+        const tFile = document.createElement("input");
+        tFile.type = "text"; tFile.placeholder = "trigger file"; tFile.value = data.trigger?.file || "";
+
+        const audio = document.createElement("audio");
+        audio.controls = true;
+        if (data.ttsAudio) audio.src = data.ttsAudio;
+
+        const saveBtn = document.createElement("button");
+        saveBtn.textContent = "Save 💾";
+        saveBtn.className = "save";
+        saveBtn.onclick = async () => {
+          const voice = detectVoice(q.value);
+          const ttsAudio = await generateTTS(a.value, voice);
+
+          const updated = {
+            userQuestion: q.value.trim(),
+            aiResponse: a.value.trim(),
+            ttsAudio: ttsAudio
+          };
+
+          if (tType.value && tFile.value) {
+            updated.trigger = { type: tType.value.trim(), file: tFile.value.trim() };
+          }
+
+          await db.ref("hardcodedResponses").child(key).set(updated);
+          alert("Saved.");
+          location.reload();
+        };
+
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "Delete 🗑";
+        delBtn.className = "delete";
+        delBtn.onclick = async () => {
+          await db.ref("hardcodedResponses").child(key).remove();
+          alert("Deleted.");
+          location.reload();
+        };
+
+        div.appendChild(q);
+        div.appendChild(a);
+        div.appendChild(tType);
+        div.appendChild(tFile);
+        div.appendChild(saveBtn);
+        div.appendChild(delBtn);
+        div.appendChild(audio);
+        container.appendChild(div);
+      });
+    }
+
+    db.ref("hardcodedReview").once("value", renderReview);
+    db.ref("hardcodedResponses").once("value", renderApproved);
+  </script>
+</body>
+</html>
