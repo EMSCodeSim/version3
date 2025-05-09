@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Admin Panel - EMS Code Sim</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -11,7 +11,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
 
   <script>
-    // Your web app's Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
       authDomain: "ems-code-sim.firebaseapp.com",
@@ -23,68 +22,110 @@
       measurementId: "G-2Q3ZT01YT1"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     firebase.analytics();
   </script>
 
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f1f5f9;
-      margin: 20px;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f0f4f8;
+      margin: 0;
+      padding: 0;
     }
-    h1 {
-      color: #333;
-    }
-    .pending, .approved, .controls {
-      background: white;
-      padding: 15px;
-      margin-bottom: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
-    }
-    input, select, textarea, button {
-      margin: 5px 0;
-      padding: 8px;
-      width: 100%;
-    }
-    button {
-      background-color: teal;
+
+    header {
+      background-color: #0f766e;
+      padding: 1rem;
       color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 5px;
+      text-align: center;
+    }
+
+    nav {
+      background-color: #134e4a;
+      padding: 0.5rem;
+      text-align: center;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      margin: 0 1rem;
       font-weight: bold;
     }
+
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    main {
+      padding: 2rem;
+    }
+
+    section {
+      background: white;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    h1, h2 {
+      color: #1e293b;
+    }
+
+    input, select, textarea, button {
+      margin: 0.5rem 0;
+      padding: 0.6rem;
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background-color: #0f766e;
+      color: white;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+    }
+
     button:hover {
-      background-color: darkslategray;
+      background-color: #115e59;
     }
   </style>
 </head>
 
 <body>
 
-<h1>Hardcode Manager (Admin Panel)</h1>
+  <header>
+    <h1>EMS Code Sim - Admin Panel</h1>
+  </header>
 
-<div class="pending">
-  <h2>Pending Unknown Questions</h2>
-  <div id="pending-list"></div>
-</div>
+  <nav>
+    <a href="approved_manager.html">Approved Manager</a>
+    <a href="review_manager.html">Review Manager</a>
+  </nav>
 
-<div class="approved">
-  <h2>Approved Hardcoded Responses</h2>
-  <div id="approved-list"></div>
-</div>
+  <main>
+    <section class="pending">
+      <h2>Pending Unknown Questions</h2>
+      <div id="pending-list">Loading...</div>
+    </section>
 
-<div class="controls">
-  <h2>Admin Controls</h2>
-  <button onclick="downloadHardcoded()">Download Approved Chat Log</button>
-  <button onclick="clearUnknowns()">Clear Pending Unknown Questions</button>
-</div>
+    <section class="approved">
+      <h2>Approved Hardcoded Responses</h2>
+      <div id="approved-list">Loading...</div>
+    </section>
 
-<!-- Load Admin JavaScript -->
-<script src="./scripts/admin.js"></script>
+    <section class="controls">
+      <h2>Admin Controls</h2>
+      <button onclick="downloadHardcoded()">Download Approved Chat Log</button>
+      <button onclick="clearUnknowns()">Clear Pending Unknown Questions</button>
+    </section>
+  </main>
 
+  <script src="./scripts/admin.js"></script>
 </body>
 </html>
