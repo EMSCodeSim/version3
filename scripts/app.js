@@ -29,6 +29,13 @@ function isProctorQuestion(message) {
   return proctorPhrases.some(phrase => normalized.includes(phrase));
 }
 
+// 🔥 Get TTS audio from Firebase if available
+async function getTTSAudioFromFirebase(question) {
+  const hash = btoa(question).slice(0, 16);
+  const snapshot = await firebase.database().ref(`hardcodedResponses/${hash}/ttsAudio`).once('value');
+  return snapshot.exists() ? snapshot.val() : null;
+}
+
 // Main user message handler
 async function processUserMessage(message) {
   if (!message) return;
@@ -39,7 +46,13 @@ async function processUserMessage(message) {
       scenarioId: scenarioPath,
       role: role.toLowerCase(),
     });
-    displayChatResponse(response, message, `${role} (${source})`);
+
+    let ttsAudio = null;
+    if (source === "hardcoded") {
+      ttsAudio = await getTTSAudioFromFirebase(message);
+    }
+
+    displayChatResponse(response, message, `${role} (${source})`, ttsAudio);
   } catch (err) {
     logErrorToDatabase("processUserMessage error: " + err.message);
     displayChatResponse("❌ AI response failed. Try again.");
