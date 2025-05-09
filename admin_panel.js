@@ -33,17 +33,23 @@ onValue(responsesRef, (snapshot) => {
   }
 
   Object.entries(data).forEach(([key, entry]) => {
+    const question = entry.question || 'N/A';
+    const response = entry.response || '';
+    const role = entry.role || 'Patient';
+    const ttsAudio = entry.ttsAudio || null;
+
     const div = document.createElement('div');
     div.className = 'response-block';
     div.innerHTML = `
-      <p><strong>Q:</strong> ${entry.question || 'N/A'}</p>
-      <textarea id="response-${key}">${entry.response || ''}</textarea>
+      <p><strong>Q:</strong> ${question}</p>
+      <textarea id="response-${key}">${response}</textarea>
       <select id="role-${key}">
-        <option value="Patient" ${entry.role === 'Patient' ? 'selected' : ''}>Patient</option>
-        <option value="Proctor" ${entry.role === 'Proctor' ? 'selected' : ''}>Proctor</option>
+        <option value="Patient" ${role === 'Patient' ? 'selected' : ''}>Patient</option>
+        <option value="Proctor" ${role === 'Proctor' ? 'selected' : ''}>Proctor</option>
       </select>
       <button class="save-btn" onclick="saveEntry('${key}')">💾 Save</button>
       <button class="delete-btn" onclick="deleteEntry('${key}')">🗑️ Delete</button>
+      ${ttsAudio ? `<audio controls src="data:audio/mp3;base64,${ttsAudio}"></audio>` : ''}
     `;
     container.appendChild(div);
   });
