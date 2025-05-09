@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Approved Response Manager</title>
+  <style>
+    body { font-family: sans-serif; padding: 1rem; background: #f4f4f4; }
+    .entry { background: white; border: 1px solid #ccc; padding: 1rem; margin-bottom: 1rem; }
+    textarea { width: 100%; height: 60px; margin-bottom: 0.5rem; }
+    select, input[type="text"] { margin-bottom: 0.5rem; width: 100%; }
+    button { margin-right: 0.5rem; }
+    audio { display: block; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <h2>Approved Hardcoded Responses</h2>
+  <div id="approved-list">Loading...</div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyD53M2XqkVWJ_0EXAMPLE",
+      authDomain: "emscodesim.firebaseapp.com",
+      databaseURL: "https://emscodesim-default-rtdb.firebaseio.com",
+      projectId: "emscodesim",
+      storageBucket: "emscodesim.appspot.com",
+      messagingSenderId: "744528493942",
+      appId: "1:744528493942:web:dc13e7f737e7d263f10f4a"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    async function generateTTS(text, voice) {
+      const res = await fetch('/.netlify/functions/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, speaker: voice })
+      });
+      const data = await res.json();
+      return data.audio || "";
+    }
+
+    function detectVoiceType(question) {
+      const proctorWords = ["scene", "safe", "bsi", "vitals", "pulse", "respiratory", "blood", "oxygen"];
+      return proctorWords.some(word => question.toLowerCase().includes(word)) ? "shimmer" : "onyx";
+   
