@@ -68,7 +68,19 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
     <div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>
   `;
   chatBox.scrollTop = chatBox.scrollHeight;
-  speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient", audioUrl);
+
+  // ✅ Handle audio: base64 or URL
+  if (audioUrl) {
+    let src = audioUrl.startsWith("//") ? "https:" + audioUrl : audioUrl;
+    const audio = audioUrl.startsWith("http") || audioUrl.startsWith("//")
+      ? new Audio(src)
+      : new Audio(`data:audio/mp3;base64,${audioUrl}`);
+    audio.play().catch(err => {
+      console.warn("Audio playback blocked or failed:", err.message);
+    });
+  } else {
+    speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient");
+  }
 }
 
 // Load scenario files
