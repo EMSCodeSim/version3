@@ -2,6 +2,9 @@
   command = "node generate_gpt_readme.js"
   publish = "."
 
+[functions]
+  directory = "netlify/functions"
+
 [[redirects]]
   from = "/api/gpt4-turbo"
   to = "/.netlify/functions/gpt4-turbo"
