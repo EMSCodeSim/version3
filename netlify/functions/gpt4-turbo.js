@@ -1,21 +1,24 @@
 const fetch = require('node-fetch');
-const { initializeApp } = require('firebase/app');
-const { getDatabase, ref, push, set } = require('firebase/database');
+const admin = require('firebase-admin');
 
-// ✅ Initialize Firebase with provided config
-const firebaseConfig = {
-  apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
-  authDomain: "ems-code-sim.firebaseapp.com",
-  databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
-  projectId: "ems-code-sim",
-  storageBucket: "ems-code-sim.firebasestorage.app",
-  messagingSenderId: "190498607578",
-  appId: "1:190498607578:web:4cf6c8e999b027956070e3",
-  measurementId: "G-2Q3ZT01YT1"
-};
+// ✅ Only initialize if environment variable exists
+if (!admin.apps.length) {
+  try {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK || '{}');
+    if (!serviceAccount.project_id) {
+      console.warn("FIREBASE_ADMIN_SDK is missing or invalid");
+    } else {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        databaseURL: 'https://ems-code-sim-default-rtdb.firebaseio.com'
+      });
+    }
+  } catch (err) {
+    console.error("Failed to parse FIREBASE_ADMIN_SDK:", err.message);
+  }
+}
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const db = admin.apps.length ? admin.database() : null;
 
 exports.handler = async function(event, context) {
   try {
@@ -62,14 +65,15 @@ exports.handler = async function(event, context) {
     const result = await response.json();
     const reply = result.choices?.[0]?.message?.content?.trim() || '[No reply received]';
 
-    // ✅ Save to hardcodeReview
-    const reviewRef = push(ref(db, "hardcodeReview"));
-    await set(reviewRef, {
-      userQuestion: content,
-      aiResponse: reply,
-      role,
-      timestamp: Date.now()
-    });
+    // ✅ Save to Firebase if available
+    if (db) {
+      const hash = Buffer.from(content).toString('base64').slice(0, 16);
+      await db.ref(`hardcodedReview/${hash}`).set({
+        userQuestion: content,
+        aiResponse: reply,
+        role
+      });
+    }
 
     return {
       statusCode: 200,
