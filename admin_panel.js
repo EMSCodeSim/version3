@@ -15,7 +15,7 @@ function switchTab(tab) {
 }
 
 function loadResponses() {
-  const path = currentTab === 'review' ? 'unmatchedLog' : 'hardcodedResponses';
+  const path = currentTab === 'review' ? 'hardcodeReview' : 'hardcodedResponses';
   db.ref(path).once('value')
     .then(snapshot => {
       container.innerHTML = '';
@@ -108,7 +108,7 @@ window.approveEntry = async function(key, question) {
       role: role,
       ttsAudio: json.audio
     });
-    await db.ref(`unmatchedLog/${key}`).remove();
+    await db.ref(`hardcodeReview/${key}`).remove();
     alert("Approved and moved.");
     loadResponses();
   } catch (err) {
