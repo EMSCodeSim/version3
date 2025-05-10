@@ -6,10 +6,13 @@
   "scripts": {
     "start": "netlify dev"
   },
+  {
+  "rules": {
   "dependencies": {
-    "firebase-admin": "^11.10.1",
-    "node-fetch": "^2.6.7",
-    "openai": "^4.21.0"
+  "firebase": "^9.0.0",
+  "openai": "^4.21.0"
+}
+
   },
   "engines": {
     "node": "18.x"
