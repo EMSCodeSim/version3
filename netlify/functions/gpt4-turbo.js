@@ -9,6 +9,7 @@ if (!admin.apps.length) {
       credential: admin.credential.cert(serviceAccount),
       databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com"
     });
+    console.log("✅ Firebase Admin initialized");
   } catch (err) {
     console.error("❌ Failed to initialize Firebase Admin:", err.message);
   }
@@ -61,23 +62,27 @@ exports.handler = async function(event, context) {
     const result = await response.json();
     const reply = result.choices?.[0]?.message?.content?.trim() || '[No reply received]';
 
-    // ✅ Attempt to write GPT response to Firebase for review
+    // ✅ Attempt to write GPT response to Firebase
     if (db) {
       try {
-        console.log("✅ Writing to Firebase...");
-        const ref = db.ref("hardcodeReview").push();
-        await ref.set({
+        console.log("✅ Firebase database initialized");
+        const payload = {
           userQuestion: content,
           aiResponse: reply,
           role,
           timestamp: Date.now()
-        });
-        console.log("✅ Firebase write complete!");
+        };
+        console.log("📦 Payload to write:", payload);
+
+        const ref = db.ref("hardcodeReview").push();
+        await ref.set(payload);
+
+        console.log("✅ Firebase write successful!");
       } catch (err) {
-        console.error("❌ Firebase write failed:", err.message);
+        console.error("❌ Firebase write failed:", err);
       }
     } else {
-      console.warn("⚠️ Firebase not initialized, skipping DB write.");
+      console.warn("⚠️ Firebase database not initialized, skipping DB write.");
     }
 
     return {
