@@ -1,25 +1,35 @@
 const fetch = require('node-fetch');
-const admin = require('firebase-admin');
+const { initializeApp } = require('firebase/app');
+const { getDatabase, ref, push } = require('firebase/database');
 
-// ✅ Use base64-encoded key from environment variable
-if (!admin.apps.length) {
+// Firebase JS SDK config (no private key needed)
+const firebaseConfig = {
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: "ems-code-sim.firebaseapp.com",
+  databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+  projectId: "ems-code-sim",
+  storageBucket: "ems-code-sim.firebasestorage.app",
+  messagingSenderId: "190498607578",
+  appId: "1:190498607578:web:4cf6c8e999b027956070e3"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Save function using JS SDK
+const saveToFirebase = async (content, reply, role) => {
   try {
-    const base64 = process.env.FIREBASE_ADMIN_SDK_BASE64;
-    const jsonStr = Buffer.from(base64, 'base64').toString('utf8');
-    const serviceAccount = JSON.parse(jsonStr);
-
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com"
+    await push(ref(db, "hardcodeReview"), {
+      userQuestion: content,
+      aiResponse: reply,
+      role,
+      timestamp: Date.now()
     });
-
-    console.log("✅ Firebase Admin initialized from Base64 env var");
+    console.log("✅ Firebase write (JS SDK) successful");
   } catch (err) {
-    console.error("❌ Failed to initialize Firebase Admin:", err.message);
+    console.error("❌ Firebase write failed (JS SDK):", err.message);
   }
-}
-
-const db = admin.apps.length ? admin.database() : null;
+};
 
 exports.handler = async function (event, context) {
   try {
@@ -66,25 +76,7 @@ exports.handler = async function (event, context) {
     const result = await response.json();
     const reply = result.choices?.[0]?.message?.content?.trim() || '[No reply received]';
 
-    // ✅ Save to Firebase for review
-    if (db) {
-      try {
-        const payload = {
-          userQuestion: content,
-          aiResponse: reply,
-          role,
-          timestamp: Date.now()
-        };
-        console.log("📦 Writing to Firebase:", payload);
-
-        await db.ref("hardcodeReview").push(payload);
-        console.log("✅ Firebase write successful");
-      } catch (err) {
-        console.error("❌ Firebase write failed:", err.message);
-      }
-    } else {
-      console.warn("⚠️ Firebase database not initialized, skipping DB write.");
-    }
+    await saveToFirebase(content, reply, role);
 
     return {
       statusCode: 200,
