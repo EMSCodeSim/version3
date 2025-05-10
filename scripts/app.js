@@ -29,11 +29,23 @@ function isProctorQuestion(message) {
   return proctorPhrases.some(phrase => normalized.includes(phrase));
 }
 
-// 🔥 Get TTS audio from Firebase if available
+// 🔥 Search Firebase for matching userQuestion and return ttsAudio
 async function getTTSAudioFromFirebase(question) {
-  const hash = btoa(question).slice(0, 16);
-  const snapshot = await firebase.database().ref(`hardcodedResponses/${hash}/ttsAudio`).once('value');
-  return snapshot.exists() ? snapshot.val() : null;
+  const snapshot = await firebase.database().ref(`hardcodedResponses`).once('value');
+  let result = null;
+
+  snapshot.forEach(child => {
+    const entry = child.val();
+    if (
+      entry.userQuestion &&
+      entry.userQuestion.trim().toLowerCase() === question.trim().toLowerCase() &&
+      entry.ttsAudio
+    ) {
+      result = entry.ttsAudio;
+    }
+  });
+
+  return result;
 }
 
 // Main user message handler
