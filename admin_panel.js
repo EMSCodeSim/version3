@@ -19,8 +19,17 @@ function loadResponses() {
   db.ref(path).once('value')
     .then(snapshot => {
       container.innerHTML = '';
+
+      if (currentTab === 'review') {
+        const clearBtn = document.createElement('button');
+        clearBtn.textContent = "🚨 Clear All";
+        clearBtn.onclick = clearAllReviewEntries;
+        clearBtn.style.marginBottom = '10px';
+        container.appendChild(clearBtn);
+      }
+
       if (!snapshot.exists()) {
-        container.innerHTML = '<div>No responses found.</div>';
+        container.innerHTML += '<div>No responses found.</div>';
         return;
       }
 
@@ -43,7 +52,8 @@ function loadResponses() {
             <option value="Proctor" ${role === 'Proctor' ? 'selected' : ''}>Proctor</option>
           </select>
           ${currentTab === 'review' 
-            ? `<button onclick="approveEntry('${key}', \`${question.replace(/`/g, '\\`')}\`)">✅ Approve</button>` 
+            ? `<button onclick="approveEntry('${key}', \`${question.replace(/`/g, '\\`')}\`)">✅ Approve</button>
+               <button onclick="deleteReviewEntry('${key}')">🗑️ Delete</button>` 
             : `<button onclick="saveEntry('${key}')">💾 Save</button>
                <button onclick="deleteEntry('${key}')">🗑️ Delete</button>`}
           ${ttsAudio ? `<br><audio controls src="data:audio/mp3;base64,${ttsAudio}"></audio>` : ''}
@@ -84,6 +94,20 @@ window.deleteEntry = async function(key) {
   if (!confirm("Delete this entry?")) return;
   await db.ref(`hardcodedResponses/${key}`).remove();
   alert("Deleted.");
+  loadResponses();
+};
+
+window.deleteReviewEntry = async function(key) {
+  if (!confirm("Delete this review entry?")) return;
+  await db.ref(`hardcodeReview/${key}`).remove();
+  alert("Review entry deleted.");
+  loadResponses();
+};
+
+window.clearAllReviewEntries = async function() {
+  if (!confirm("This will permanently delete ALL review entries. Continue?")) return;
+  await db.ref('hardcodeReview').remove();
+  alert("All review entries cleared.");
   loadResponses();
 };
 
