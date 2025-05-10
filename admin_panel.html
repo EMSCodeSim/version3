@@ -1,101 +1,79 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>EMS Code Sim – Admin Panel</title>
+  <title>Admin Panel</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 0;
-      background: #f4f4f4;
-    }
-
-    header {
-      background-color: #00796b;
-      color: white;
+      background: #f9f9f9;
       padding: 20px;
-      text-align: center;
-      font-size: 24px;
     }
-
+    h1 {
+      text-align: center;
+    }
     .tabs {
       display: flex;
       justify-content: center;
-      background: #e0f2f1;
-      padding: 10px 0;
+      margin-bottom: 20px;
     }
-
     .tabs button {
-      margin: 0 10px;
       padding: 10px 20px;
+      margin: 0 10px;
       border: none;
-      background-color: #ccc;
+      background: #ccc;
       cursor: pointer;
-      font-weight: bold;
     }
-
     .tabs button.active {
-      background-color: #00796b;
+      background: #007bff;
       color: white;
     }
-
-    .content {
-      padding: 20px;
-    }
-
     .response {
       background: white;
       padding: 15px;
       margin-bottom: 20px;
-      border-radius: 6px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.1);
     }
-
     textarea {
       width: 100%;
       height: 80px;
       margin-top: 10px;
     }
-
-    select, button {
+    select, input[type="text"] {
       margin-top: 10px;
-      margin-right: 10px;
-      padding: 6px 10px;
+      margin-bottom: 10px;
     }
-
-    audio {
-      margin-top: 10px;
-    }
-
-    .upgrade-btn {
-      background-color: #2196F3;
-      color: white;
-      font-size: 16px;
+    button {
+      margin: 5px 5px 5px 0;
+      padding: 6px 12px;
       border: none;
-      padding: 10px 16px;
-      margin: 20px auto;
-      display: block;
-      border-radius: 6px;
+      background: #007bff;
+      color: white;
+      border-radius: 4px;
       cursor: pointer;
     }
+    button:hover {
+      background: #0056b3;
+    }
+    audio {
+      margin-top: 10px;
+      width: 100%;
+    }
   </style>
-
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
 <body>
 
-  <header>EMS Code Sim – Admin Panel</header>
+  <h1>EMS Code Sim: Admin Panel</h1>
 
   <div class="tabs">
     <button id="tab-approved" class="active" onclick="switchTab('approved')">✅ Approved</button>
     <button id="tab-review" onclick="switchTab('review')">🕵️ Review</button>
   </div>
 
-  <button class="upgrade-btn" onclick="upgradeMissingTTS()">🔄 Upgrade Missing TTS</button>
+  <div id="responsesContainer"></div>
 
-  <div class="content" id="responsesContainer">Loading...</div>
-
-  <script src="admin_panel.js"></script>
+  <script src="/admin_panel.js"></script>
 </body>
 </html>
