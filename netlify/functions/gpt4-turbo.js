@@ -10,7 +10,7 @@ if (!admin.apps.length) {
       databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com"
     });
   } catch (err) {
-    console.error("Failed to initialize Firebase Admin:", err.message);
+    console.error("❌ Failed to initialize Firebase Admin:", err.message);
   }
 }
 
@@ -61,16 +61,23 @@ exports.handler = async function(event, context) {
     const result = await response.json();
     const reply = result.choices?.[0]?.message?.content?.trim() || '[No reply received]';
 
-    // ✅ Save to Firebase review database
+    // ✅ Attempt to write GPT response to Firebase for review
     if (db) {
-      await db.ref("hardcodeReview").push({
-        userQuestion: content,
-        aiResponse: reply,
-        role,
-        timestamp: Date.now()
-      });
+      try {
+        console.log("✅ Writing to Firebase...");
+        const ref = db.ref("hardcodeReview").push();
+        await ref.set({
+          userQuestion: content,
+          aiResponse: reply,
+          role,
+          timestamp: Date.now()
+        });
+        console.log("✅ Firebase write complete!");
+      } catch (err) {
+        console.error("❌ Firebase write failed:", err.message);
+      }
     } else {
-      console.warn("Firebase DB not initialized. GPT answer not logged.");
+      console.warn("⚠️ Firebase not initialized, skipping DB write.");
     }
 
     return {
@@ -79,7 +86,7 @@ exports.handler = async function(event, context) {
     };
 
   } catch (error) {
-    console.error("GPT4 function error:", error.message);
+    console.error("❌ GPT4 function error:", error.message);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: 'Server error' })
