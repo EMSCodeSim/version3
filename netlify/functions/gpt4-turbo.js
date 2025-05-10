@@ -4,7 +4,9 @@ const admin = require('firebase-admin');
 // ✅ Initialize Firebase Admin from environment variable
 if (!admin.apps.length) {
   try {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK);
+    const decoded = Buffer.from(process.env.FIREBASE_ADMIN_SDK_BASE64, 'base64').toString('utf8');
+    const serviceAccount = JSON.parse(decoded);
+
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
       databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com"
