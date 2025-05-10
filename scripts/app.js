@@ -8,7 +8,6 @@ let gradingTemplate = {};
 let scoreTracker = {};
 let scenarioStarted = false;
 
-// Load grading template dynamically
 async function loadGradingTemplate(type = "medical") {
   const file = `grading_templates/${type}_assessment.json`;
   const res = await fetch(file);
@@ -16,7 +15,6 @@ async function loadGradingTemplate(type = "medical") {
   initializeScoreTracker(gradingTemplate);
 }
 
-// Detect proctor vs patient
 function isProctorQuestion(message) {
   const normalized = message.toLowerCase();
   const proctorPhrases = [
@@ -29,8 +27,9 @@ function isProctorQuestion(message) {
   return proctorPhrases.some(phrase => normalized.includes(phrase));
 }
 
-// 🔥 Search Firebase for matching userQuestion and return ttsAudio
+// ✅ Match Firebase entry by userQuestion string
 async function getTTSAudioFromFirebase(question) {
+  console.log("Looking for TTS match for:", question);
   const snapshot = await firebase.database().ref(`hardcodedResponses`).once('value');
   let result = null;
 
@@ -38,17 +37,17 @@ async function getTTSAudioFromFirebase(question) {
     const entry = child.val();
     if (
       entry.userQuestion &&
-      entry.userQuestion.trim().toLowerCase() === question.trim().toLowerCase() &&
-      entry.ttsAudio
+      entry.userQuestion.trim().toLowerCase() === question.trim().toLowerCase()
     ) {
+      console.log("TTS match found:", entry.ttsAudio ? "✔️" : "❌ no audio");
       result = entry.ttsAudio;
     }
   });
 
+  if (!result) console.warn("No TTS audio match found.");
   return result;
 }
 
-// Main user message handler
 async function processUserMessage(message) {
   if (!message) return;
   const role = isProctorQuestion(message) ? "Proctor" : "Patient";
@@ -71,7 +70,6 @@ async function processUserMessage(message) {
   }
 }
 
-// Chat display
 async function displayChatResponse(response, question = "", role = "", audioUrl = null) {
   const chatBox = document.getElementById("chat-box");
   const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
@@ -81,21 +79,22 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
   `;
   chatBox.scrollTop = chatBox.scrollHeight;
 
-  // ✅ Handle audio: base64 or URL
   if (audioUrl) {
+    const preview = audioUrl.slice(0, 30);
+    console.log("Attempting to play TTS audio:", preview);
     let src = audioUrl.startsWith("//") ? "https:" + audioUrl : audioUrl;
     const audio = audioUrl.startsWith("http") || audioUrl.startsWith("//")
       ? new Audio(src)
       : new Audio(`data:audio/mp3;base64,${audioUrl}`);
     audio.play().catch(err => {
-      console.warn("Audio playback blocked or failed:", err.message);
+      console.error("TTS playback error:", err.message);
     });
   } else {
+    console.warn("No audio URL passed. Using speech synthesis.");
     speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient");
   }
 }
 
-// Load scenario files
 async function loadDispatchInfo() {
   try {
     const res = await fetch(`${scenarioPath}dispatch.txt`);
@@ -105,6 +104,7 @@ async function loadDispatchInfo() {
     return "Dispatch not available.";
   }
 }
+
 async function loadPatientInfo() {
   try {
     const res = await fetch(`${scenarioPath}patient.txt`);
@@ -115,13 +115,11 @@ async function loadPatientInfo() {
   }
 }
 
-// Log errors
 function logErrorToDatabase(errorInfo) {
   console.error("🔴", errorInfo);
   firebase.database().ref('error_logs').push({ error: errorInfo, timestamp: Date.now() });
 }
 
-// Start and End scenario
 window.startScenario = async function () {
   if (scenarioStarted) return;
 
@@ -149,7 +147,6 @@ window.endScenario = function () {
   scenarioStarted = false;
 };
 
-// DOM Bindings
 document.addEventListener('DOMContentLoaded', () => {
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
