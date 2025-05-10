@@ -7,7 +7,7 @@
     "start": "netlify dev"
   },
   "dependencies": {
-    "firebase": "^11.17.0",
+    "firebase": "^9.23.0",
     "openai": "^4.21.0"
   },
   "engines": {
