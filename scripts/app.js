@@ -27,7 +27,6 @@ function isProctorQuestion(message) {
   return proctorPhrases.some(phrase => normalized.includes(phrase));
 }
 
-// ✅ Match Firebase entry by userQuestion string
 async function getTTSAudioFromFirebase(question) {
   console.log("Looking for TTS match for:", question);
   const snapshot = await firebase.database().ref(`hardcodedResponses`).once('value');
@@ -73,26 +72,38 @@ async function processUserMessage(message) {
 async function displayChatResponse(response, question = "", role = "", audioUrl = null) {
   const chatBox = document.getElementById("chat-box");
   const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
-  chatBox.innerHTML += `
-    ${question ? `<div class="question">🗣️ <b>You:</b> ${question}</div>` : ""}
-    <div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>
-  `;
-  chatBox.scrollTop = chatBox.scrollHeight;
 
+  // Add chat bubbles
+  if (question) {
+    chatBox.innerHTML += `<div class="question">🗣️ <b>You:</b> ${question}</div>`;
+  }
+  chatBox.innerHTML += `<div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>`;
+
+  // Audio playback (inline player like admin panel)
   if (audioUrl) {
-    const preview = audioUrl.slice(0, 30);
-    console.log("Attempting to play TTS audio:", preview);
+    console.log("TTS audio source:", audioUrl.slice(0, 30));
     let src = audioUrl.startsWith("//") ? "https:" + audioUrl : audioUrl;
-    const audio = audioUrl.startsWith("http") || audioUrl.startsWith("//")
-      ? new Audio(src)
-      : new Audio(`data:audio/mp3;base64,${audioUrl}`);
-    audio.play().catch(err => {
-      console.error("TTS playback error:", err.message);
+    src = audioUrl.startsWith("http") || audioUrl.startsWith("//")
+      ? src
+      : `data:audio/mp3;base64,${audioUrl}`;
+
+    const audioElement = document.createElement("audio");
+    audioElement.src = src;
+    audioElement.setAttribute("controls", "controls");
+    audioElement.setAttribute("autoplay", "autoplay");
+    audioElement.style.marginTop = "10px";
+
+    chatBox.appendChild(audioElement);
+
+    audioElement.play().catch(err => {
+      console.warn("Autoplay failed:", err.message);
     });
   } else {
-    console.warn("No audio URL passed. Using speech synthesis.");
+    console.warn("No audio found. Using speech synthesis.");
     speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient");
   }
+
+  chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 async function loadDispatchInfo() {
