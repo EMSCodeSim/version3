@@ -1,20 +1,16 @@
 const fetch = require('node-fetch');
 const admin = require('firebase-admin');
 
-// ✅ Only initialize if environment variable exists
+// ✅ Initialize Firebase Admin from environment variable
 if (!admin.apps.length) {
   try {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK || '{}');
-    if (!serviceAccount.project_id) {
-      console.warn("FIREBASE_ADMIN_SDK is missing or invalid");
-    } else {
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        databaseURL: 'https://ems-code-sim-default-rtdb.firebaseio.com'
-      });
-    }
+    const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com"
+    });
   } catch (err) {
-    console.error("Failed to parse FIREBASE_ADMIN_SDK:", err.message);
+    console.error("Failed to initialize Firebase Admin:", err.message);
   }
 }
 
@@ -65,14 +61,16 @@ exports.handler = async function(event, context) {
     const result = await response.json();
     const reply = result.choices?.[0]?.message?.content?.trim() || '[No reply received]';
 
-    // ✅ Save to Firebase if available
+    // ✅ Save to Firebase review database
     if (db) {
-      const hash = Buffer.from(content).toString('base64').slice(0, 16);
-      await db.ref(`hardcodedReview/${hash}`).set({
+      await db.ref("hardcodeReview").push({
         userQuestion: content,
         aiResponse: reply,
-        role
+        role,
+        timestamp: Date.now()
       });
+    } else {
+      console.warn("Firebase DB not initialized. GPT answer not logged.");
     }
 
     return {
@@ -84,7 +82,7 @@ exports.handler = async function(event, context) {
     console.error("GPT4 function error:", error.message);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Function error.' })
+      body: JSON.stringify({ error: 'Server error' })
     };
   }
 };
