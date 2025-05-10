@@ -1,17 +1,19 @@
 const fetch = require('node-fetch');
 const admin = require('firebase-admin');
 
-// ✅ Initialize Firebase Admin from environment variable
+// ✅ Use base64-encoded key from environment variable
 if (!admin.apps.length) {
   try {
-    const decoded = Buffer.from(process.env.FIREBASE_ADMIN_SDK_BASE64, 'base64').toString('utf8');
-    const serviceAccount = JSON.parse(decoded);
+    const base64 = process.env.FIREBASE_ADMIN_SDK_BASE64;
+    const jsonStr = Buffer.from(base64, 'base64').toString('utf8');
+    const serviceAccount = JSON.parse(jsonStr);
 
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
       databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com"
     });
-    console.log("✅ Firebase Admin initialized");
+
+    console.log("✅ Firebase Admin initialized from Base64 env var");
   } catch (err) {
     console.error("❌ Failed to initialize Firebase Admin:", err.message);
   }
@@ -19,7 +21,7 @@ if (!admin.apps.length) {
 
 const db = admin.apps.length ? admin.database() : null;
 
-exports.handler = async function(event, context) {
+exports.handler = async function (event, context) {
   try {
     const { content } = JSON.parse(event.body || '{}');
     if (!content) {
@@ -64,24 +66,21 @@ exports.handler = async function(event, context) {
     const result = await response.json();
     const reply = result.choices?.[0]?.message?.content?.trim() || '[No reply received]';
 
-    // ✅ Attempt to write GPT response to Firebase
+    // ✅ Save to Firebase for review
     if (db) {
       try {
-        console.log("✅ Firebase database initialized");
         const payload = {
           userQuestion: content,
           aiResponse: reply,
           role,
           timestamp: Date.now()
         };
-        console.log("📦 Payload to write:", payload);
+        console.log("📦 Writing to Firebase:", payload);
 
-        const ref = db.ref("hardcodeReview").push();
-        await ref.set(payload);
-
-        console.log("✅ Firebase write successful!");
+        await db.ref("hardcodeReview").push(payload);
+        console.log("✅ Firebase write successful");
       } catch (err) {
-        console.error("❌ Firebase write failed:", err);
+        console.error("❌ Firebase write failed:", err.message);
       }
     } else {
       console.warn("⚠️ Firebase database not initialized, skipping DB write.");
