@@ -122,3 +122,7 @@ function endScenario() {
   showMessage("Scenario ended. Hand-off complete.", "System");
   scenarioStarted = false;
 }
+
+// Make these available to HTML buttons
+window.startScenario = startScenario;
+window.endScenario = endScenario;
