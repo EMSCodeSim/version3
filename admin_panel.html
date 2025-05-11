@@ -66,13 +66,14 @@
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
   const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    databaseURL: "YOUR_DB_URL",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_BUCKET",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
+    authDomain: "ems-code-sim.firebaseapp.com",
+    databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+    projectId: "ems-code-sim",
+    storageBucket: "ems-code-sim.firebasestorage.app",
+    messagingSenderId: "190498607578",
+    appId: "1:190498607578:web:4cf6c8e999b027956070e3",
+    measurementId: "G-2Q3ZT01YT1"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -84,6 +85,8 @@
     container.innerHTML = "<p>Loading...</p>";
     const snapshot = await get(ref(db, tab === "approved" ? "hardcodedResponses" : "hardcodedReview"));
     const data = snapshot.val() || {};
+
+    console.log(`Loading tab: ${tab}`, data);
 
     container.innerHTML = "";
     Object.entries(data).forEach(([question, info]) => {
@@ -188,7 +191,6 @@
       container.appendChild(block);
     });
 
-    // Clear all for review
     if (tab === "review") {
       const clearBtn = document.createElement("button");
       clearBtn.innerText = "Clear All Review Entries";
