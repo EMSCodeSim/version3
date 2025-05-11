@@ -28,14 +28,10 @@
       padding: 15px;
       margin-bottom: 15px;
     }
-    .response-block textarea {
+    .response-block textarea, .response-block input[type="text"] {
       width: 100%;
-      height: 60px;
       font-size: 14px;
-    }
-    .trigger-input {
-      width: 100%;
-      margin-top: 5px;
+      margin-bottom: 10px;
     }
     .preview-img {
       max-width: 100%;
@@ -72,8 +68,7 @@
     projectId: "ems-code-sim",
     storageBucket: "ems-code-sim.firebasestorage.app",
     messagingSenderId: "190498607578",
-    appId: "1:190498607578:web:4cf6c8e999b027956070e3",
-    measurementId: "G-2Q3ZT01YT1"
+    appId: "1:190498607578:web:4cf6c8e999b027956070e3"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -83,23 +78,35 @@
   async function loadResponses(tab) {
     const container = document.getElementById("response-container");
     container.innerHTML = "<p>Loading...</p>";
-    const snapshot = await get(ref(db, tab === "approved" ? "hardcodedResponses" : "hardcodedReview"));
+    const path = tab === "approved" ? "hardcodedResponses" : "hardcodedReview";
+    const snapshot = await get(ref(db, path));
     const data = snapshot.val() || {};
 
-    console.log(`Loading tab: ${tab}`, data);
+    console.log(`Loaded tab: ${tab}`, data);
 
     container.innerHTML = "";
-    Object.entries(data).forEach(([question, info]) => {
+    Object.entries(data).forEach(([key, info]) => {
+      const questionText = info.question || key;
+      const responseText = info.response || "";
+      const role = info.role || "Proctor";
+      const ttsAudio = info.ttsAudio || "";
+      let triggerFileBase64 = info.triggerFile || "";
+      let triggerFileType = info.triggerFileType || "";
+
       const block = document.createElement("div");
       block.className = "response-block";
 
       block.innerHTML = `
-        <p><strong>Q:</strong> ${question}</p>
-        <textarea>${info.response || ""}</textarea><br>
+        <label><strong>Edit Question:</strong></label>
+        <input type="text" class="question-edit" value="${questionText}"><br>
+
+        <label><strong>Answer:</strong></label>
+        <textarea>${responseText}</textarea><br>
+
         Role:
         <select>
-          <option value="Proctor" ${info.role === "Proctor" ? "selected" : ""}>Proctor</option>
-          <option value="Patient" ${info.role === "Patient" ? "selected" : ""}>Patient</option>
+          <option value="Proctor" ${role === "Proctor" ? "selected" : ""}>Proctor</option>
+          <option value="Patient" ${role === "Patient" ? "selected" : ""}>Patient</option>
         </select><br><br>
 
         Trigger Upload:
@@ -109,16 +116,12 @@
         <button class="save-btn">Save</button>
         <button class="delete-btn">Delete</button><br><br>
 
-        ${info.ttsAudio ? `
+        ${ttsAudio ? `
           <audio controls>
-            <source src="${info.ttsAudio}" type="audio/mp3">
+            <source src="${ttsAudio}" type="audio/mp3">
           </audio>
         ` : ""}
       `;
-
-      const triggerInput = block.querySelector(".trigger-file");
-      let triggerFileBase64 = info.triggerFile || "";
-      let triggerFileType = info.triggerFileType || "";
 
       const previewArea = block.querySelector(".preview-area");
       if (triggerFileBase64 && triggerFileType.startsWith("image")) {
@@ -127,13 +130,14 @@
         previewArea.innerHTML = `<audio controls src="${triggerFileBase64}"></audio>`;
       }
 
-      triggerInput.addEventListener("change", () => {
-        const file = triggerInput.files[0];
+      // Handle file upload
+      const fileInput = block.querySelector(".trigger-file");
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files[0];
         const reader = new FileReader();
         reader.onloadend = () => {
           triggerFileBase64 = reader.result;
           triggerFileType = file.type;
-
           if (file.type.startsWith("image")) {
             previewArea.innerHTML = `<img class="preview-img" src="${triggerFileBase64}">`;
           } else if (file.type.startsWith("audio")) {
@@ -143,8 +147,9 @@
         reader.readAsDataURL(file);
       });
 
-      // Save logic
+      // Save updated record
       block.querySelector(".save-btn").onclick = async () => {
+        const newQuestion = block.querySelector(".question-edit").value.trim();
         const newResponse = block.querySelector("textarea").value.trim();
         const newRole = block.querySelector("select").value;
         const voice = newRole === "Proctor" ? "shimmer" : "onyx";
@@ -152,7 +157,7 @@
         const ttsResp = await fetch("https://api.openai.com/v1/audio/speech", {
           method: "POST",
           headers: {
-            "Authorization": `Bearer YOUR_OPENAI_API_KEY`,
+            "Authorization": "Bearer YOUR_OPENAI_API_KEY",
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
@@ -167,7 +172,13 @@
         reader.onloadend = async () => {
           const ttsAudioBase64 = reader.result;
 
-          await set(ref(db, `hardcodedResponses/${question}`), {
+          // Delete old if question was changed
+          if (newQuestion !== key) {
+            await remove(ref(db, `${path}/${key}`));
+          }
+
+          await set(ref(db, `${path}/${newQuestion}`), {
+            question: newQuestion,
             response: newResponse,
             role: newRole,
             ttsAudio: ttsAudioBase64,
@@ -176,14 +187,14 @@
           });
 
           alert("Saved!");
+          loadResponses(currentTab);
         };
         reader.readAsDataURL(ttsBlob);
       };
 
-      // Delete logic
+      // Delete record
       block.querySelector(".delete-btn").onclick = async () => {
-        const path = tab === "approved" ? `hardcodedResponses/${question}` : `hardcodedReview/${question}`;
-        await remove(ref(db, path));
+        await remove(ref(db, `${path}/${key}`));
         alert("Deleted.");
         loadResponses(currentTab);
       };
