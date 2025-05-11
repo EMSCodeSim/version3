@@ -1,74 +1,124 @@
-const fetch = require('node-fetch');
+import { initializeScoreTracker, updateScoreTracker, gradeScenario } from './grading.js';
+import { startVoiceRecognition } from './mic.js';
+import { routeUserInput, loadHardcodedResponses } from './router.js';
+import { getHardcodedResponse } from './hardcodedSearch.js';
 
-exports.handler = async function(event, context) {
-  try {
-    const { content } = JSON.parse(event.body);
+const scenarioPath = 'scenarios/chest_pain_002/';
+let patientContext = "";
+let gradingTemplate = {};
+let scoreTracker = {};
+let scenarioStarted = false;
 
-    if (!content) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Missing message content.' })
-      };
-    }
+// Load grading template (default to medical)
+async function loadGradingTemplate(type = "medical") {
+  const file = `grading_templates/${type}_assessment.json`;
+  const res = await fetch(file);
+  gradingTemplate = await res.json();
+  initializeScoreTracker(gradingTemplate);
+}
 
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+function isProctorQuestion(message) {
+  const normalized = message.toLowerCase();
+  const proctorPhrases = [
+    "scene safe", "bsi", "mechanism of injury", "nature of illness", "number of patients",
+    "additional resources", "c-spine", "blood pressure", "pulse", "respiratory rate", "oxygen",
+    "pulse ox", "blood glucose", "temperature", "avpu", "i’m giving oxygen", "starting cpr",
+    "applying splint", "applying dressing", "applying tourniquet", "administering",
+    "making a transport decision", "how long", "time elapsed"
+  ];
+  return proctorPhrases.some(phrase => normalized.includes(phrase));
+}
 
-    // Keywords to determine if the question should be routed to the proctor
-    const proctorKeywords = [
-      'scene safe', 'bsi', 'scene', 'blood pressure', 'pulse', 'respiratory rate', 'saO2',
-      'skin color', 'bgl', 'blood sugar', 'breath sounds', 'lung sounds', 'oxygen', 'NRB',
-      'nasal cannula', 'splint', 'transport', 'stretcher', 'spinal immobilization', 'move patient',
-      'position patient', 'load and go', 'procedure', 'place patient', 'emergent transport',
-      'administer', 'give aspirin', 'give nitro', 'asa', 'oral glucose', 'epinephrine', 'splint',
-      'immobilize', 'check pupils', 'response to painful stimuli'
-    ];
+async function processUserMessage(message) {
+  if (!message) return;
 
-    const lowerContent = content.toLowerCase();
-    const isProctorQuestion = proctorKeywords.some(keyword => lowerContent.includes(keyword));
-    const responder = isProctorQuestion ? 'proctor' : 'patient';
+  const lowerMessage = message.trim().toLowerCase();
 
-    let systemPrompt = '';
-
-    if (responder === 'patient') {
-      systemPrompt = "You are playing the role of a 62-year-old male experiencing chest pain at a public park. Respond realistically as the patient, based only on symptoms, history, or how you feel.";
-    } else {
-      systemPrompt = "You are acting as a certified NREMT Proctor for an EMT Basic exam. You are not the patient. Only respond with scene information, vitals, physical findings, or acknowledge procedures. If asked something the patient would know, say 'Refer to the patient.'";
-    }
-
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: content }
-        ],
-        temperature: 0.5
-      })
-    });
-
-    const openaiData = await openaiResponse.json();
-
-    if (!openaiData.choices || openaiData.choices.length === 0) {
-      throw new Error('No choices returned from OpenAI.');
-    }
-
-    const aiReply = openaiData.choices[0].message.content.trim();
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ reply: aiReply })  // unified reply key
-    };
-
-  } catch (error) {
-    console.error('Chat function error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to generate reply.' })
-    };
+  // Check hardcoded responses
+  const hardcoded = await getHardcodedResponse(lowerMessage);
+  if (hardcoded) {
+    showMessage(hardcoded.response);
+    if (hardcoded.ttsAudio) playAudio(hardcoded.ttsAudio);
+    if (hardcoded.triggerFile) showTrigger(hardcoded.triggerFile, hardcoded.triggerFileType);
+    return;
   }
-};
+
+  // Default: route to GPT
+  try {
+    const { response, source } = await routeUserInput(message);
+    showMessage(response, source);
+  } catch (err) {
+    console.error("Error routing user input:", err);
+    showMessage("There was an error processing your input.");
+  }
+}
+
+// DOM handlers
+document.getElementById("send-button").addEventListener("click", () => {
+  const input = document.getElementById("user-input");
+  const message = input.value.trim();
+  if (message) {
+    showMessage(message, "You");
+    processUserMessage(message);
+    input.value = "";
+  }
+});
+
+document.getElementById("user-input").addEventListener("keypress", (e) => {
+  if (e.key === "Enter") {
+    document.getElementById("send-button").click();
+  }
+});
+
+// Show message in chat
+function showMessage(message, sender = "Patient") {
+  const chatBox = document.getElementById("chat-box");
+  const messageElement = document.createElement("div");
+  messageElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
+  chatBox.appendChild(messageElement);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// Play audio from base64 TTS string
+function playAudio(base64Audio) {
+  const audio = new Audio(base64Audio);
+  audio.play();
+}
+
+// Show trigger (image or audio)
+function showTrigger(fileBase64, fileType) {
+  const chatBox = document.getElementById("chat-box");
+  const wrapper = document.createElement("div");
+
+  if (fileType.startsWith("image")) {
+    const img = document.createElement("img");
+    img.src = fileBase64;
+    img.style.maxWidth = "100%";
+    wrapper.appendChild(img);
+  } else if (fileType.startsWith("audio")) {
+    const audio = document.createElement("audio");
+    audio.controls = true;
+    audio.src = fileBase64;
+    wrapper.appendChild(audio);
+  }
+
+  chatBox.appendChild(wrapper);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// Start Scenario logic
+function startScenario() {
+  if (scenarioStarted) return;
+
+  scenarioStarted = true;
+  const dispatchText = "Unit 12, respond for a 62-year-old male with chest pain at the park.";
+  showMessage(dispatchText, "Dispatch");
+
+  console.log("Scenario started.");
+}
+
+// End scenario logic (optional)
+function endScenario() {
+  showMessage("Scenario ended. Hand-off complete.", "System");
+  scenarioStarted = false;
+}
