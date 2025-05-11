@@ -1,79 +1,214 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Admin Panel</title>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <meta charset="UTF-8">
+  <title>EMS Code Sim: Admin Panel</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f9f9f9;
+      background: #f3f3f3;
       padding: 20px;
     }
-    h1 {
+    h2 {
       text-align: center;
     }
     .tabs {
-      display: flex;
-      justify-content: center;
+      text-align: center;
       margin-bottom: 20px;
     }
     .tabs button {
       padding: 10px 20px;
       margin: 0 10px;
-      border: none;
-      background: #ccc;
       cursor: pointer;
+      font-weight: bold;
     }
-    .tabs button.active {
-      background: #007bff;
-      color: white;
-    }
-    .response {
+    .response-block {
       background: white;
+      border: 1px solid #ccc;
       padding: 15px;
-      margin-bottom: 20px;
-      border-radius: 8px;
-      box-shadow: 0 0 4px rgba(0,0,0,0.1);
+      margin-bottom: 15px;
     }
-    textarea {
+    .response-block textarea {
       width: 100%;
-      height: 80px;
-      margin-top: 10px;
+      height: 60px;
+      font-size: 14px;
     }
-    select, input[type="text"] {
-      margin-top: 10px;
-      margin-bottom: 10px;
-    }
-    button {
-      margin: 5px 5px 5px 0;
-      padding: 6px 12px;
-      border: none;
-      background: #007bff;
-      color: white;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    audio {
-      margin-top: 10px;
+    .trigger-input {
       width: 100%;
+      margin-top: 5px;
+    }
+    .preview-img {
+      max-width: 100%;
+      max-height: 150px;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
 
-  <h1>EMS Code Sim: Admin Panel</h1>
+<h2>EMS Code Sim: Admin Panel</h2>
 
-  <div class="tabs">
-    <button id="tab-approved" class="active" onclick="switchTab('approved')">✅ Approved</button>
-    <button id="tab-review" onclick="switchTab('review')">🕵️ Review</button>
-  </div>
+<div class="tabs">
+  <button onclick="switchTab('approved')">✅ Approved</button>
+  <button onclick="switchTab('review')">🟡 Review</button>
+</div>
 
-  <div id="responsesContainer"></div>
+<div id="response-container"></div>
 
-  <script src="/admin_panel.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getDatabase,
+    ref,
+    get,
+    set,
+    remove
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    databaseURL: "YOUR_DB_URL",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_BUCKET",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  let currentTab = "approved";
+
+  async function loadResponses(tab) {
+    const container = document.getElementById("response-container");
+    container.innerHTML = "<p>Loading...</p>";
+    const snapshot = await get(ref(db, tab === "approved" ? "hardcodedResponses" : "hardcodedReview"));
+    const data = snapshot.val() || {};
+
+    container.innerHTML = "";
+    Object.entries(data).forEach(([question, info]) => {
+      const block = document.createElement("div");
+      block.className = "response-block";
+
+      block.innerHTML = `
+        <p><strong>Q:</strong> ${question}</p>
+        <textarea>${info.response || ""}</textarea><br>
+        Role:
+        <select>
+          <option value="Proctor" ${info.role === "Proctor" ? "selected" : ""}>Proctor</option>
+          <option value="Patient" ${info.role === "Patient" ? "selected" : ""}>Patient</option>
+        </select><br><br>
+
+        Trigger Upload:
+        <input class="trigger-file" type="file" accept="image/*,audio/*"><br>
+        <div class="preview-area"></div><br>
+
+        <button class="save-btn">Save</button>
+        <button class="delete-btn">Delete</button><br><br>
+
+        ${info.ttsAudio ? `
+          <audio controls>
+            <source src="${info.ttsAudio}" type="audio/mp3">
+          </audio>
+        ` : ""}
+      `;
+
+      const triggerInput = block.querySelector(".trigger-file");
+      let triggerFileBase64 = info.triggerFile || "";
+      let triggerFileType = info.triggerFileType || "";
+
+      const previewArea = block.querySelector(".preview-area");
+      if (triggerFileBase64 && triggerFileType.startsWith("image")) {
+        previewArea.innerHTML = `<img class="preview-img" src="${triggerFileBase64}">`;
+      } else if (triggerFileBase64 && triggerFileType.startsWith("audio")) {
+        previewArea.innerHTML = `<audio controls src="${triggerFileBase64}"></audio>`;
+      }
+
+      triggerInput.addEventListener("change", () => {
+        const file = triggerInput.files[0];
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          triggerFileBase64 = reader.result;
+          triggerFileType = file.type;
+
+          if (file.type.startsWith("image")) {
+            previewArea.innerHTML = `<img class="preview-img" src="${triggerFileBase64}">`;
+          } else if (file.type.startsWith("audio")) {
+            previewArea.innerHTML = `<audio controls src="${triggerFileBase64}"></audio>`;
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+
+      // Save logic
+      block.querySelector(".save-btn").onclick = async () => {
+        const newResponse = block.querySelector("textarea").value.trim();
+        const newRole = block.querySelector("select").value;
+        const voice = newRole === "Proctor" ? "shimmer" : "onyx";
+
+        const ttsResp = await fetch("https://api.openai.com/v1/audio/speech", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer YOUR_OPENAI_API_KEY`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "tts-1",
+            voice: voice,
+            input: newResponse
+          })
+        });
+
+        const ttsBlob = await ttsResp.blob();
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const ttsAudioBase64 = reader.result;
+
+          await set(ref(db, `hardcodedResponses/${question}`), {
+            response: newResponse,
+            role: newRole,
+            ttsAudio: ttsAudioBase64,
+            triggerFile: triggerFileBase64,
+            triggerFileType: triggerFileType
+          });
+
+          alert("Saved!");
+        };
+        reader.readAsDataURL(ttsBlob);
+      };
+
+      // Delete logic
+      block.querySelector(".delete-btn").onclick = async () => {
+        const path = tab === "approved" ? `hardcodedResponses/${question}` : `hardcodedReview/${question}`;
+        await remove(ref(db, path));
+        alert("Deleted.");
+        loadResponses(currentTab);
+      };
+
+      container.appendChild(block);
+    });
+
+    // Clear all for review
+    if (tab === "review") {
+      const clearBtn = document.createElement("button");
+      clearBtn.innerText = "Clear All Review Entries";
+      clearBtn.onclick = async () => {
+        await remove(ref(db, "hardcodedReview"));
+        alert("All review questions cleared.");
+        loadResponses("review");
+      };
+      container.appendChild(clearBtn);
+    }
+  }
+
+  function switchTab(tabName) {
+    currentTab = tabName;
+    loadResponses(tabName);
+  }
+
+  window.onload = () => {
+    switchTab("approved");
+  };
+</script>
 </body>
 </html>
