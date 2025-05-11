@@ -1,40 +1,35 @@
-// hardcodedSearch.js
 
 import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 /**
- * Gets a hardcoded response by exact key match or question match.
- * @param {string} userInput - The user’s input or question.
- * @returns {Promise<Object|null>} - Returns matching response data or null.
+ * Tries to match a user input to a hardcoded response.
+ * First tries exact key match, then fallback to matching the 'question' field.
  */
 export async function getHardcodedResponse(userInput) {
   const db = getDatabase();
-  const lowerInput = userInput.trim().toLowerCase();
+  const normalized = userInput.trim().toLowerCase();
 
-  // Try direct match as key
-  const directRef = ref(db, `hardcodedResponses/${lowerInput}`);
-  const directSnap = await get(directRef);
-
-  if (directSnap.exists()) {
-    const result = directSnap.val();
+  // Try exact key match
+  const keyRef = ref(db, `hardcodedResponses/${normalized}`);
+  const keySnap = await get(keyRef);
+  if (keySnap.exists()) {
+    const val = keySnap.val();
     return {
-      matchType: "key",
-      response: result.response || "",
-      role: result.role || "Proctor",
-      ttsAudio: result.ttsAudio || null,
-      triggerFile: result.triggerFile || null,
-      triggerFileType: result.triggerFileType || null
+      response: val.response || "",
+      role: val.role || "Proctor",
+      ttsAudio: val.ttsAudio || null,
+      triggerFile: val.triggerFile || null,
+      triggerFileType: val.triggerFileType || null
     };
   }
 
-  // Try matching inside values using .question field
+  // Fallback: check .question field inside all entries
   const allSnap = await get(ref(db, "hardcodedResponses"));
   const allData = allSnap.val() || {};
 
-  for (const [key, entry] of Object.entries(allData)) {
-    if ((entry.question || "").trim().toLowerCase() === lowerInput) {
+  for (const [_, entry] of Object.entries(allData)) {
+    if ((entry.question || "").trim().toLowerCase() === normalized) {
       return {
-        matchType: "question",
         response: entry.response || "",
         role: entry.role || "Proctor",
         ttsAudio: entry.ttsAudio || null,
