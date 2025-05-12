@@ -1,68 +1,36 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>EMS Code Sim – Admin Panel</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f4f4f4;
-    }
+let hardcodedResponses = [];
 
-    header {
-      background: #00695c;
-      color: white;
-      padding: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
+export async function loadHardcodedResponses() {
+  const snapshot = await firebase.database().ref("hardcodedResponses").once("value");
+  const data = snapshot.val() || {};
+  hardcodedResponses = Object.values(data);
+}
 
-    header h1 {
-      margin: 0;
-    }
+export async function routeUserInput(message, { scenarioId, role }) {
+  const normalized = message.trim().toLowerCase();
 
-    .tabs {
-      display: flex;
-      gap: 20px;
-    }
+  const match = hardcodedResponses.find(entry =>
+    entry.question?.trim().toLowerCase() === normalized ||
+    entry.userQuestion?.trim().toLowerCase() === normalized
+  );
 
-    .tabs a {
-      color: white;
-      text-decoration: none;
-      padding: 8px 12px;
-      border-radius: 4px;
-      background: #004d40;
-      transition: background 0.3s;
-    }
+  if (match && match.response) {
+    return { response: match.response, source: "hardcoded" };
+  }
 
-    .tabs a:hover {
-      background: #00332e;
-    }
+  try {
+    const res = await fetch("/api/gpt4-turbo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: message })
+    });
 
-    .tabs a.active {
-      background: #00796b;
-    }
+    const data = await res.json();
+    if (!res.ok || !data.reply) throw new Error(data.error || "GPT failed");
 
-    main {
-      padding: 30px;
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <h1>EMS Code Sim – Admin Panel</h1>
-    <nav class="tabs">
-      <a href="approved_manager.html">✅ Approved</a>
-      <a href="review_manager.html">🕵️ Review</a>
-      <a href="admin_panel.html">🛠️ Admin Panel</a>
-    </nav>
-  </header>
-  <main>
-    <p>Welcome to the EMS Code Sim admin home page. Use the tabs above to manage hardcoded responses.</p>
-  </main>
-</body>
-</html>
+    return { response: data.reply, source: "gpt" };
+  } catch (err) {
+    console.error("GPT fallback failed:", err.message);
+    return { response: "❌ No response from AI.", source: "gpt" };
+  }
+}
