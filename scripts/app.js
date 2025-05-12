@@ -73,8 +73,8 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
 
   chatBox.innerHTML += `<div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>`;
 
-  // Play TTS audio if available
-  if (audioUrl) {
+  // Safely play TTS audio if from hardcoded
+  if (audioUrl && source === "hardcoded" && question && response) {
     let src = audioUrl.startsWith("http") ? audioUrl : `data:audio/mp3;base64,${audioUrl}`;
     const audioElement = document.createElement("audio");
     audioElement.src = src;
@@ -82,7 +82,10 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
     audioElement.setAttribute("autoplay", "autoplay");
     audioElement.style.marginTop = "10px";
     chatBox.appendChild(audioElement);
-    audioElement.play().catch(err => console.warn("Autoplay failed:", err));
+
+    audioElement.play().catch(err => {
+      console.warn("Autoplay failed:", err.message);
+    });
   } else {
     speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient");
   }
@@ -114,7 +117,7 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
       chatBox.appendChild(triggerDiv);
     }
 
-    // TTS Preview Button
+    // Preview Button
     if (match?.ttsAudio) {
       const button = document.createElement("button");
       button.innerText = "▶ Preview TTS";
