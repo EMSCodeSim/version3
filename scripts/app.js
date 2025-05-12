@@ -1,81 +1,190 @@
-const fetch = require('node-fetch');
+import { initializeScoreTracker, updateScoreTracker, gradeScenario } from './grading.js';
+import { startVoiceRecognition } from './mic.js';
+import { routeUserInput, loadHardcodedResponses } from './router.js';
 
-exports.handler = async function(event, context) {
+
+const scenarioPath = 'scenarios/chest_pain_002/';
+let patientContext = "";
+let hardcodedResponses = {};
+let gradingTemplate = {};
+let scoreTracker = {};
+let scenarioStarted = false;
+
+// Load hardcoded responses from Firebase
+firebase.database().ref('hardcodedResponses').once('value').then(snapshot => {
+  hardcodedResponses = snapshot.val() || {};
+  console.log("✅ Loaded hardcodedResponses");
+});
+
+// Load grading template dynamically
+async function loadGradingTemplate(type = "medical") {
+  const file = `grading_templates/${type}_assessment.json`;
+  const res = await fetch(file);
+  gradingTemplate = await res.json();
+  initializeScoreTracker(gradingTemplate);
+}
+
+// GPT fallback
+async function getAIResponseGPT4Turbo(message) {
   try {
-    const { content } = JSON.parse(event.body);
-
-    if (!content) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Missing message content.' })
-      };
-    }
-
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-
-    // Keywords to determine if the question should be routed to the proctor
-    const proctorKeywords = [
-      'scene safe', 'bsi', 'scene', 'blood pressure', 'pulse', 'respiratory rate', 'saO2',
-      'skin color', 'bgl', 'blood sugar', 'breath sounds', 'lung sounds', 'oxygen', 'NRB',
-      'nasal cannula', 'splint', 'transport', 'stretcher', 'spinal immobilization', 'move patient',
-      'position patient', 'load and go', 'procedure', 'place patient', 'emergent transport',
-      'administer', 'give aspirin', 'give nitro', 'asa', 'oral glucose', 'epinephrine', 'splint',
-      'immobilize', 'check pupils', 'response to painful stimuli'
-    ];
-
-    const lowerContent = content.toLowerCase();
-    const isProctorQuestion = proctorKeywords.some(keyword => lowerContent.includes(keyword));
-    const responder = isProctorQuestion ? 'proctor' : 'patient';
-
-    let systemPrompt = '';
-
-    if (responder === 'patient') {
-      systemPrompt = "You are playing the role of a 62-year-old male experiencing chest pain at a public park. Respond realistically as the patient, based only on symptoms, history, or how you feel.";
-    } else {
-      systemPrompt = "You are acting as a certified NREMT Proctor for an EMT Basic exam. You are not the patient. Only respond with scene information, vitals, physical findings, or acknowledge procedures. If asked something the patient would know, say 'Refer to the patient.'";
-    }
-
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch('/api/gpt4-turbo', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: content }
-        ],
-        temperature: 0.5
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: message })
     });
+    const data = await res.json();
+    return data.reply || null;
+  } catch (e) {
+    logErrorToDatabase("GPT fallback failed: " + e.message);
+    return null;
+  }
+}
 
-    const openaiData = await openaiResponse.json();
+// Vector fallback
+async function getVectorResponse(message) {
+  try {
+    const res = await fetch('/api/vector-search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: message })
+    });
+    const data = await res.json();
+    return data.match || null;
+  } catch (e) {
+    logErrorToDatabase("Vector search failed: " + e.message);
+    return null;
+  }
+}
 
-    if (!openaiData.choices || openaiData.choices.length === 0) {
-      throw new Error('No choices returned from OpenAI.');
+// Hardcoded match
+function checkHardcodedResponse(message) {
+  if (!hardcodedResponses) return null;
+  const normalized = message.trim().toLowerCase();
+  for (const key in hardcodedResponses) {
+    const stored = hardcodedResponses[key];
+    if (stored?.userQuestion?.trim().toLowerCase() === normalized) {
+      return stored;
     }
+  }
+  return null;
+}
 
-    const aiReply = openaiData.choices[0].message.content.trim();
+// Proctor or Patient detection
+function isProctorQuestion(message) {
+  const normalized = message.toLowerCase();
+  const proctorPhrases = [
+    "scene safe", "bsi", "mechanism of injury", "nature of illness", "number of patients",
+    "additional resources", "c-spine", "blood pressure", "pulse", "respiratory rate", "oxygen",
+    "pulse ox", "blood glucose", "temperature", "avpu", "i’m giving oxygen", "starting cpr",
+    "applying splint", "applying dressing", "applying tourniquet", "administering",
+    "making a transport decision", "how long", "time elapsed"
+  ];
+  return proctorPhrases.some(phrase => normalized.includes(phrase));
+}
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ reply: aiReply })  // unified reply key
-    };
+// Main chat handler
+async function processUserMessage(message) {
+  if (!message) return;
 
-  } catch (error) {
-    console.error('Chat function error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to generate reply.' })
-    };
+  const role = isProctorQuestion(message) ? "Proctor" : "Patient";
+
+  try {
+    const { response, source } = await routeUserInput(message, { scenarioId: scenarioPath, role: role.toLowerCase() });
+    displayChatResponse(response, message, `${role} (${source})`);
+  } catch (err) {
+    logErrorToDatabase("processUserMessage error: " + err.message);
+    displayChatResponse("❌ AI response failed. Try again.");
+  }
+}
+
+// Chat display
+async function displayChatResponse(response, question = "", role = "", audioUrl = null) {
+  const chatBox = document.getElementById("chat-box");
+  const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
+  chatBox.innerHTML += `
+    ${question ? `<div class="question">🗣️ <b>You:</b> ${question}</div>` : ""}
+    <div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>
+  `;
+  chatBox.scrollTop = chatBox.scrollHeight;
+  speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient", audioUrl);
+}
+
+// Error logger
+function logErrorToDatabase(errorInfo) {
+  console.error("🔴", errorInfo);
+  firebase.database().ref('error_logs').push({ error: errorInfo, timestamp: Date.now() });
+}
+
+// Scenario file loaders
+async function loadDispatchInfo() {
+  try {
+    const res = await fetch(`${scenarioPath}dispatch.txt`);
+    return await res.text();
+  } catch (e) {
+    logErrorToDatabase("Dispatch load failed: " + e.message);
+    return "Dispatch not available.";
+  }
+}
+async function loadPatientInfo() {
+  try {
+    const res = await fetch(`${scenarioPath}patient.txt`);
+    return await res.text();
+  } catch (e) {
+    logErrorToDatabase("Patient info load failed: " + e.message);
+    return "Patient info not available.";
+  }
+}
+
+// Start and End buttons
+window.startScenario = async function () {
+  if (scenarioStarted) return;
+  scenarioStarted = true;
+
+  await loadHardcodedResponses();
+
+  try {
+    const configRes = await fetch(`${scenarioPath}config.json`);
+    const config = await configRes.json();
+    await loadGradingTemplate(config.grading || "medical");
+    const dispatch = await loadDispatchInfo();
+    patientContext = await loadPatientInfo();
+    displayChatResponse(`🚑 Dispatch: ${dispatch}`);
+  } catch (err) {
+    logErrorToDatabase("startScenario error: " + err.message);
+    displayChatResponse("❌ Failed to load scenario. Missing config or files.");
   }
 };
 
-function startScenario() {
-  console.log("✅ Start Scenario clicked.");
-  // You can place simulation startup logic here (e.g., loading dispatch, enabling chat, etc.)
-  const chatBox = document.getElementById("chat-box");
-  chatBox.innerHTML += `<div><strong>Dispatch:</strong> You are responding to a 56-year-old male with chest pain.</div>`;
-}
+window.endScenario = function () {
+  const feedback = gradeScenario();
+  displayChatResponse("📦 Scenario ended. Here's your performance summary:<br><br>" + feedback);
+  scenarioStarted = false;
+};
+
+// DOM bindings
+document.addEventListener('DOMContentLoaded', () => {
+  const sendBtn = document.getElementById('send-button');
+  const input = document.getElementById('user-input');
+  const startBtn = document.getElementById('start-button');
+  const endBtn = document.getElementById('end-button');
+  const micBtn = document.getElementById('mic-button');
+
+  sendBtn?.addEventListener('click', () => {
+    const message = input.value.trim();
+    if (message) {
+      processUserMessage(message);
+      input.value = '';
+    }
+  });
+
+  input?.addEventListener('keypress', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendBtn.click();
+    }
+  });
+
+  startBtn?.addEventListener('click', () => window.startScenario?.());
+  endBtn?.addEventListener('click', () => window.endScenario?.());
+  micBtn?.addEventListener('click', () => startVoiceRecognition?.());
+});
