@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>EMS Code Sim – Admin Panel</title>
   <style>
     body {
@@ -28,9 +28,17 @@
       width: 100%;
       height: 60px;
     }
-    select, input[type="text"] {
+    select, input[type="text"], input[type="file"] {
       margin: 5px 0;
-      width: 200px;
+      width: 100%;
+    }
+    img {
+      max-height: 100px;
+      margin-top: 5px;
+    }
+    audio {
+      width: 100%;
+      margin-top: 5px;
     }
   </style>
 </head>
@@ -43,15 +51,10 @@
     <button onclick="switchTab('review')">📝 Review</button>
   </div>
 
-  <div>
-    <button onclick="upgradeMissingTTS()">🔁 Upgrade Missing TTS</button>
-  </div>
-
-  <div id="response-list"></div>
+  <div id="response-list">Loading...</div>
 
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <script>
     const firebaseConfig = {
@@ -69,27 +72,17 @@
 
     function switchTab(tab) {
       currentTab = tab;
-      if (tab === "approved") {
-        loadApprovedResponses();
-      } else {
-        loadReviewResponses();
-      }
-    }
-
-    function upgradeMissingTTS() {
-      alert("Upgrade Missing TTS not yet implemented.");
+      tab === "approved" ? loadApprovedResponses() : loadReviewResponses();
     }
 
     function loadApprovedResponses() {
-      const ref = firebase.database().ref("hardcodedResponses");
-      ref.once("value").then(snapshot => {
+      firebase.database().ref("hardcodedResponses").once("value").then(snapshot => {
         renderResponses(snapshot.val(), false);
       });
     }
 
     function loadReviewResponses() {
-      const ref = firebase.database().ref("hardcodeReview");
-      ref.once("value").then(snapshot => {
+      firebase.database().ref("hardcodeReview").once("value").then(snapshot => {
         renderResponses(snapshot.val(), true);
       });
     }
@@ -110,7 +103,8 @@
         const q = entry.question || entry.userQuestion || "N/A";
         const a = entry.response || entry.aiResponse || "";
         const role = entry.role || "Patient";
-        const trigger = entry.trigger || "";
+        const triggerFileBase64 = entry.triggerFile || "";
+        const triggerType = entry.triggerFileType || "";
 
         div.innerHTML = `
           <p><b>Q:</b> ${q}</p>
@@ -119,7 +113,11 @@
             <option value="Patient" ${role === "Patient" ? "selected" : ""}>Patient</option>
             <option value="Proctor" ${role === "Proctor" ? "selected" : ""}>Proctor</option>
           </select><br>
-          <input type="text" placeholder="Trigger (e.g. breath.mp3)" value="${trigger}" /><br>
+          <input type="file" class="trigger-upload" accept="image/*,audio/*" /><br>
+          <div class="trigger-preview">
+            ${triggerType === "image" ? `<img src="${triggerFileBase64}">` : ""}
+            ${triggerType === "audio" ? `<audio controls src="${triggerFileBase64}"></audio>` : ""}
+          </div>
           ${isReview
             ? `<button onclick="approveReview('${id}', this)">✅ Approve</button>
                <button onclick="deleteReview('${id}')">🗑 Delete</button>`
@@ -136,29 +134,44 @@
       const block = button.closest(".response-block");
       const text = block.querySelector("textarea").value;
       const role = block.querySelector("select").value;
-      const trigger = block.querySelector("input").value;
+      const fileInput = block.querySelector(".trigger-upload");
+      const file = fileInput.files[0];
 
       const ref = firebase.database().ref("hardcodeReview/" + id);
       ref.once("value").then(snapshot => {
         const q = snapshot.val().question || snapshot.val().userQuestion;
-        const obj = {
-          userQuestion: q,
-          response: text,
-          role: role,
-          trigger: trigger
+
+        const uploadAndSave = (triggerFile = "", triggerFileType = "") => {
+          const obj = {
+            question: q,
+            response: text,
+            role,
+            triggerFile,
+            triggerFileType
+          };
+          firebase.database().ref("hardcodedResponses").push(obj);
+          ref.remove().then(() => {
+            alert("Approved.");
+            loadReviewResponses();
+          });
         };
-        firebase.database().ref("hardcodedResponses").push(obj);
-        ref.remove().then(() => {
-          alert("Approved & moved.");
-          loadReviewResponses();
-        });
+
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const type = file.type.startsWith("image") ? "image" : "audio";
+            uploadAndSave(reader.result, type);
+          };
+          reader.readAsDataURL(file);
+        } else {
+          uploadAndSave();
+        }
       });
     }
 
     function deleteReview(id) {
       if (confirm("Delete this review?")) {
-        firebase.database().ref("hardcodeReview/" + id).remove()
-          .then(() => loadReviewResponses());
+        firebase.database().ref("hardcodeReview/" + id).remove().then(loadReviewResponses);
       }
     }
 
@@ -166,24 +179,38 @@
       const block = button.closest(".response-block");
       const text = block.querySelector("textarea").value;
       const role = block.querySelector("select").value;
-      const trigger = block.querySelector("input").value;
+      const fileInput = block.querySelector(".trigger-upload");
+      const file = fileInput.files[0];
 
-      const ref = firebase.database().ref("hardcodedResponses/" + id);
-      ref.update({
-        response: text,
-        role: role,
-        trigger: trigger
-      }).then(() => alert("Saved."));
+      const updateRef = (triggerFile = "", triggerFileType = "") => {
+        const ref = firebase.database().ref("hardcodedResponses/" + id);
+        ref.update({
+          response: text,
+          role,
+          ...(triggerFile && { triggerFile }),
+          ...(triggerFileType && { triggerFileType })
+        }).then(() => alert("Saved."));
+      };
+
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const type = file.type.startsWith("image") ? "image" : "audio";
+          updateRef(reader.result, type);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        updateRef();
+      }
     }
 
     function deleteApproved(id) {
       if (confirm("Delete this approved response?")) {
-        firebase.database().ref("hardcodedResponses/" + id).remove()
-          .then(() => loadApprovedResponses());
+        firebase.database().ref("hardcodedResponses/" + id).remove().then(loadApprovedResponses);
       }
     }
 
-    // Auto-load on start
+    // Load default tab
     switchTab("approved");
   </script>
 
