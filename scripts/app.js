@@ -1,178 +1,218 @@
-import { initializeScoreTracker, updateScoreTracker, gradeScenario } from './grading.js';
-import { startVoiceRecognition } from './mic.js';
-import { routeUserInput, loadHardcodedResponses } from './router.js';
-
-const scenarioPath = 'scenarios/chest_pain_002/';
-let patientContext = "";
-let gradingTemplate = {};
-let scoreTracker = {};
-let scenarioStarted = false;
-
-async function loadGradingTemplate(type = "medical") {
-  const file = `grading_templates/${type}_assessment.json`;
-  const res = await fetch(file);
-  gradingTemplate = await res.json();
-  initializeScoreTracker(gradingTemplate);
-}
-
-function isProctorQuestion(message) {
-  const normalized = message.toLowerCase();
-  const proctorPhrases = [
-    "scene safe", "bsi", "mechanism of injury", "nature of illness", "number of patients",
-    "additional resources", "c-spine", "blood pressure", "pulse", "respiratory rate", "oxygen",
-    "pulse ox", "blood glucose", "temperature", "avpu", "i’m giving oxygen", "starting cpr",
-    "applying splint", "applying dressing", "applying tourniquet", "administering",
-    "making a transport decision", "how long", "time elapsed"
-  ];
-  return proctorPhrases.some(phrase => normalized.includes(phrase));
-}
-
-async function getTTSAudioFromFirebase(question) {
-  console.log("Looking for TTS match for:", question);
-  const snapshot = await firebase.database().ref(`hardcodedResponses`).once('value');
-  let result = null;
-
-  snapshot.forEach(child => {
-    const entry = child.val();
-    const key = entry.userQuestion || entry.question;
-    if (key && key.trim().toLowerCase() === question.trim().toLowerCase()) {
-      result = entry.ttsAudio;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>EMS Code Sim – Admin Panel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      padding: 20px;
     }
-  });
+    .tabs {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .tabs button {
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+    .response-block {
+      background: white;
+      padding: 15px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+    }
+    textarea {
+      width: 100%;
+      height: 60px;
+    }
+    select, input[type="text"], input[type="file"] {
+      margin: 5px 0;
+      width: 100%;
+    }
+    img {
+      max-height: 100px;
+      margin-top: 5px;
+    }
+    audio {
+      width: 100%;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
 
-  if (!result) console.warn("No TTS audio match found.");
-  return result;
-}
+  <h1>EMS Code Sim – Admin Panel</h1>
 
-async function processUserMessage(message) {
-  if (!message) return;
-  const role = isProctorQuestion(message) ? "Proctor" : "Patient";
+  <div class="tabs">
+    <button onclick="switchTab('approved')">✅ Approved</button>
+    <button onclick="switchTab('review')">📝 Review</button>
+  </div>
 
-  try {
-    const { response, source } = await routeUserInput(message, {
-      scenarioId: scenarioPath,
-      role: role.toLowerCase(),
-    });
+  <div id="response-list">Loading...</div>
 
-    let ttsAudio = null;
-    if (source === "hardcoded") {
-      ttsAudio = await getTTSAudioFromFirebase(message);
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
+      authDomain: "ems-code-sim.firebaseapp.com",
+      databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+      projectId: "ems-code-sim",
+      storageBucket: "ems-code-sim.appspot.com",
+      messagingSenderId: "190498607578",
+      appId: "1:190498607578:web:4cf6c8e999b027956070e3"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    let currentTab = "approved";
+
+    function switchTab(tab) {
+      currentTab = tab;
+      tab === "approved" ? loadApprovedResponses() : loadReviewResponses();
     }
 
-    displayChatResponse(response, message, `${role} (${source})`, ttsAudio);
-  } catch (err) {
-    logErrorToDatabase("processUserMessage error: " + err.message);
-    displayChatResponse("❌ AI response failed. Try again.");
-  }
-}
-
-async function displayChatResponse(response, question = "", role = "", audioUrl = null) {
-  const chatBox = document.getElementById("chat-box");
-  const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
-
-  if (question) {
-    chatBox.innerHTML += `<div class="question">🗣️ <b>You:</b> ${question}</div>`;
-  }
-  chatBox.innerHTML += `<div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>`;
-
-  if (audioUrl) {
-    console.log("TTS audio source:", audioUrl.slice(0, 30));
-    let src = audioUrl.startsWith("//") ? "https:" + audioUrl : audioUrl;
-    src = audioUrl.startsWith("http") || audioUrl.startsWith("//")
-      ? src
-      : `data:audio/mp3;base64,${audioUrl}`;
-
-    const audioElement = document.createElement("audio");
-    audioElement.src = src;
-    audioElement.setAttribute("controls", "controls");
-    audioElement.setAttribute("autoplay", "autoplay");
-    audioElement.style.marginTop = "10px";
-    chatBox.appendChild(audioElement);
-    audioElement.play().catch(err => {
-      console.warn("Autoplay failed:", err.message);
-    });
-  } else {
-    speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient");
-  }
-
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-async function loadDispatchInfo() {
-  try {
-    const res = await fetch(`${scenarioPath}dispatch.txt`);
-    return await res.text();
-  } catch (e) {
-    logErrorToDatabase("Dispatch load failed: " + e.message);
-    return "Dispatch not available.";
-  }
-}
-
-async function loadPatientInfo() {
-  try {
-    const res = await fetch(`${scenarioPath}patient.txt`);
-    return await res.text();
-  } catch (e) {
-    logErrorToDatabase("Patient info load failed: " + e.message);
-    return "Patient info not available.";
-  }
-}
-
-function logErrorToDatabase(errorInfo) {
-  console.error("🔴", errorInfo);
-  firebase.database().ref('error_logs').push({ error: errorInfo, timestamp: Date.now() });
-}
-
-window.startScenario = async function () {
-  if (scenarioStarted) return;
-
-  try {
-    await loadHardcodedResponses();
-
-    const configRes = await fetch(`${scenarioPath}config.json`);
-    const config = await configRes.json();
-    await loadGradingTemplate(config.grading || "medical");
-
-    const dispatch = await loadDispatchInfo();
-    patientContext = await loadPatientInfo();
-
-    displayChatResponse(`🚑 Dispatch: ${dispatch}`);
-    scenarioStarted = true;
-  } catch (err) {
-    logErrorToDatabase("startScenario error: " + err.message);
-    displayChatResponse("❌ Failed to load scenario. Missing config or files.");
-  }
-};
-
-window.endScenario = function () {
-  const feedback = gradeScenario();
-  displayChatResponse("📦 Scenario ended. Here's your performance summary:<br><br>" + feedback);
-  scenarioStarted = false;
-};
-
-document.addEventListener('DOMContentLoaded', () => {
-  const sendBtn = document.getElementById('send-button');
-  const input = document.getElementById('user-input');
-  const startBtn = document.getElementById('start-button');
-  const endBtn = document.getElementById('end-button');
-  const micBtn = document.getElementById('mic-button');
-
-  sendBtn?.addEventListener('click', () => {
-    const message = input.value.trim();
-    if (message) {
-      processUserMessage(message);
-      input.value = '';
+    function loadApprovedResponses() {
+      firebase.database().ref("hardcodedResponses").once("value").then(snapshot => {
+        renderResponses(snapshot.val(), false);
+      });
     }
-  });
 
-  input?.addEventListener('keypress', e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      sendBtn.click();
+    function loadReviewResponses() {
+      firebase.database().ref("hardcodeReview").once("value").then(snapshot => {
+        renderResponses(snapshot.val(), true);
+      });
     }
-  });
 
-  startBtn?.addEventListener('click', () => window.startScenario?.());
-  endBtn?.addEventListener('click', () => window.endScenario?.());
-  micBtn?.addEventListener('click', () => startVoiceRecognition?.());
-});
+    function renderResponses(data, isReview) {
+      const container = document.getElementById("response-list");
+      container.innerHTML = "";
+
+      if (!data) {
+        container.innerHTML = "<p>No responses found.</p>";
+        return;
+      }
+
+      Object.entries(data).forEach(([id, entry]) => {
+        const div = document.createElement("div");
+        div.className = "response-block";
+
+        const q = entry.question || entry.userQuestion || "N/A";
+        const a = entry.response || entry.aiResponse || "";
+        const role = entry.role || "Patient";
+        const triggerFileBase64 = entry.triggerFile || "";
+        const triggerType = entry.triggerFileType || "";
+
+        div.innerHTML = `
+          <p><b>Q:</b> ${q}</p>
+          <textarea>${a}</textarea><br>
+          <select>
+            <option value="Patient" ${role === "Patient" ? "selected" : ""}>Patient</option>
+            <option value="Proctor" ${role === "Proctor" ? "selected" : ""}>Proctor</option>
+          </select><br>
+          <input type="file" class="trigger-upload" accept="image/*,audio/*" /><br>
+          <div class="trigger-preview">
+            ${triggerType === "image" ? `<img src="${triggerFileBase64}">` : ""}
+            ${triggerType === "audio" ? `<audio controls src="${triggerFileBase64}"></audio>` : ""}
+          </div>
+          ${isReview
+            ? `<button onclick="approveReview('${id}', this)">✅ Approve</button>
+               <button onclick="deleteReview('${id}')">🗑 Delete</button>`
+            : `<button onclick="saveApproved('${id}', this)">💾 Save</button>
+               <button onclick="deleteApproved('${id}')">🗑 Delete</button>`
+          }
+        `;
+
+        container.appendChild(div);
+      });
+    }
+
+    function approveReview(id, button) {
+      const block = button.closest(".response-block");
+      const text = block.querySelector("textarea").value;
+      const role = block.querySelector("select").value;
+      const fileInput = block.querySelector(".trigger-upload");
+      const file = fileInput.files[0];
+
+      const ref = firebase.database().ref("hardcodeReview/" + id);
+      ref.once("value").then(snapshot => {
+        const q = snapshot.val().question || snapshot.val().userQuestion;
+
+        const uploadAndSave = (triggerFile = "", triggerFileType = "") => {
+          const obj = {
+            question: q,
+            response: text,
+            role,
+            triggerFile,
+            triggerFileType
+          };
+          firebase.database().ref("hardcodedResponses").push(obj);
+          ref.remove().then(() => {
+            alert("Approved.");
+            loadReviewResponses();
+          });
+        };
+
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const type = file.type.startsWith("image") ? "image" : "audio";
+            uploadAndSave(reader.result, type);
+          };
+          reader.readAsDataURL(file);
+        } else {
+          uploadAndSave();
+        }
+      });
+    }
+
+    function deleteReview(id) {
+      if (confirm("Delete this review?")) {
+        firebase.database().ref("hardcodeReview/" + id).remove().then(loadReviewResponses);
+      }
+    }
+
+    function saveApproved(id, button) {
+      const block = button.closest(".response-block");
+      const text = block.querySelector("textarea").value;
+      const role = block.querySelector("select").value;
+      const fileInput = block.querySelector(".trigger-upload");
+      const file = fileInput.files[0];
+
+      const updateRef = (triggerFile = "", triggerFileType = "") => {
+        const ref = firebase.database().ref("hardcodedResponses/" + id);
+        ref.update({
+          response: text,
+          role,
+          ...(triggerFile && { triggerFile }),
+          ...(triggerFileType && { triggerFileType })
+        }).then(() => alert("Saved."));
+      };
+
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const type = file.type.startsWith("image") ? "image" : "audio";
+          updateRef(reader.result, type);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        updateRef();
+      }
+    }
+
+    function deleteApproved(id) {
+      if (confirm("Delete this approved response?")) {
+        firebase.database().ref("hardcodedResponses/" + id).remove().then(loadApprovedResponses);
+      }
+    }
+
+    // Load default tab
+    switchTab("approved");
+  </script>
+
+</body>
+</html>
