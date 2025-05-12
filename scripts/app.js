@@ -72,3 +72,10 @@ exports.handler = async function(event, context) {
     };
   }
 };
+
+function startScenario() {
+  console.log("✅ Start Scenario clicked.");
+  // You can place simulation startup logic here (e.g., loading dispatch, enabling chat, etc.)
+  const chatBox = document.getElementById("chat-box");
+  chatBox.innerHTML += `<div><strong>Dispatch:</strong> You are responding to a 56-year-old male with chest pain.</div>`;
+}
