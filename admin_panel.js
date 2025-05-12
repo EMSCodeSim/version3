@@ -1,168 +1,124 @@
-const db = firebase.database();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>EMS Code Sim – Admin Panel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f4f4;
+    }
 
-function switchTab(tab) {
-  currentTab = tab;
-  tab === "review" ? loadReviewResponses() : loadApprovedResponses();
-}
+    header {
+      background-color: #00796b;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 24px;
+    }
 
-function loadReviewResponses() {
-  db.ref("hardcodeReview").once("value").then(snapshot => {
-    renderResponses(snapshot.val(), true);
-  });
-}
+    .tabs {
+      display: flex;
+      justify-content: center;
+      background: #e0f2f1;
+      padding: 10px 0;
+    }
 
-function loadApprovedResponses() {
-  db.ref("hardcodedResponses").once("value").then(snapshot => {
-    renderResponses(snapshot.val(), false);
-  });
-}
+    .tabs button {
+      margin: 0 10px;
+      padding: 10px 20px;
+      border: none;
+      background-color: #ccc;
+      cursor: pointer;
+      font-weight: bold;
+    }
 
-function renderResponses(data, isReview) {
-  const container = document.getElementById("response-list");
-  container.innerHTML = "";
+    .tabs button.active {
+      background-color: #00796b;
+      color: white;
+    }
 
-  if (!data) {
-    container.innerHTML = "<p>No responses found.</p>";
-    return;
-  }
+    .content {
+      padding: 20px;
+    }
 
-  Object.entries(data).forEach(([id, entry]) => {
-    const div = document.createElement("div");
-    div.className = "response-block";
+    .response {
+      background: white;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
 
-    const q = entry.question || entry.userQuestion || "N/A";
-    const a = entry.response || entry.aiResponse || "";
-    const role = entry.role || "Patient";
-    const triggerFileBase64 = entry.triggerFile || "";
-    const triggerType = entry.triggerFileType || "";
+    textarea {
+      width: 100%;
+      height: 80px;
+      margin-top: 10px;
+    }
 
-    div.innerHTML = `
-      <p><b>Q:</b> ${q}</p>
-      <textarea>${a}</textarea><br>
-      <select>
-        <option value="Patient" ${role === "Patient" ? "selected" : ""}>Patient</option>
-        <option value="Proctor" ${role === "Proctor" ? "selected" : ""}>Proctor</option>
-      </select><br>
-      <input type="file" class="trigger-upload" accept="image/*,audio/*" /><br>
-      <div class="trigger-preview">
-        ${triggerType === "image" ? `<img src="${triggerFileBase64}" style="max-height:100px;">` : ""}
-        ${triggerType === "audio" ? `<audio controls src="${triggerFileBase64}"></audio>` : ""}
-      </div>
-      ${isReview
-        ? `<button onclick="approveReview('${id}', this)">✅ Approve</button>
-           <button onclick="deleteReview('${id}')">🗑 Delete</button>`
-        : `<button onclick="saveApproved('${id}', this)">💾 Save</button>
-           <button onclick="deleteApproved('${id}')">🗑 Delete</button>`}
-    `;
+    select, input[type="file"], button {
+      margin-top: 10px;
+      margin-right: 10px;
+      padding: 6px 10px;
+    }
 
-    container.appendChild(div);
-  });
-}
+    .trigger-preview img {
+      max-height: 100px;
+      margin-top: 10px;
+    }
 
-async function approveReview(id, button) {
-  const block = button.closest(".response-block");
-  const text = block.querySelector("textarea").value;
-  const role = block.querySelector("select").value;
-  const fileInput = block.querySelector(".trigger-upload");
-  const file = fileInput?.files?.[0];
+    .trigger-preview audio {
+      width: 100%;
+      margin-top: 10px;
+    }
 
-  const snapshot = await db.ref("hardcodeReview/" + id).once("value");
-  const q = snapshot.val().question || snapshot.val().userQuestion;
+    .upgrade-btn {
+      background-color: #2196F3;
+      color: white;
+      font-size: 16px;
+      border: none;
+      padding: 10px 16px;
+      margin: 20px auto;
+      display: block;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
 
-  const voice = role === "Proctor" ? "shimmer" : "onyx";
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+</head>
+<body>
 
-  const ttsRes = await fetch("https://api.openai.com/v1/audio/speech", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer YOUR_OPENAI_API_KEY`
-    },
-    body: JSON.stringify({
-      model: "tts-1",
-      voice,
-      input: text
-    })
-  });
+  <header>EMS Code Sim – Admin Panel</header>
 
-  const ttsBlob = await ttsRes.blob();
-  const ttsBase64 = await new Promise(resolve => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result.split(',')[1]);
-    reader.readAsDataURL(ttsBlob);
-  });
+  <div class="tabs">
+    <button id="tab-approved" class="active" onclick="switchTab('approved')">✅ Approved</button>
+    <button id="tab-review" onclick="switchTab('review')">🕵️ Review</button>
+  </div>
 
-  let triggerFile = "", triggerFileType = "";
+  <button class="upgrade-btn" onclick="upgradeMissingTTS()">🔄 Upgrade Missing TTS</button>
 
-  const saveToFirebase = () => {
-    const newEntry = {
-      question: q,
-      response: text,
-      role,
-      ttsAudio: ttsBase64,
-      triggerFile,
-      triggerFileType
+  <div class="content" id="responsesContainer">Loading...</div>
+
+  <!-- Firebase Config -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
+      authDomain: "ems-code-sim.firebaseapp.com",
+      databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+      projectId: "ems-code-sim",
+      storageBucket: "ems-code-sim.appspot.com",
+      messagingSenderId: "190498607578",
+      appId: "1:190498607578:web:4cf6c8e999b027956070e3"
     };
-    db.ref("hardcodedResponses").push(newEntry);
-    db.ref("hardcodeReview/" + id).remove().then(() => {
-      alert("Approved and TTS saved.");
-      loadReviewResponses();
-    });
-  };
+    firebase.initializeApp(firebaseConfig);
+  </script>
 
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      triggerFile = reader.result;
-      triggerFileType = file.type.startsWith("image") ? "image" : "audio";
-      saveToFirebase();
-    };
-    reader.readAsDataURL(file);
-  } else {
-    saveToFirebase();
-  }
-}
+  <!-- Admin Script Logic -->
+  <script src="admin_panel.js"></script>
 
-function deleteReview(id) {
-  if (confirm("Delete this review?")) {
-    db.ref("hardcodeReview/" + id).remove().then(loadReviewResponses);
-  }
-}
-
-function saveApproved(id, button) {
-  const block = button.closest(".response-block");
-  const text = block.querySelector("textarea").value;
-  const role = block.querySelector("select").value;
-  const fileInput = block.querySelector(".trigger-upload");
-  const file = fileInput?.files?.[0];
-
-  const update = (triggerFile = "", triggerFileType = "") => {
-    const updateData = { response: text, role };
-    if (triggerFile) updateData.triggerFile = triggerFile;
-    if (triggerFileType) updateData.triggerFileType = triggerFileType;
-
-    db.ref("hardcodedResponses/" + id).update(updateData).then(() => {
-      alert("Saved.");
-      loadApprovedResponses();
-    });
-  };
-
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const type = file.type.startsWith("image") ? "image" : "audio";
-      update(reader.result, type);
-    };
-    reader.readAsDataURL(file);
-  } else {
-    update();
-  }
-}
-
-function deleteApproved(id) {
-  if (confirm("Delete this approved response?")) {
-    db.ref("hardcodedResponses/" + id).remove().then(loadApprovedResponses);
-  }
-}
-
-// Initialize with approved
-switchTab("approved");
+</body>
+</html>
