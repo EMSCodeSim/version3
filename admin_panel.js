@@ -15,7 +15,7 @@ function switchTab(tab) {
 }
 
 function loadResponses() {
-  const path = currentTab === 'review' ? 'hardcodedReview' : 'hardcodedResponses';
+  const path = currentTab === 'review' ? 'hardcodeReview' : 'hardcodedResponses';
   db.ref(path).once('value')
     .then(snapshot => {
       container.innerHTML = '';
