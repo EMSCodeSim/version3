@@ -2,175 +2,100 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>EMS Code Sim: Admin Panel</title>
+  <title>EMS Code Sim – Admin Panel</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f9f9f9;
+      margin: 0;
+      background: #f4f4f4;
+    }
+
+    header {
+      background-color: #00796b;
+      color: white;
       padding: 20px;
-    }
-    h2 {
       text-align: center;
+      font-size: 24px;
     }
+
     .tabs {
-      text-align: center;
-      margin-bottom: 20px;
+      display: flex;
+      justify-content: center;
+      background: #e0f2f1;
+      padding: 10px 0;
     }
+
     .tabs button {
-      padding: 10px 20px;
       margin: 0 10px;
-      font-weight: bold;
-      cursor: pointer;
-      background: #e0e0e0;
+      padding: 10px 20px;
       border: none;
-      border-radius: 5px;
+      background-color: #ccc;
+      cursor: pointer;
+      font-weight: bold;
     }
+
     .tabs button.active {
-      background: #007bff;
+      background-color: #00796b;
       color: white;
     }
-    .response-block {
+
+    .content {
+      padding: 20px;
+    }
+
+    .response {
       background: white;
-      border: 1px solid #ccc;
       padding: 15px;
-      margin-bottom: 15px;
+      margin-bottom: 20px;
       border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-    textarea,
-    input[type="text"],
-    select {
+
+    textarea {
       width: 100%;
-      font-size: 14px;
-      margin-top: 8px;
-      margin-bottom: 12px;
-      padding: 8px;
-    }
-    button {
-      padding: 6px 12px;
-      margin: 5px 5px 0 0;
-    }
-    audio {
-      display: block;
+      height: 80px;
       margin-top: 10px;
-      width: 100%;
+    }
+
+    select, button {
+      margin-top: 10px;
+      margin-right: 10px;
+      padding: 6px 10px;
+    }
+
+    audio {
+      margin-top: 10px;
+    }
+
+    .upgrade-btn {
+      background-color: #2196F3;
+      color: white;
+      font-size: 16px;
+      border: none;
+      padding: 10px 16px;
+      margin: 20px auto;
+      display: block;
+      border-radius: 6px;
+      cursor: pointer;
     }
   </style>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
 <body>
 
-  <h2>EMS Code Sim: Admin Panel</h2>
+  <header>EMS Code Sim – Admin Panel</header>
 
   <div class="tabs">
-    <button onclick="switchTab('approved')" class="active">✅ Approved</button>
-    <button onclick="switchTab('review')">🟡 Review</button>
+    <button id="tab-approved" class="active" onclick="switchTab('approved')">✅ Approved</button>
+    <button id="tab-review" onclick="switchTab('review')">🕵️ Review</button>
   </div>
 
-  <div id="responsesContainer">Loading...</div>
+  <button class="upgrade-btn" onclick="upgradeMissingTTS()">🔄 Upgrade Missing TTS</button>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import {
-      getDatabase,
-      ref,
-      get,
-      set,
-      remove
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  <div class="content" id="responsesContainer">Loading...</div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
-      authDomain: "ems-code-sim.firebaseapp.com",
-      databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
-      projectId: "ems-code-sim",
-      storageBucket: "ems-code-sim.firebasestorage.app",
-      messagingSenderId: "190498607578",
-      appId: "1:190498607578:web:4cf6c8e999b027956070e3"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    let currentTab = 'approved';
-
-    function switchTab(tab) {
-      currentTab = tab;
-      document.querySelectorAll(".tabs button").forEach(btn => btn.classList.remove("active"));
-      document.querySelector(`.tabs button[onclick="switchTab('${tab}')"]`)?.classList.add("active");
-      loadResponses(tab);
-    }
-
-    async function loadResponses(tab) {
-      const container = document.getElementById("responsesContainer");
-      container.innerHTML = "<p>Loading...</p>";
-      const path = tab === 'review' ? 'hardcodeReview' : 'hardcodedResponses';
-      const snapshot = await get(ref(db, path));
-      const data = snapshot.val() || {};
-
-      container.innerHTML = "";
-      Object.entries(data).forEach(([key, entry]) => {
-        const block = document.createElement("div");
-        block.className = "response-block";
-
-        block.innerHTML = `
-          <label><strong>Question:</strong></label>
-          <input type="text" class="question-edit" value="${entry.question || ''}">
-
-          <label><strong>Response:</strong></label>
-          <textarea class="response-text">${entry.response || ''}</textarea>
-
-          <label><strong>Role:</strong></label>
-          <select class="role-select">
-            <option value="Patient" ${entry.role === 'Patient' ? 'selected' : ''}>Patient</option>
-            <option value="Proctor" ${entry.role === 'Proctor' ? 'selected' : ''}>Proctor</option>
-          </select>
-
-          ${entry.ttsAudio ? `<audio controls src="data:audio/mp3;base64,${entry.ttsAudio}"></audio>` : ''}
-
-          ${tab === 'review'
-            ? `<button onclick="approveEntry('${key}', this.parentElement)">✅ Approve</button>
-               <button onclick="deleteEntry('${key}', 'review')">🗑️ Delete</button>`
-            : `<button onclick="saveEntry('${key}', this.parentElement)">💾 Save</button>
-               <button onclick="deleteEntry('${key}', 'approved')">🗑️ Delete</button>`}
-        `;
-
-        container.appendChild(block);
-      });
-    }
-
-    window.approveEntry = async function (key, container) {
-      const question = container.querySelector(".question-edit").value;
-      const response = container.querySelector(".response-text").value;
-      const role = container.querySelector(".role-select").value;
-
-      const data = { question, response, role };
-
-      await set(ref(db, `hardcodedResponses/${key}`), data);
-      await remove(ref(db, `hardcodeReview/${key}`));
-      alert("✅ Approved and moved.");
-      loadResponses('review');
-    };
-
-    window.saveEntry = async function (key, container) {
-      const question = container.querySelector(".question-edit").value;
-      const response = container.querySelector(".response-text").value;
-      const role = container.querySelector(".role-select").value;
-
-      const data = { question, response, role };
-
-      await set(ref(db, `hardcodedResponses/${key}`), data);
-      alert("💾 Saved.");
-      loadResponses('approved');
-    };
-
-    window.deleteEntry = async function (key, from) {
-      const path = from === 'review' ? 'hardcodeReview' : 'hardcodedResponses';
-      if (confirm("Are you sure you want to delete this entry?")) {
-        await remove(ref(db, `${path}/${key}`));
-        loadResponses(from);
-      }
-    };
-
-    // Load default tab on startup
-    loadResponses('approved');
-  </script>
+  <script src="admin_panel.js"></script>
 </body>
 </html>
