@@ -37,7 +37,7 @@ function loadResponses() {
         const key = child.key;
         const entry = child.val();
 
-        const question = entry.userQuestion || entry.question || 'N/A';
+        const question = (entry.userQuestion || entry.question || '').trim();
         const response = entry.aiResponse || entry.response || '';
         const role = entry.role || 'Patient';
         const ttsAudio = entry.ttsAudio || null;
