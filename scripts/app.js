@@ -7,7 +7,7 @@ let patientContext = "";
 let gradingTemplate = {};
 let scoreTracker = {};
 let scenarioStarted = false;
-let hardcodedResponses = {};  // Added to hold loaded responses
+let hardcodedResponses = {};
 
 async function loadGradingTemplate(type = "medical") {
   const file = `grading_templates/${type}_assessment.json`;
@@ -29,10 +29,8 @@ function isProctorQuestion(message) {
 }
 
 async function getTTSAudioFromFirebase(question) {
-  console.log("Looking for TTS match for:", question);
   const snapshot = await firebase.database().ref(`hardcodedResponses`).once('value');
   let result = null;
-
   snapshot.forEach(child => {
     const entry = child.val();
     const key = entry.userQuestion || entry.question;
@@ -40,8 +38,6 @@ async function getTTSAudioFromFirebase(question) {
       result = entry.ttsAudio;
     }
   });
-
-  if (!result) console.warn("No TTS audio match found.");
   return result;
 }
 
@@ -77,27 +73,21 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
 
   chatBox.innerHTML += `<div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>`;
 
-  // Audio playback
+  // Play TTS audio if available
   if (audioUrl) {
-    let src = audioUrl.startsWith("//") ? "https:" + audioUrl : audioUrl;
-    src = audioUrl.startsWith("http") || audioUrl.startsWith("//")
-      ? src
-      : `data:audio/mp3;base64,${audioUrl}`;
-
+    let src = audioUrl.startsWith("http") ? audioUrl : `data:audio/mp3;base64,${audioUrl}`;
     const audioElement = document.createElement("audio");
     audioElement.src = src;
     audioElement.setAttribute("controls", "controls");
     audioElement.setAttribute("autoplay", "autoplay");
     audioElement.style.marginTop = "10px";
     chatBox.appendChild(audioElement);
-    audioElement.play().catch(err => {
-      console.warn("Autoplay failed:", err.message);
-    });
+    audioElement.play().catch(err => console.warn("Autoplay failed:", err));
   } else {
     speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient");
   }
 
-  // Show trigger file (photo or audio) if available in hardcoded match
+  // Trigger file (image/audio)
   if (source === "hardcoded") {
     const match = Object.values(hardcodedResponses).find(entry =>
       (entry.question || entry.userQuestion)?.trim().toLowerCase() === userInput.trim().toLowerCase()
@@ -122,6 +112,21 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
       }
 
       chatBox.appendChild(triggerDiv);
+    }
+
+    // TTS Preview Button
+    if (match?.ttsAudio) {
+      const button = document.createElement("button");
+      button.innerText = "▶ Preview TTS";
+      button.style.marginTop = "8px";
+      button.onclick = () => {
+        const previewAudio = new Audio(`data:audio/mp3;base64,${match.ttsAudio}`);
+        previewAudio.play().catch(err => {
+          console.warn("Preview playback failed:", err);
+          alert("Unable to play preview.");
+        });
+      };
+      chatBox.appendChild(button);
     }
   }
 
@@ -158,7 +163,6 @@ window.startScenario = async function () {
 
   try {
     await loadHardcodedResponses();
-
     const snapshot = await firebase.database().ref('hardcodedResponses').once('value');
     hardcodedResponses = snapshot.val() || {};
 
