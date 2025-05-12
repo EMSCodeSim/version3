@@ -5,7 +5,7 @@ export async function loadHardcodedResponses() {
   try {
     const snapshot = await firebase.database().ref('hardcodedResponses').once('value');
     hardcodedResponses = snapshot.val() || {};
-    console.log("✅ Hardcoded responses loaded.");
+    console.log("✅ Hardcoded responses loaded:", Object.keys(hardcodedResponses).length);
   } catch (error) {
     console.error("❌ Error loading hardcoded responses:", error);
   }
@@ -50,8 +50,9 @@ export async function routeUserInput(userInput, context = {}) {
 function findHardcodedMatch(input) {
   for (const key in hardcodedResponses) {
     const stored = hardcodedResponses[key];
-    if (stored?.userQuestion?.trim().toLowerCase() === input) {
-      return stored.aiResponse;
+    const matchKey = stored?.question || stored?.userQuestion;
+    if (matchKey && matchKey.trim().toLowerCase() === input) {
+      return stored.response || stored.aiResponse;
     }
   }
   return null;
@@ -66,53 +67,53 @@ async function rephraseWithGPT35(input) {
       body: JSON.stringify({ message: input })
     });
     const data = await res.json();
-    return data.rephrased || null;
-  } catch (e) {
-    console.error("❌ GPT-3.5 rephrase failed:", e);
+    return data.rephrased;
+  } catch (err) {
+    console.warn("Rephrase error:", err.message);
     return null;
   }
 }
 
-// Vector search call
+// Vector similarity search fallback
 async function getVectorResponse(input) {
   try {
-    const res = await fetch('/.netlify/functions/vector-search', {
+    const res = await fetch('/.netlify/functions/vector_search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: input })
+      body: JSON.stringify({ message: input })
     });
     const data = await res.json();
-    return data.match || null;
-  } catch (e) {
-    console.error("❌ Vector search failed:", e);
+    return data.response;
+  } catch (err) {
+    console.warn("Vector search error:", err.message);
     return null;
   }
 }
 
-// GPT-4 Turbo fallback
+// GPT-4 fallback
 async function getAIResponseGPT4Turbo(input, context) {
   try {
     const res = await fetch('/.netlify/functions/gpt4-turbo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: input, context })
+      body: JSON.stringify({ message: input, context })
     });
     const data = await res.json();
-    return data.reply || null;
-  } catch (e) {
-    console.error("❌ GPT-4 fallback failed:", e);
+    return data.response;
+  } catch (err) {
+    console.warn("GPT-4 error:", err.message);
     return null;
   }
 }
 
-// Log fallback to Firebase
-function logGPTResponseToDatabase(input, reply, context) {
-  const logRef = firebase.database().ref("unmatchedLog").push();
-  const entry = {
-    timestamp: Date.now(),
-    userInput: input,
-    gptReply: reply,
-    context: context
-  };
-  logRef.set(entry);
+// Log unknown GPT response for later approval
+function logGPTResponseToDatabase(question, reply, context) {
+  const db = firebase.database();
+  const hash = btoa(question).slice(0, 30);
+  db.ref(`hardcodeReview/${hash}`).set({
+    question: question,
+    response: reply,
+    role: context.role || "Patient",
+    timestamp: Date.now()
+  });
 }
