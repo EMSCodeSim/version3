@@ -50,7 +50,7 @@ export async function routeUserInput(userInput, context = {}) {
 function findHardcodedMatch(input) {
   for (const key in hardcodedResponses) {
     const stored = hardcodedResponses[key];
-    if (stored?.Question?.trim().toLowerCase() === input) {
+    if (stored?.userQuestion?.trim().toLowerCase() === input) {
       return stored.aiResponse;
     }
   }
