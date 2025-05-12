@@ -1,149 +1,110 @@
-const firebaseConfig = {
-  databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com"
-};
-firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const container = document.getElementById("responsesContainer");
 
-let currentTab = 'approved';
+let currentTab = "approved";
 
 function switchTab(tab) {
   currentTab = tab;
-  document.getElementById("tab-approved").classList.toggle("active", tab === 'approved');
-  document.getElementById("tab-review").classList.toggle("active", tab === 'review');
+  document.getElementById("tab-approved").classList.toggle("active", tab === "approved");
+  document.getElementById("tab-review").classList.toggle("active", tab === "review");
   loadResponses();
 }
 
 function loadResponses() {
-  const path = currentTab === 'review' ? 'hardcodedReview' : 'hardcodedResponses';
-  db.ref(path).once('value').then(snapshot => {
-    container.innerHTML = '';
+  const ref = db.ref(currentTab === "review" ? "hardcodeReview" : "hardcodedResponses");
+  ref.once("value").then(snapshot => {
+    container.innerHTML = "";
+
     if (!snapshot.exists()) {
-      container.innerHTML = '<div>No responses found.</div>';
+      container.innerHTML = "<p>No responses found.</p>";
       return;
     }
 
     snapshot.forEach(child => {
-      const key = child.key;
+      const id = child.key;
       const entry = child.val();
 
-      const question = entry.userQuestion || entry.question || 'N/A';
-      const response = entry.aiResponse || entry.response || '';
-      const role = entry.role || 'Patient';
-      const ttsAudio = entry.ttsAudio || null;
+      const question = entry.userQuestion || entry.question || "N/A";
+      const response = entry.response || entry.aiResponse || "";
+      const role = entry.role || "Patient";
+      const ttsAudio = entry.ttsAudio || "";
 
-      const div = document.createElement('div');
-      div.className = 'response';
+      const div = document.createElement("div");
+      div.className = "response-block";
+
       div.innerHTML = `
         <p><strong>Q:</strong> ${question}</p>
-        <textarea id="response-${key}">${response}</textarea><br>
-        <select id="role-${key}">
-          <option value="Patient" ${role === 'Patient' ? 'selected' : ''}>Patient</option>
-          <option value="Proctor" ${role === 'Proctor' ? 'selected' : ''}>Proctor</option>
+        <textarea id="resp-${id}">${response}</textarea><br>
+        <select id="role-${id}">
+          <option value="Patient" ${role === "Patient" ? "selected" : ""}>Patient</option>
+          <option value="Proctor" ${role === "Proctor" ? "selected" : ""}>Proctor</option>
         </select>
-        ${currentTab === 'review'
-          ? `<button onclick="approveEntry('${key}', \`${question.replace(/`/g, '\\`')}\`)">✅ Approve</button>`
-          : `<button onclick="saveEntry('${key}')">💾 Save</button>
-             <button onclick="deleteEntry('${key}')">🗑️ Delete</button>`}
-        ${ttsAudio ? `<br><audio controls src="data:audio/mp3;base64,${ttsAudio}"></audio>` : ''}
+        ${ttsAudio ? `<br><audio controls src="data:audio/mp3;base64,${ttsAudio}"></audio>` : ""}
+        ${currentTab === "review"
+          ? `<button onclick="approveResponse('${id}')">✅ Approve</button>
+             <button onclick="deleteReview('${id}')">🗑 Delete</button>`
+          : `<button onclick="saveApproved('${id}')">💾 Save</button>
+             <button onclick="deleteApproved('${id}')">🗑 Delete</button>`}
       `;
+
       container.appendChild(div);
     });
   });
 }
 
-window.saveEntry = async function(key) {
-  const text = document.getElementById(`response-${key}`).value.trim();
-  const role = document.getElementById(`role-${key}`).value;
+window.approveResponse = async function(id) {
+  const ref = db.ref("hardcodeReview").child(id);
+  const snap = await ref.once("value");
+  const data = snap.val();
+  const question = data.userQuestion || data.question || id;
+  const response = document.getElementById(`resp-${id}`).value;
+  const role = document.getElementById(`role-${id}`).value;
 
-  if (!text) return alert("Response text is required.");
+  const tts = await fetch("/.netlify/functions/tts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: response, speaker: role.toLowerCase() })
+  });
+  const { audio } = await tts.json();
 
-  try {
-    const res = await fetch("/.netlify/functions/tts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, speaker: role.toLowerCase() })
-    });
-    const json = await res.json();
-    if (!res.ok || !json.audio) throw new Error(json.error || "TTS failed");
-
-    await db.ref(`hardcodedResponses/${key}`).update({
-      response: text,
-      role,
-      ttsAudio: json.audio
-    });
-    alert("Saved.");
-    loadResponses();
-  } catch (err) {
-    alert("Save failed: " + err.message);
-  }
-};
-
-window.deleteEntry = async function(key) {
-  if (!confirm("Delete this entry?")) return;
-  await db.ref(`hardcodedResponses/${key}`).remove();
-  alert("Deleted.");
+  await db.ref("hardcodedResponses").push({
+    question,
+    response,
+    role,
+    ttsAudio: audio || ""
+  });
+  await ref.remove();
   loadResponses();
 };
 
-window.approveEntry = async function(key, question) {
-  const text = document.getElementById(`response-${key}`).value.trim();
-  const role = document.getElementById(`role-${key}`).value;
+window.saveApproved = async function(id) {
+  const response = document.getElementById(`resp-${id}`).value;
+  const role = document.getElementById(`role-${id}`).value;
 
-  if (!text) return alert("Response text is required.");
+  const tts = await fetch("/.netlify/functions/tts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: response, speaker: role.toLowerCase() })
+  });
+  const { audio } = await tts.json();
 
-  try {
-    const res = await fetch("/.netlify/functions/tts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, speaker: role.toLowerCase() })
-    });
-    const json = await res.json();
-    if (!res.ok || !json.audio) throw new Error(json.error || "TTS failed");
+  await db.ref("hardcodedResponses").child(id).update({
+    response,
+    role,
+    ttsAudio: audio || ""
+  });
 
-    await db.ref(`hardcodedResponses/${key}`).set({
-      question,
-      response: text,
-      role,
-      ttsAudio: json.audio
-    });
-    await db.ref(`hardcodedReview/${key}`).remove();
-    alert("Approved and moved.");
-    loadResponses();
-  } catch (err) {
-    alert("Approval failed: " + err.message);
-  }
-};
-
-window.upgradeMissingTTS = async function() {
-  const snapshot = await db.ref('hardcodedResponses').once('value');
-  const data = snapshot.val();
-  if (!data) return alert("No data found.");
-
-  const entries = Object.entries(data).filter(([_, v]) => v.response && !v.ttsAudio);
-  if (!entries.length) return alert("All entries already have TTS.");
-
-  if (!confirm(`Upgrade ${entries.length} entries?`)) return;
-
-  for (const [key, entry] of entries) {
-    try {
-      const res = await fetch("/.netlify/functions/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: entry.response, speaker: (entry.role || "Patient").toLowerCase() })
-      });
-
-      const json = await res.json();
-      if (res.ok && json.audio) {
-        await db.ref(`hardcodedResponses/${key}/ttsAudio`).set(json.audio);
-      }
-    } catch (err) {
-      console.error(`TTS upgrade failed for ${key}:`, err);
-    }
-  }
-
-  alert("TTS upgrades complete.");
+  alert("✅ Saved");
   loadResponses();
 };
 
-loadResponses();
+window.deleteReview = function(id) {
+  db.ref("hardcodeReview").child(id).remove().then(loadResponses);
+};
+
+window.deleteApproved = function(id) {
+  db.ref("hardcodedResponses").child(id).remove().then(loadResponses);
+};
+
+// Auto-load approved tab
+switchTab("approved");
