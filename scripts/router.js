@@ -1,53 +1,36 @@
-// router.js
-
-let hardcodedResponses = {};
+let hardcodedResponses = [];
 
 export async function loadHardcodedResponses() {
-  try {
-    const snapshot = await firebase.database().ref('hardcodedResponses').once('value');
-    const data = snapshot.val() || {};
-
-    hardcodedResponses = data;
-    console.log(`✅ Loaded ${Object.keys(data).length} hardcoded responses.`);
-  } catch (err) {
-    console.error("❌ Failed to load hardcoded responses:", err.message);
-  }
+  const snapshot = await firebase.database().ref("hardcodedResponses").once("value");
+  const data = snapshot.val() || {};
+  hardcodedResponses = Object.values(data);
 }
 
-export async function routeUserInput(input, context = {}) {
-  input = input.trim().toLowerCase();
-  console.log("USER INPUT:", input);
-  console.log("ROLE:", context.role || "unknown");
+export async function routeUserInput(message, { scenarioId, role }) {
+  const normalized = message.trim().toLowerCase();
 
-  // 1. Try exact hardcoded match
-  const matches = Object.values(hardcodedResponses).filter(entry => {
-    const key = (entry.question || entry.userQuestion || "").trim().toLowerCase();
-    return key === input && (!entry.role || entry.role.toLowerCase() === context.role.toLowerCase());
-  });
+  const match = hardcodedResponses.find(entry =>
+    entry.question?.trim().toLowerCase() === normalized ||
+    entry.userQuestion?.trim().toLowerCase() === normalized
+  );
 
-  if (matches.length > 0) {
-    console.log("✅ Matched hardcoded response:", matches[0]);
-    return {
-      response: matches[0].response || "[No response text]",
-      source: "hardcoded",
-    };
+  if (match && match.response) {
+    return { response: match.response, source: "hardcoded" };
   }
 
-  // 2. Fallback to GPT route
-  console.warn("⚠️ No hardcoded match found for:", input);
-  const gptRes = await fetch("/api/gpt4-turbo", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      user_input: input,
-      scenario_id: context.scenarioId || "default",
-      role: context.role || "patient",
-    }),
-  });
+  try {
+    const res = await fetch("/api/gpt4-turbo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: message })
+    });
 
-  const gptData = await gptRes.json();
-  return {
-    response: gptData?.response || "❌ No response from AI.",
-    source: "gpt",
-  };
+    const data = await res.json();
+    if (!res.ok || !data.reply) throw new Error(data.error || "GPT failed");
+
+    return { response: data.reply, source: "gpt" };
+  } catch (err) {
+    console.error("GPT fallback failed:", err.message);
+    return { response: "❌ No response from AI.", source: "gpt" };
+  }
 }
