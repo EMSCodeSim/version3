@@ -4,6 +4,7 @@
   <title>Admin Panel</title>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -38,35 +39,160 @@
       border-radius: 8px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
-    textarea {
+    textarea, select, input[type="text"] {
       width: 100%;
-      height: 60px;
       margin-bottom: 10px;
-    }
-    select, input[type="file"], button {
-      margin: 5px 0;
     }
     .controls {
       text-align: center;
       margin: 20px;
     }
+    audio {
+      margin-top: 10px;
+      width: 100%;
+    }
+    .btn-group button {
+      margin-right: 5px;
+    }
   </style>
 </head>
 <body>
 
-  <h1>Admin Panel</h1>
+<h1>Admin Panel</h1>
 
-  <div class="tabs">
-    <button id="tab-approved" onclick="switchTab('approved')">✅ Approved</button>
-    <button id="tab-review" onclick="switchTab('review')">📝 Review</button>
-  </div>
+<div class="tabs">
+  <button id="tab-approved" onclick="switchTab('approved')">✅ Approved</button>
+  <button id="tab-review" onclick="switchTab('review')">📝 Review</button>
+</div>
 
-  <div class="controls">
-    <button onclick="upgradeMissingTTS()">🔊 Upgrade Missing TTS</button>
-  </div>
+<div class="controls">
+  <button onclick="upgradeMissingTTS()">🔊 Upgrade Missing TTS</button>
+</div>
 
-  <div id="responsesContainer"></div>
+<div id="responsesContainer"></div>
 
-  <script src="admin_panel.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
+    authDomain: "ems-code-sim.firebaseapp.com",
+    databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+    projectId: "ems-code-sim",
+    storageBucket: "ems-code-sim.appspot.com",
+    messagingSenderId: "190498607578",
+    appId: "1:190498607578:web:4cf6c8e999b027956070e3",
+    measurementId: "G-2Q3ZT01YT1"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  let currentTab = 'review';
+
+  function switchTab(tab) {
+    currentTab = tab;
+    document.getElementById('tab-approved').classList.remove('active');
+    document.getElementById('tab-review').classList.remove('active');
+    document.getElementById(`tab-${tab}`).classList.add('active');
+    loadResponses();
+  }
+
+  function loadResponses() {
+    const refPath = currentTab === 'review' ? 'hardcodeReview' : 'hardcodedResponses';
+    const container = document.getElementById('responsesContainer');
+    container.innerHTML = '<p>Loading...</p>';
+
+    db.ref(refPath).once('value', snapshot => {
+      container.innerHTML = '';
+      snapshot.forEach(child => {
+        const key = child.key;
+        const data = child.val();
+
+        const card = document.createElement('div');
+        card.className = 'response';
+
+        card.innerHTML = `
+          <textarea id="question-${key}">${data.question || ''}</textarea>
+          <textarea id="response-${key}">${data.response || ''}</textarea>
+          <select id="role-${key}">
+            <option value="Patient" ${data.role === 'Patient' ? 'selected' : ''}>Patient</option>
+            <option value="Proctor" ${data.role === 'Proctor' ? 'selected' : ''}>Proctor</option>
+          </select>
+          <button onclick="previewTTS('${key}')">▶️ Preview TTS</button>
+          <audio id="audio-${key}" controls style="display:none"></audio>
+          <div class="btn-group">
+            <button onclick="saveToApproved('${key}', ${JSON.stringify(data).replace(/"/g, '&quot;')})">✅ Approve</button>
+            <button onclick="deleteEntry('${refPath}', '${key}')">🗑 Delete</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    });
+  }
+
+  function deleteEntry(path, key) {
+    if (confirm('Are you sure you want to delete this entry?')) {
+      db.ref(`${path}/${key}`).remove().then(loadResponses);
+    }
+  }
+
+  function saveToApproved(key, originalData) {
+    const updated = {
+      question: document.getElementById(`question-${key}`).value,
+      response: document.getElementById(`response-${key}`).value,
+      role: document.getElementById(`role-${key}`).value
+    };
+
+    fetch('/.netlify/functions/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: updated.response, voice: updated.role === 'Proctor' ? 'shimmer' : 'onyx' })
+    })
+    .then(res => res.json())
+    .then(json => {
+      updated.ttsAudio = json.audio;
+      db.ref(`hardcodedResponses`).push(updated).then(() => {
+        db.ref(`hardcodeReview/${key}`).remove().then(loadResponses);
+      });
+    });
+  }
+
+  function previewTTS(key) {
+    const responseText = document.getElementById(`response-${key}`).value;
+    const role = document.getElementById(`role-${key}`).value;
+    fetch('/.netlify/functions/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: responseText, voice: role === 'Proctor' ? 'shimmer' : 'onyx' })
+    })
+    .then(res => res.json())
+    .then(json => {
+      const audio = document.getElementById(`audio-${key}`);
+      audio.src = `data:audio/mp3;base64,${json.audio}`;
+      audio.style.display = 'block';
+      audio.play();
+    });
+  }
+
+  function upgradeMissingTTS() {
+    db.ref('hardcodedResponses').once('value', snapshot => {
+      snapshot.forEach(child => {
+        const key = child.key;
+        const val = child.val();
+        if (!val.ttsAudio && val.response) {
+          fetch('/.netlify/functions/tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: val.response, voice: val.role === 'Proctor' ? 'shimmer' : 'onyx' })
+          })
+          .then(res => res.json())
+          .then(json => {
+            db.ref(`hardcodedResponses/${key}/ttsAudio`).set(json.audio);
+          });
+        }
+      });
+    });
+  }
+
+  switchTab('review');
+</script>
 </body>
 </html>
