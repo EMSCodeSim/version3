@@ -64,7 +64,7 @@ window.approveResponse = async function(id) {
   const role = document.getElementById(`role-${id}`).value;
 
   try {
-    const ttsRes = await fetch("/.netlify/functions/tts", {
+    const ttsRes = await fetch("/.netlify/functions/tts.js", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: response, speaker: role.toLowerCase() })
