@@ -78,7 +78,7 @@ window.saveEntry = async function (key) {
 
 async function saveToFirebase(key, text, role, triggerFile, triggerFileType) {
   try {
-    const res = await fetch("/.netlify/functions/tts", {
+    const res = await fetch("/.netlify/functions/tts.js", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text, speaker: role.toLowerCase() })
