@@ -141,7 +141,7 @@
       role: document.getElementById(`role-${key}`).value
     };
 
-    fetch('/.netlify/functions/tts', {
+    fetch('/.netlify/functions/tts.js', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: updated.response, voice: updated.role === 'Proctor' ? 'shimmer' : 'onyx' })
