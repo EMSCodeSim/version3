@@ -39,7 +39,10 @@ function loadResponses() {
           <option value="Patient" ${role === "Patient" ? "selected" : ""}>Patient</option>
           <option value="Proctor" ${role === "Proctor" ? "selected" : ""}>Proctor</option>
         </select>
-        ${ttsAudio ? `<br><audio controls src="data:audio/mp3;base64,${ttsAudio}"></audio>` : ""}
+        ${ttsAudio
+          ? `<br><button onclick="playTTS('${ttsAudio}')">▶ Play TTS</button>
+             <audio id="audio-${id}" src="data:audio/mp3;base64,${ttsAudio}"></audio>`
+          : ""}
         ${currentTab === "review"
           ? `<button onclick="approveResponse('${id}')">✅ Approve</button>
              <button onclick="deleteReview('${id}')">🗑 Delete</button>`
@@ -57,45 +60,57 @@ window.approveResponse = async function(id) {
   const snap = await ref.once("value");
   const data = snap.val();
   const question = data.userQuestion || data.question || id;
-  const response = document.getElementById(`resp-${id}`).value;
+  const response = document.getElementById(`resp-${id}`).value.trim();
   const role = document.getElementById(`role-${id}`).value;
 
-  const tts = await fetch("/.netlify/functions/tts", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text: response, speaker: role.toLowerCase() })
-  });
-  const { audio } = await tts.json();
+  try {
+    const ttsRes = await fetch("/.netlify/functions/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: response, speaker: role.toLowerCase() })
+    });
+    const { audio } = await ttsRes.json();
 
-  await db.ref("hardcodedResponses").push({
-    question,
-    response,
-    role,
-    ttsAudio: audio || ""
-  });
-  await ref.remove();
-  loadResponses();
+    await db.ref("hardcodedResponses").push({
+      question,
+      response,
+      role,
+      ttsAudio: audio || ""
+    });
+
+    await ref.remove();
+    alert("✅ Approved and TTS saved.");
+    loadResponses();
+  } catch (err) {
+    console.error("TTS Error:", err);
+    alert("Failed to approve with TTS.");
+  }
 };
 
 window.saveApproved = async function(id) {
-  const response = document.getElementById(`resp-${id}`).value;
+  const response = document.getElementById(`resp-${id}`).value.trim();
   const role = document.getElementById(`role-${id}`).value;
 
-  const tts = await fetch("/.netlify/functions/tts", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text: response, speaker: role.toLowerCase() })
-  });
-  const { audio } = await tts.json();
+  try {
+    const ttsRes = await fetch("/.netlify/functions/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: response, speaker: role.toLowerCase() })
+    });
+    const { audio } = await ttsRes.json();
 
-  await db.ref("hardcodedResponses").child(id).update({
-    response,
-    role,
-    ttsAudio: audio || ""
-  });
+    await db.ref("hardcodedResponses").child(id).update({
+      response,
+      role,
+      ttsAudio: audio || ""
+    });
 
-  alert("✅ Saved");
-  loadResponses();
+    alert("💾 Saved and TTS updated.");
+    loadResponses();
+  } catch (err) {
+    console.error("TTS Error:", err);
+    alert("Failed to save with TTS.");
+  }
 };
 
 window.deleteReview = function(id) {
@@ -106,5 +121,13 @@ window.deleteApproved = function(id) {
   db.ref("hardcodedResponses").child(id).remove().then(loadResponses);
 };
 
-// Auto-load approved tab
+window.playTTS = function(base64) {
+  const audio = new Audio(`data:audio/mp3;base64,${base64}`);
+  audio.play().catch(err => {
+    console.warn("Playback failed:", err);
+    alert("Could not play audio.");
+  });
+};
+
+// Load approved tab by default
 switchTab("approved");
