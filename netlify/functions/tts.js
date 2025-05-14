@@ -3,11 +3,20 @@ exports.handler = async function(event) {
     const { text, speaker } = JSON.parse(event.body || "{}");
     const voice = speaker === "proctor" ? "shimmer" : "onyx";
 
-    if (!text || typeof text !== "string" || text.trim().length === 0) {
+    if (!text || typeof text !== "string" || !text.trim()) {
       return {
         statusCode: 400,
         headers: { "Access-Control-Allow-Origin": "*" },
-        body: JSON.stringify({ error: "No text provided" })
+        body: JSON.stringify({ error: "Missing or invalid text." })
+      };
+    }
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return {
+        statusCode: 500,
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ error: "Missing OpenAI API key." })
       };
     }
 
@@ -15,23 +24,23 @@ exports.handler = async function(event) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
+        Authorization: `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         model: "tts-1",
         input: text,
-        voice: voice,
+        voice,
         response_format: "mp3"
       })
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("TTS API Error:", errorText);
+      console.error("TTS API error:", errorText);
       return {
-        statusCode: 500,
+        statusCode: 502,
         headers: { "Access-Control-Allow-Origin": "*" },
-        body: JSON.stringify({ error: "TTS API failed", details: errorText })
+        body: JSON.stringify({ error: "OpenAI API error", details: errorText })
       };
     }
 
@@ -45,11 +54,11 @@ exports.handler = async function(event) {
     };
 
   } catch (err) {
-    console.error("Unexpected TTS error:", err);
+    console.error("Unhandled TTS error:", err);
     return {
       statusCode: 500,
       headers: { "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify({ error: "Internal error", details: err.message })
+      body: JSON.stringify({ error: "Server error", details: err.message })
     };
   }
 };
