@@ -246,6 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // ONLY call the scenario function (do NOT call displayChatResponse here!)
   startBtn?.addEventListener('click', () => window.startScenario?.());
   endBtn?.addEventListener('click', () => window.endScenario?.());
   micBtn?.addEventListener('click', () => startVoiceRecognition?.());
