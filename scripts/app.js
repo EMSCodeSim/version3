@@ -76,7 +76,15 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
   // Safely play TTS audio if from hardcoded
   if (audioUrl && source === "hardcoded" && question && response) {
     let src = audioUrl.startsWith("http") ? audioUrl : `data:audio/mp3;base64,${audioUrl}`;
+    // Remove any previous scenario TTS audio element
+    const oldAudio = document.getElementById("scenarioTTS");
+    if (oldAudio) {
+      oldAudio.pause();
+      oldAudio.remove();
+    }
+    // Create and play new audio
     const audioElement = document.createElement("audio");
+    audioElement.id = "scenarioTTS";
     audioElement.src = src;
     audioElement.setAttribute("controls", "controls");
     audioElement.setAttribute("autoplay", "autoplay");
