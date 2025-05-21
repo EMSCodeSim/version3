@@ -66,9 +66,9 @@
           snap.forEach(childSnap => {
             const val = childSnap.val();
             const id = childSnap.key;
-            // CORRECT FIELD NAMES BASED ON YOUR ACTUAL DB
+            // FIELD NAMES EXACTLY AS IN YOUR DATABASE
             const question = val.userQuestion || "";
-            const response = val.aieResponse || "";
+            const response = val.aiResponse || "";
             const role = val.role || "patient";
             html += `
               <div class="response-block" id="block-${id}">
@@ -122,7 +122,7 @@
                 <div><b>${val.question || val.userQuestion || ""}</b></div>
                 <div>Role: ${val.role || "patient"}</div>
                 <div>Response:<br>
-                  <textarea readonly>${val.response || val.aieResponse || ""}</textarea>
+                  <textarea readonly>${val.response || val.aiResponse || ""}</textarea>
                 </div>
                 ${
                   val.triggerFileURL
@@ -221,8 +221,8 @@
         }
       }
 
-      // Save changes
-      await update(ref(db, `hardcodeReview/${id}`), { aieResponse: response, role, triggerFileURL });
+      // Save changes (use exact field name: aiResponse)
+      await update(ref(db, `hardcodeReview/${id}`), { aiResponse: response, role, triggerFileURL });
       alert("Saved!");
       button.disabled = false;
       button.innerText = "💾 Save";
