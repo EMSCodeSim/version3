@@ -1,3 +1,5 @@
+console.log("DEBUG: admin_panel.js loaded and running!");
+
 // admin_panel.js
 
 // ---- Utility for rendering each review entry ----
