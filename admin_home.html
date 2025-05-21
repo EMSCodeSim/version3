@@ -67,16 +67,20 @@
           snap.forEach(childSnap => {
             const val = childSnap.val();
             const id = childSnap.key;
+            // Robust field accessors for legacy/variant field names
+            const question = val.question || val.text || "";
+            const response = val.response || val.answer || "";
+            const role = val.role || "patient";
             html += `
               <div class="response-block" id="block-${id}">
-                <div><b id="question-${id}">${val.question || ""}</b></div>
+                <div><b id="question-${id}">${question}</b></div>
                 <div>
                   <select id="role-${id}">
-                    <option value="patient" ${val.role === "patient" ? "selected" : ""}>Patient</option>
-                    <option value="proctor" ${val.role === "proctor" ? "selected" : ""}>Proctor</option>
+                    <option value="patient" ${role === "patient" ? "selected" : ""}>Patient</option>
+                    <option value="proctor" ${role === "proctor" ? "selected" : ""}>Proctor</option>
                   </select>
                 </div>
-                <textarea id="resp-${id}">${val.response || ""}</textarea>
+                <textarea id="resp-${id}">${response}</textarea>
                 <br>
                 <label>Photo/Trigger:
                   <input type="file" accept="image/*,audio/*" id="file-${id}" />
@@ -117,10 +121,10 @@
             const val = childSnap.val();
             html += `
               <div class="response-block">
-                <div><b>${val.question || ""}</b></div>
-                <div>Role: ${val.role || ""}</div>
+                <div><b>${val.question || val.text || ""}</b></div>
+                <div>Role: ${val.role || "patient"}</div>
                 <div>Response:<br>
-                  <textarea readonly>${val.response || ""}</textarea>
+                  <textarea readonly>${val.response || val.answer || ""}</textarea>
                 </div>
                 ${
                   val.triggerFileURL
