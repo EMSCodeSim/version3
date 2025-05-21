@@ -24,9 +24,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getDatabase, ref, get, set, push, remove, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
-    import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
     // Firebase config
     const firebaseConfig = {
@@ -40,14 +38,9 @@
       measurementId: "G-2Q3ZT01YT1"
     };
     const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
     const db = getDatabase(app);
-    const storage = getStorage(app);
-
-    let currentTab = "approved";
 
     window.switchTab = function(tab) {
-      currentTab = tab;
       if (tab === "approved") {
         loadApprovedResponses();
       } else {
@@ -56,10 +49,9 @@
     };
 
     async function loadReviewResponses() {
-      console.log("Loading review responses...");
       const dbRef = ref(db, "hardcodeReview");
       const list = document.getElementById("response-list");
-      list.innerHTML = "<b>Loading...</b>";
+      list.innerHTML = "<b>Loading for debug...</b>";
       try {
         const snap = await get(dbRef);
         let html = "";
@@ -67,75 +59,31 @@
           snap.forEach(childSnap => {
             const val = childSnap.val();
             const id = childSnap.key;
-            // Robust field accessors for legacy/variant field names
-            const question = val.question || val.text || "";
-            const response = val.response || val.answer || "";
-            const role = val.role || "patient";
-            html += `
-              <div class="response-block" id="block-${id}">
-                <div><b id="question-${id}">${question}</b></div>
-                <div>
-                  <select id="role-${id}">
-                    <option value="patient" ${role === "patient" ? "selected" : ""}>Patient</option>
-                    <option value="proctor" ${role === "proctor" ? "selected" : ""}>Proctor</option>
-                  </select>
-                </div>
-                <textarea id="resp-${id}">${response}</textarea>
-                <br>
-                <label>Photo/Trigger:
-                  <input type="file" accept="image/*,audio/*" id="file-${id}" />
-                </label>
-                <br>
-                ${
-                  val.triggerFileURL
-                    ? (val.triggerFileURL.match(/\.(mp3|wav|ogg)$/i)
-                        ? `<audio controls src="${val.triggerFileURL}"></audio>`
-                        : `<img src="${val.triggerFileURL}" alt="Trigger File" />`)
-                    : ""
-                }
-                <br>
-                <button onclick="approveReview('${id}', this)">✅ Approve & TTS</button>
-                <button onclick="saveReview('${id}', this)">💾 Save</button>
-                <button onclick="deleteReview('${id}')">🗑 Delete</button>
-              </div>
-            `;
+            // DUMP THE WHOLE OBJECT TO CONSOLE
+            console.log("Review DB Record for id", id, val);
+
+            html += `<div class="response-block" style="white-space:pre;font-size:12px"><b>ID:</b> ${id}<br><pre>${JSON.stringify(val, null, 2)}</pre></div>`;
           });
         }
         list.innerHTML = html || "<i>No review responses.</i>";
-        console.log("Review responses loaded.");
       } catch (e) {
         console.error("Error loading review responses:", e);
         list.innerHTML = "<span style='color:red;'>Failed to load review responses.</span>";
       }
     }
 
+    // Just for completeness so the Approved tab doesn't error out
     async function loadApprovedResponses() {
       const dbRef = ref(db, "hardcodedResponses");
       const list = document.getElementById("response-list");
-      list.innerHTML = "<b>Loading...</b>";
+      list.innerHTML = "<b>Loading approved responses...</b>";
       try {
         const snap = await get(dbRef);
         let html = "";
         if (snap.exists()) {
           snap.forEach(childSnap => {
             const val = childSnap.val();
-            html += `
-              <div class="response-block">
-                <div><b>${val.question || val.text || ""}</b></div>
-                <div>Role: ${val.role || "patient"}</div>
-                <div>Response:<br>
-                  <textarea readonly>${val.response || val.answer || ""}</textarea>
-                </div>
-                ${
-                  val.triggerFileURL
-                    ? (val.triggerFileURL.match(/\.(mp3|wav|ogg)$/i)
-                        ? `<audio controls src="${val.triggerFileURL}"></audio>`
-                        : `<img src="${val.triggerFileURL}" alt="Trigger File" />`)
-                    : ""
-                }
-                ${val.ttsAudio ? `<audio controls src="data:audio/mp3;base64,${val.ttsAudio}"></audio>` : '<span style="color:red">No audio</span>'}
-              </div>
-            `;
+            html += `<div class="response-block"><pre>${JSON.stringify(val, null, 2)}</pre></div>`;
           });
         }
         list.innerHTML = html || "<i>No approved responses.</i>";
@@ -145,103 +93,7 @@
       }
     }
 
-    // ---- Approve and save TTS to Firebase ----
-    window.approveReview = async function(id, button) {
-      button.disabled = true;
-      button.innerText = "Saving...";
-      const response = document.getElementById(`resp-${id}`).value;
-      const role = document.getElementById(`role-${id}`).value;
-      const question = document.getElementById(`question-${id}`).innerText;
-      let triggerFileURL = null;
-
-      // Upload new file if selected
-      const fileInput = document.getElementById(`file-${id}`);
-      if (fileInput.files && fileInput.files[0]) {
-        const file = fileInput.files[0];
-        const storagePath = `triggers/${id}/${file.name}`;
-        const uploadTask = await uploadBytes(sRef(storage, storagePath), file);
-        triggerFileURL = await getDownloadURL(uploadTask.ref);
-      } else {
-        // Use existing if present
-        const reviewSnap = await get(ref(db, `hardcodeReview/${id}`));
-        if (reviewSnap.exists() && reviewSnap.val().triggerFileURL) {
-          triggerFileURL = reviewSnap.val().triggerFileURL;
-        }
-      }
-
-      // Fetch TTS audio
-      let ttsAudio = null;
-      try {
-        const res = await fetch('/.netlify/functions/tts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: response, speaker: role.toLowerCase() })
-        });
-        const json = await res.json();
-        if (!res.ok || !json.audio) {
-          alert("TTS audio generation failed: " + (json.error || "Unknown error."));
-          button.disabled = false;
-          button.innerText = "✅ Approve & TTS";
-          return;
-        }
-        ttsAudio = json.audio;
-      } catch (err) {
-        alert("TTS fetch failed: " + err.message);
-        button.disabled = false;
-        button.innerText = "✅ Approve & TTS";
-        return;
-      }
-
-      // Save approved entry with TTS and file URL
-      await push(ref(db, "hardcodedResponses"), { question, response, role, ttsAudio, triggerFileURL });
-      await remove(ref(db, `hardcodeReview/${id}`));
-      alert("Approved and TTS audio saved!");
-      button.innerText = "✅ Approved";
-      loadReviewResponses();
-    };
-
-    // ---- Save changes to review entry ----
-    window.saveReview = async function(id, button) {
-      button.disabled = true;
-      button.innerText = "Saving...";
-      const response = document.getElementById(`resp-${id}`).value;
-      const role = document.getElementById(`role-${id}`).value;
-      let triggerFileURL = null;
-
-      // Upload new file if selected
-      const fileInput = document.getElementById(`file-${id}`);
-      if (fileInput.files && fileInput.files[0]) {
-        const file = fileInput.files[0];
-        const storagePath = `triggers/${id}/${file.name}`;
-        const uploadTask = await uploadBytes(sRef(storage, storagePath), file);
-        triggerFileURL = await getDownloadURL(uploadTask.ref);
-      } else {
-        // Use existing if present
-        const reviewSnap = await get(ref(db, `hardcodeReview/${id}`));
-        if (reviewSnap.exists() && reviewSnap.val().triggerFileURL) {
-          triggerFileURL = reviewSnap.val().triggerFileURL;
-        }
-      }
-
-      // Save changes
-      await update(ref(db, `hardcodeReview/${id}`), { response, role, triggerFileURL });
-      alert("Saved!");
-      button.disabled = false;
-      button.innerText = "💾 Save";
-      loadReviewResponses();
-    };
-
-    // ---- Delete review entry ----
-    window.deleteReview = function(id) {
-      if (confirm("Delete this review entry?")) {
-        remove(ref(db, `hardcodeReview/${id}`)).then(loadReviewResponses);
-      }
-    };
-
-    // ---- On load ----
-    window.onload = () => {
-      switchTab(currentTab);
-    };
+    window.onload = loadReviewResponses;
   </script>
 </body>
 </html>
