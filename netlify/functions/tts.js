@@ -61,7 +61,7 @@ exports.handler = async function(event) {
       });
 
       if (response.ok) {
-        audioBuffer = await response.arrayBuffer();
+        audioBuffer = Buffer.from(await response.arrayBuffer());
         break;
       } else if (attempt === 1) {
         const errorText = await response.text();
@@ -70,4 +70,31 @@ exports.handler = async function(event) {
       }
     }
 
-    // Save
+    // Save mp3 to cache
+    fs.writeFileSync(cachePath, audioBuffer);
+
+    // Return base64 to client
+    const base64Audio = fs.readFileSync(cachePath, "base64");
+    return ok({ audio: base64Audio, cached: false });
+
+  } catch (err) {
+    console.error("TTS Function error:", err);
+    return error(500, "Server error", err.message || err);
+  }
+};
+
+// Utility functions
+function ok(obj) {
+  return {
+    statusCode: 200,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(obj)
+  };
+}
+function error(statusCode, msg, details) {
+  return {
+    statusCode,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ error: msg, details })
+  };
+}
