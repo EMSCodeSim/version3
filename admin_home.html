@@ -28,7 +28,6 @@
     import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics.js";
 
-    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
       authDomain: "ems-code-sim.firebaseapp.com",
@@ -66,7 +65,6 @@
           snap.forEach(childSnap => {
             const val = childSnap.val();
             const id = childSnap.key;
-            // FIELD NAMES EXACTLY AS IN YOUR DATABASE
             const question = val.userQuestion || "";
             const response = val.aiResponse || "";
             const role = val.role || "patient";
@@ -117,13 +115,27 @@
         if (snap.exists()) {
           snap.forEach(childSnap => {
             const val = childSnap.val();
+            const id = childSnap.key;
+            const question = val.question || val.userQuestion || "";
+            const response = val.response || val.aiResponse || "";
+            const role = val.role || "patient";
             html += `
-              <div class="response-block">
-                <div><b>${val.question || val.userQuestion || ""}</b></div>
-                <div>Role: ${val.role || "patient"}</div>
-                <div>Response:<br>
-                  <textarea readonly>${val.response || val.aiResponse || ""}</textarea>
+              <div class="response-block" id="block-approved-${id}">
+                <div><b>Question:</b>
+                  <input type="text" id="question-approved-${id}" value="${question}" />
                 </div>
+                <div>
+                  <select id="role-approved-${id}">
+                    <option value="patient" ${role === "Patient" || role === "patient" ? "selected" : ""}>Patient</option>
+                    <option value="proctor" ${role === "Proctor" || role === "proctor" ? "selected" : ""}>Proctor</option>
+                  </select>
+                </div>
+                <textarea id="resp-approved-${id}">${response}</textarea>
+                <br>
+                <label>Photo/Trigger:
+                  <input type="file" accept="image/*,audio/*" id="file-approved-${id}" />
+                </label>
+                <br>
                 ${
                   val.triggerFileURL
                     ? (val.triggerFileURL.match(/\.(mp3|wav|ogg)$/i)
@@ -131,7 +143,11 @@
                         : `<img src="${val.triggerFileURL}" alt="Trigger File" />`)
                     : ""
                 }
+                <br>
                 ${val.ttsAudio ? `<audio controls src="data:audio/mp3;base64,${val.ttsAudio}"></audio>` : '<span style="color:red">No audio</span>'}
+                <br>
+                <button onclick="saveApproved('${id}', this)">💾 Save</button>
+                <button onclick="deleteApproved('${id}')">🗑 Delete</button>
               </div>
             `;
           });
@@ -143,7 +159,7 @@
       }
     }
 
-    // ---- Approve and save TTS to Firebase ----
+    // ---- Review tab actions ----
     window.approveReview = async function(id, button) {
       button.disabled = true;
       button.innerText = "Saving...";
@@ -152,7 +168,6 @@
       const question = document.getElementById(`question-${id}`).innerText;
       let triggerFileURL = null;
 
-      // Upload new file if selected
       const fileInput = document.getElementById(`file-${id}`);
       if (fileInput.files && fileInput.files[0]) {
         const file = fileInput.files[0];
@@ -160,14 +175,12 @@
         const uploadTask = await uploadBytes(sRef(storage, storagePath), file);
         triggerFileURL = await getDownloadURL(uploadTask.ref);
       } else {
-        // Use existing if present
         const reviewSnap = await get(ref(db, `hardcodeReview/${id}`));
         if (reviewSnap.exists() && reviewSnap.val().triggerFileURL) {
           triggerFileURL = reviewSnap.val().triggerFileURL;
         }
       }
 
-      // Fetch TTS audio
       let ttsAudio = null;
       try {
         const res = await fetch('/.netlify/functions/tts', {
@@ -190,7 +203,6 @@
         return;
       }
 
-      // Save approved entry with TTS and file URL
       await push(ref(db, "hardcodedResponses"), { question, response, role, ttsAudio, triggerFileURL });
       await remove(ref(db, `hardcodeReview/${id}`));
       alert("Approved and TTS audio saved!");
@@ -198,15 +210,12 @@
       loadReviewResponses();
     };
 
-    // ---- Save changes to review entry ----
     window.saveReview = async function(id, button) {
       button.disabled = true;
       button.innerText = "Saving...";
       const response = document.getElementById(`resp-${id}`).value;
       const role = document.getElementById(`role-${id}`).value;
       let triggerFileURL = null;
-
-      // Upload new file if selected
       const fileInput = document.getElementById(`file-${id}`);
       if (fileInput.files && fileInput.files[0]) {
         const file = fileInput.files[0];
@@ -214,14 +223,11 @@
         const uploadTask = await uploadBytes(sRef(storage, storagePath), file);
         triggerFileURL = await getDownloadURL(uploadTask.ref);
       } else {
-        // Use existing if present
         const reviewSnap = await get(ref(db, `hardcodeReview/${id}`));
         if (reviewSnap.exists() && reviewSnap.val().triggerFileURL) {
           triggerFileURL = reviewSnap.val().triggerFileURL;
         }
       }
-
-      // Save changes (use exact field name: aiResponse)
       await update(ref(db, `hardcodeReview/${id}`), { aiResponse: response, role, triggerFileURL });
       alert("Saved!");
       button.disabled = false;
@@ -229,10 +235,47 @@
       loadReviewResponses();
     };
 
-    // ---- Delete review entry ----
     window.deleteReview = function(id) {
       if (confirm("Delete this review entry?")) {
         remove(ref(db, `hardcodeReview/${id}`)).then(loadReviewResponses);
+      }
+    };
+
+    // ---- Approved tab actions ----
+    window.saveApproved = async function(id, button) {
+      button.disabled = true;
+      button.innerText = "Saving...";
+      const question = document.getElementById(`question-approved-${id}`).value;
+      const response = document.getElementById(`resp-approved-${id}`).value;
+      const role = document.getElementById(`role-approved-${id}`).value;
+      let triggerFileURL = null;
+      const fileInput = document.getElementById(`file-approved-${id}`);
+      if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        const storagePath = `triggers/approved/${id}/${file.name}`;
+        const uploadTask = await uploadBytes(sRef(storage, storagePath), file);
+        triggerFileURL = await getDownloadURL(uploadTask.ref);
+      } else {
+        const approvedSnap = await get(ref(db, `hardcodedResponses/${id}`));
+        if (approvedSnap.exists() && approvedSnap.val().triggerFileURL) {
+          triggerFileURL = approvedSnap.val().triggerFileURL;
+        }
+      }
+      await update(ref(db, `hardcodedResponses/${id}`), {
+        question,
+        response,
+        role,
+        triggerFileURL
+      });
+      alert("Approved entry saved!");
+      button.disabled = false;
+      button.innerText = "💾 Save";
+      loadApprovedResponses();
+    };
+
+    window.deleteApproved = function(id) {
+      if (confirm("Delete this approved entry?")) {
+        remove(ref(db, `hardcodedResponses/${id}`)).then(loadApprovedResponses);
       }
     };
 
