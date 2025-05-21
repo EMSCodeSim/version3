@@ -1,5 +1,5 @@
 import { initializeScoreTracker, updateScoreTracker, gradeScenario } from './grading.js';
-import { startVoiceRecognition } from './mic.js';
+import { startVoiceRecognition, stopVoiceRecognition } from './mic.js';
 import { routeUserInput, loadHardcodedResponses } from './router.js';
 
 const scenarioPath = 'scenarios/chest_pain_002/';
@@ -8,6 +8,18 @@ let gradingTemplate = {};
 let scoreTracker = {};
 let scenarioStarted = false;
 let hardcodedResponses = {};
+
+// --- SMART MIC CONTROL HELPERS ---
+function disableMic() {
+  const micBtn = document.getElementById('mic-button');
+  if (micBtn) micBtn.disabled = true;
+  if (window.stopVoiceRecognition) window.stopVoiceRecognition();
+}
+function enableMic() {
+  const micBtn = document.getElementById('mic-button');
+  if (micBtn) micBtn.disabled = false;
+  if (window.startVoiceRecognition) window.startVoiceRecognition();
+}
 
 async function loadGradingTemplate(type = "medical") {
   const file = `grading_templates/${type}_assessment.json`;
@@ -73,7 +85,7 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
 
   chatBox.innerHTML += `<div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>`;
 
-  // Safely play TTS audio if from hardcoded
+  // --- SMART AUDIO/MIC LOGIC FOR HARD-CODED RESPONSES ---
   if (audioUrl && source === "hardcoded" && question && response) {
     let src = audioUrl.startsWith("http") ? audioUrl : `data:audio/mp3;base64,${audioUrl}`;
     // Remove any previous scenario TTS audio element
@@ -91,8 +103,12 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
     audioElement.style.marginTop = "10px";
     chatBox.appendChild(audioElement);
 
+    // SMART MIC CONTROL
+    disableMic();
+    audioElement.addEventListener('ended', enableMic);
     audioElement.play().catch(err => {
       console.warn("Autoplay failed:", err.message);
+      enableMic(); // fail-safe, re-enable mic if playback fails
     });
   } else {
     speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient");
@@ -142,6 +158,16 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
   }
 
   chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// --- SMART MIC LOGIC FOR SPEAK() (browser speech synthesis) ---
+function speak(text, voice = "patient") {
+  if (!window.speechSynthesis) return;
+  const utterThis = new SpeechSynthesisUtterance(text);
+  utterThis.voice = speechSynthesis.getVoices().find(v => v.name.toLowerCase().includes(voice)) || null;
+  disableMic();
+  utterThis.onend = enableMic;
+  window.speechSynthesis.speak(utterThis);
 }
 
 async function loadDispatchInfo() {
