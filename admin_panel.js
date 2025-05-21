@@ -1,11 +1,10 @@
 // admin_panel.js
 
-// Example: Render each review entry as a card with Approve button
+// ---- Utility for rendering each review entry ----
 function renderReviewEntry(key, question, response, role) {
   const container = document.createElement('div');
   container.className = 'response';
 
-  // Response textarea and role
   container.innerHTML = `
     <b>Q:</b> ${question}<br>
     <b>Role:</b>
@@ -20,7 +19,7 @@ function renderReviewEntry(key, question, response, role) {
     <button onclick="deleteEntry('${key}')">🗑️ Delete</button>
   `;
 
-  // Wire approve button
+  // Wire Approve button to approveEntry
   setTimeout(() => {
     document.getElementById(`approve-btn-${key}`)
       .onclick = () => approveEntry(key, question);
@@ -29,13 +28,13 @@ function renderReviewEntry(key, question, response, role) {
   return container;
 }
 
-// Main approveEntry with debug logs and error handling
+// ---- Core Approve Function with DEBUG LOGS ----
 async function approveEntry(key, question) {
+  console.log("DEBUG: approveEntry called", key, question);
   try {
-    console.log("approveEntry called", key, question);
     const response = document.getElementById(`resp-${key}`).value;
     const role = document.getElementById(`role-${key}`).value;
-    console.log("Calling TTS fetch...", response, role);
+    console.log("DEBUG: Calling TTS fetch...", response, role);
 
     const res = await fetch('/.netlify/functions/tts', {
       method: 'POST',
@@ -44,7 +43,7 @@ async function approveEntry(key, question) {
     });
 
     const json = await res.json();
-    console.log("TTS fetch returned:", json);
+    console.log("DEBUG: TTS fetch returned:", json);
 
     if (!res.ok || !json.audio) {
       alert("TTS audio generation failed: " + (json.error || "Unknown error."));
@@ -62,10 +61,13 @@ async function approveEntry(key, question) {
   }
 }
 
+// ---- Save Function (if you use it for manual entries) ----
 async function saveEntry(key) {
+  console.log("DEBUG: saveEntry called", key);
   try {
     const response = document.getElementById(`resp-${key}`).value;
     const role = document.getElementById(`role-${key}`).value;
+    console.log("DEBUG: Calling TTS fetch (save)...", response, role);
 
     const res = await fetch('/.netlify/functions/tts', {
       method: 'POST',
@@ -74,6 +76,7 @@ async function saveEntry(key) {
     });
 
     const json = await res.json();
+    console.log("DEBUG: TTS fetch (save) returned:", json);
 
     if (!res.ok || !json.audio) {
       alert("TTS audio generation failed: " + (json.error || "Unknown error."));
@@ -94,7 +97,7 @@ async function saveEntry(key) {
   }
 }
 
-// Example: Load responses and render review entries (simplified)
+// ---- Load and render review entries ----
 function loadResponses() {
   const container = document.getElementById("responsesContainer");
   container.innerHTML = "<b>Loading...</b>";
@@ -110,9 +113,17 @@ function loadResponses() {
   });
 }
 
-// Example: Initialize Firebase (should match your config)
+// ---- (Optional) Delete Entry ----
+function deleteEntry(key) {
+  if (confirm("Are you sure you want to delete this entry?")) {
+    db.ref(`hardcodeReview/${key}`).remove().then(loadResponses);
+  }
+}
+
+// ---- Firebase Initialization ----
+// Replace this config with your real Firebase config!
 var firebaseConfig = {
-  // your firebase config here...
+  // Your config here
 };
 firebase.initializeApp(firebaseConfig);
 var db = firebase.database();
