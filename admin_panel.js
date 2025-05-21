@@ -121,11 +121,25 @@ function deleteEntry(key) {
 }
 
 // ---- Firebase Initialization ----
-// Replace this config with your real Firebase config!
-var firebaseConfig = {
-  // Your config here
-};
-firebase.initializeApp(firebaseConfig);
-var db = firebase.database();
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
-window.onload = loadResponses;
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
+  authDomain: "ems-code-sim.firebaseapp.com",
+  databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+  projectId: "ems-code-sim",
+  storageBucket: "ems-code-sim.firebasestorage.app",
+  messagingSenderId: "190498607578",
+  appId: "1:190498607578:web:4cf6c8e999b027956070e3",
+  measurementId: "G-2Q3ZT01YT1"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
