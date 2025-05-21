@@ -4,42 +4,14 @@
   <meta charset="UTF-8" />
   <title>EMS Code Sim – Admin Panel</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      padding: 20px;
-    }
-    .tabs {
-      display: flex;
-      gap: 20px;
-      margin-bottom: 20px;
-    }
-    .tabs button {
-      padding: 10px 20px;
-      cursor: pointer;
-    }
-    .response-block {
-      background: white;
-      padding: 15px;
-      margin-bottom: 10px;
-      border: 1px solid #ccc;
-    }
-    textarea {
-      width: 100%;
-      height: 60px;
-    }
-    select, input[type="text"], input[type="file"] {
-      margin: 5px 0;
-      width: 100%;
-    }
-    img {
-      max-height: 100px;
-      margin-top: 5px;
-    }
-    audio {
-      width: 100%;
-      margin-top: 5px;
-    }
+    body { font-family: Arial, sans-serif; background: #f2f2f2; padding: 20px; }
+    .tabs { display: flex; gap: 20px; margin-bottom: 20px; }
+    .tabs button { padding: 10px 20px; cursor: pointer; }
+    .response-block { background: white; padding: 15px; margin-bottom: 10px; border: 1px solid #ccc; }
+    textarea { width: 100%; height: 60px; }
+    select, input[type="text"], input[type="file"] { margin: 5px 0; width: 100%; }
+    img { max-height: 100px; margin-top: 5px; }
+    audio { width: 100%; margin-top: 5px; }
   </style>
 </head>
 <body>
@@ -56,7 +28,8 @@
   <!-- Firebase v9+ modular scripts -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getDatabase, ref, get, set, push, remove, child } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+    import { getDatabase, ref, get, set, push, remove, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+    import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics.js";
 
     // Your Firebase config
@@ -65,7 +38,7 @@
       authDomain: "ems-code-sim.firebaseapp.com",
       databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
       projectId: "ems-code-sim",
-      storageBucket: "ems-code-sim.firebasestorage.app",
+      storageBucket: "ems-code-sim.appspot.com",
       messagingSenderId: "190498607578",
       appId: "1:190498607578:web:4cf6c8e999b027956070e3",
       measurementId: "G-2Q3ZT01YT1"
@@ -73,6 +46,7 @@
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
     const db = getDatabase(app);
+    const storage = getStorage(app);
 
     let currentTab = "approved";
 
@@ -93,7 +67,7 @@
           const val = childSnap.val();
           const id = childSnap.key;
           html += `
-            <div class="response-block">
+            <div class="response-block" id="block-${id}">
               <div><b id="question-${id}">${val.question || ""}</b></div>
               <div>
                 <select id="role-${id}">
@@ -103,8 +77,19 @@
               </div>
               <textarea id="resp-${id}">${val.response || ""}</textarea>
               <br>
-              <button onclick="approveReview('${id}', this)">✅ Approve & TTS</button>
-              <button onclick="deleteReview('${id}')">🗑 Delete</button>
+              <label>Photo/Trigger:
+                <input type="file" accept="image/*,audio/*" id="file-${id}" />
+              </label>
+              <br>
+              ${val.triggerFileURL ? (
+                val.triggerFileURL.match(/\.(mp3|wav)$/i)
+                  ? `<audio controls src="${val.triggerFileURL}"></audio>`
+                  : `<img src="${val.triggerFileURL}" alt="Trigger File" />`
+                ) : ''}
+              <br>
+              <button onclick="window.approveReview('${id}', this)">✅ Approve & TTS</button>
+              <button onclick="window.saveReview('${id}', this)">💾 Save</button>
+              <button onclick="window.deleteReview('${id}')">🗑 Delete</button>
             </div>
           `;
         });
@@ -129,6 +114,11 @@
               <div>Response:<br>
                 <textarea readonly>${val.response || ""}</textarea>
               </div>
+              ${val.triggerFileURL ? (
+                val.triggerFileURL.match(/\.(mp3|wav)$/i)
+                  ? `<audio controls src="${val.triggerFileURL}"></audio>`
+                  : `<img src="${val.triggerFileURL}" alt="Trigger File" />`
+                ) : ''}
               ${val.ttsAudio ? `<audio controls src="data:audio/mp3;base64,${val.ttsAudio}"></audio>` : '<span style="color:red">No audio</span>'}
             </div>
           `;
@@ -141,10 +131,25 @@
     window.approveReview = async function(id, button) {
       button.disabled = true;
       button.innerText = "Saving...";
-
       const response = document.getElementById(`resp-${id}`).value;
       const role = document.getElementById(`role-${id}`).value;
       const question = document.getElementById(`question-${id}`).innerText;
+      let triggerFileURL = null;
+
+      // If a new file is selected, upload to Firebase Storage
+      const fileInput = document.getElementById(`file-${id}`);
+      if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        const storagePath = `triggers/${id}/${file.name}`;
+        const uploadTask = await uploadBytes(sRef(storage, storagePath), file);
+        triggerFileURL = await getDownloadURL(uploadTask.ref);
+      } else {
+        // Keep existing file if present
+        const reviewSnap = await get(ref(db, `hardcodeReview/${id}`));
+        if (reviewSnap.exists() && reviewSnap.val().triggerFileURL) {
+          triggerFileURL = reviewSnap.val().triggerFileURL;
+        }
+      }
 
       // Fetch TTS audio from Netlify function
       let ttsAudio = null;
@@ -169,14 +174,44 @@
         return;
       }
 
-      // Save approved entry to Firebase with TTS audio
+      // Save approved entry to Firebase with TTS audio and trigger file
       const approvedRef = ref(db, "hardcodedResponses");
-      await push(approvedRef, { question, response, role, ttsAudio });
-
+      await push(approvedRef, { question, response, role, ttsAudio, triggerFileURL });
       // Remove from review
       await remove(ref(db, `hardcodeReview/${id}`));
       alert("Approved and TTS audio saved!");
       button.innerText = "✅ Approved";
+      loadReviewResponses();
+    }
+
+    // ---- Save changes to review entry (response, role, trigger file) ----
+    window.saveReview = async function(id, button) {
+      button.disabled = true;
+      button.innerText = "Saving...";
+      const response = document.getElementById(`resp-${id}`).value;
+      const role = document.getElementById(`role-${id}`).value;
+      let triggerFileURL = null;
+
+      // If a new file is selected, upload to Firebase Storage
+      const fileInput = document.getElementById(`file-${id}`);
+      if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        const storagePath = `triggers/${id}/${file.name}`;
+        const uploadTask = await uploadBytes(sRef(storage, storagePath), file);
+        triggerFileURL = await getDownloadURL(uploadTask.ref);
+      } else {
+        // Keep existing file if present
+        const reviewSnap = await get(ref(db, `hardcodeReview/${id}`));
+        if (reviewSnap.exists() && reviewSnap.val().triggerFileURL) {
+          triggerFileURL = reviewSnap.val().triggerFileURL;
+        }
+      }
+
+      // Save changes in place (without approval)
+      await update(ref(db, `hardcodeReview/${id}`), { response, role, triggerFileURL });
+      alert("Saved!");
+      button.disabled = false;
+      button.innerText = "💾 Save";
       loadReviewResponses();
     }
 
