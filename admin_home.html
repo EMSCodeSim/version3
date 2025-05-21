@@ -53,20 +53,26 @@
 
   <div id="response-list">Loading...</div>
 
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+  <!-- Firebase v9+ modular scripts -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, get, set, push, remove, child } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics.js";
 
-  <script>
+    // Your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
       authDomain: "ems-code-sim.firebaseapp.com",
       databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
       projectId: "ems-code-sim",
-      storageBucket: "ems-code-sim.appspot.com",
+      storageBucket: "ems-code-sim.firebasestorage.app",
       messagingSenderId: "190498607578",
-      appId: "1:190498607578:web:4cf6c8e999b027956070e3"
+      appId: "1:190498607578:web:4cf6c8e999b027956070e3",
+      measurementId: "G-2Q3ZT01YT1"
     };
-    firebase.initializeApp(firebaseConfig);
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getDatabase(app);
 
     let currentTab = "approved";
 
@@ -75,144 +81,116 @@
       tab === "approved" ? loadApprovedResponses() : loadReviewResponses();
     }
 
-    function loadApprovedResponses() {
-      firebase.database().ref("hardcodedResponses").once("value").then(snapshot => {
-        renderResponses(snapshot.val(), false);
-      });
+    // ---- Review Tab: Show items pending approval ----
+    async function loadReviewResponses() {
+      const dbRef = ref(db, "hardcodeReview");
+      const list = document.getElementById("response-list");
+      list.innerHTML = "<b>Loading...</b>";
+      const snap = await get(dbRef);
+      let html = "";
+      if (snap.exists()) {
+        snap.forEach(childSnap => {
+          const val = childSnap.val();
+          const id = childSnap.key;
+          html += `
+            <div class="response-block">
+              <div><b id="question-${id}">${val.question || ""}</b></div>
+              <div>
+                <select id="role-${id}">
+                  <option value="patient" ${val.role === "patient" ? "selected" : ""}>Patient</option>
+                  <option value="proctor" ${val.role === "proctor" ? "selected" : ""}>Proctor</option>
+                </select>
+              </div>
+              <textarea id="resp-${id}">${val.response || ""}</textarea>
+              <br>
+              <button onclick="approveReview('${id}', this)">✅ Approve & TTS</button>
+              <button onclick="deleteReview('${id}')">🗑 Delete</button>
+            </div>
+          `;
+        });
+      }
+      list.innerHTML = html || "<i>No review responses.</i>";
     }
 
-    function loadReviewResponses() {
-      firebase.database().ref("hardcodeReview").once("value").then(snapshot => {
-        renderResponses(snapshot.val(), true);
-      });
+    // ---- Approved Tab: Show approved entries ----
+    async function loadApprovedResponses() {
+      const dbRef = ref(db, "hardcodedResponses");
+      const list = document.getElementById("response-list");
+      list.innerHTML = "<b>Loading...</b>";
+      const snap = await get(dbRef);
+      let html = "";
+      if (snap.exists()) {
+        snap.forEach(childSnap => {
+          const val = childSnap.val();
+          html += `
+            <div class="response-block">
+              <div><b>${val.question || ""}</b></div>
+              <div>Role: ${val.role || ""}</div>
+              <div>Response:<br>
+                <textarea readonly>${val.response || ""}</textarea>
+              </div>
+              ${val.ttsAudio ? `<audio controls src="data:audio/mp3;base64,${val.ttsAudio}"></audio>` : '<span style="color:red">No audio</span>'}
+            </div>
+          `;
+        });
+      }
+      list.innerHTML = html || "<i>No approved responses.</i>";
     }
 
-    function renderResponses(data, isReview) {
-      const container = document.getElementById("response-list");
-      container.innerHTML = "";
+    // ---- Approve and save TTS to Firebase ----
+    window.approveReview = async function(id, button) {
+      button.disabled = true;
+      button.innerText = "Saving...";
 
-      if (!data) {
-        container.innerHTML = "<p>No responses found.</p>";
+      const response = document.getElementById(`resp-${id}`).value;
+      const role = document.getElementById(`role-${id}`).value;
+      const question = document.getElementById(`question-${id}`).innerText;
+
+      // Fetch TTS audio from Netlify function
+      let ttsAudio = null;
+      try {
+        const res = await fetch('/.netlify/functions/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: response, speaker: role.toLowerCase() })
+        });
+        const json = await res.json();
+        if (!res.ok || !json.audio) {
+          alert("TTS audio generation failed: " + (json.error || "Unknown error."));
+          button.disabled = false;
+          button.innerText = "✅ Approve & TTS";
+          return;
+        }
+        ttsAudio = json.audio;
+      } catch (err) {
+        alert("TTS fetch failed: " + err.message);
+        button.disabled = false;
+        button.innerText = "✅ Approve & TTS";
         return;
       }
 
-      Object.entries(data).forEach(([id, entry]) => {
-        const div = document.createElement("div");
-        div.className = "response-block";
+      // Save approved entry to Firebase with TTS audio
+      const approvedRef = ref(db, "hardcodedResponses");
+      await push(approvedRef, { question, response, role, ttsAudio });
 
-        const q = entry.question || entry.userQuestion || "N/A";
-        const a = entry.response || entry.aiResponse || "";
-        const role = entry.role || "Patient";
-        const triggerFileBase64 = entry.triggerFile || "";
-        const triggerType = entry.triggerFileType || "";
-
-        div.innerHTML = `
-          <p><b>Q:</b> ${q}</p>
-          <textarea>${a}</textarea><br>
-          <select>
-            <option value="Patient" ${role === "Patient" ? "selected" : ""}>Patient</option>
-            <option value="Proctor" ${role === "Proctor" ? "selected" : ""}>Proctor</option>
-          </select><br>
-          <input type="file" class="trigger-upload" accept="image/*,audio/*" /><br>
-          <div class="trigger-preview">
-            ${triggerType === "image" ? `<img src="${triggerFileBase64}">` : ""}
-            ${triggerType === "audio" ? `<audio controls src="${triggerFileBase64}"></audio>` : ""}
-          </div>
-          ${isReview
-            ? `<button onclick="approveReview('${id}', this)">✅ Approve</button>
-               <button onclick="deleteReview('${id}')">🗑 Delete</button>`
-            : `<button onclick="saveApproved('${id}', this)">💾 Save</button>
-               <button onclick="deleteApproved('${id}')">🗑 Delete</button>`
-          }
-        `;
-
-        container.appendChild(div);
-      });
+      // Remove from review
+      await remove(ref(db, `hardcodeReview/${id}`));
+      alert("Approved and TTS audio saved!");
+      button.innerText = "✅ Approved";
+      loadReviewResponses();
     }
 
-    function approveReview(id, button) {
-      const block = button.closest(".response-block");
-      const text = block.querySelector("textarea").value;
-      const role = block.querySelector("select").value;
-      const fileInput = block.querySelector(".trigger-upload");
-      const file = fileInput.files[0];
-
-      const ref = firebase.database().ref("hardcodeReview/" + id);
-      ref.once("value").then(snapshot => {
-        const q = snapshot.val().question || snapshot.val().userQuestion;
-
-        const uploadAndSave = (triggerFile = "", triggerFileType = "") => {
-          const obj = {
-            question: q,
-            response: text,
-            role,
-            triggerFile,
-            triggerFileType
-          };
-          firebase.database().ref("hardcodedResponses").push(obj);
-          ref.remove().then(() => {
-            alert("Approved.");
-            loadReviewResponses();
-          });
-        };
-
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const type = file.type.startsWith("image") ? "image" : "audio";
-            uploadAndSave(reader.result, type);
-          };
-          reader.readAsDataURL(file);
-        } else {
-          uploadAndSave();
-        }
-      });
-    }
-
-    function deleteReview(id) {
-      if (confirm("Delete this review?")) {
-        firebase.database().ref("hardcodeReview/" + id).remove().then(loadReviewResponses);
+    // ---- Delete review entry ----
+    window.deleteReview = function(id) {
+      if (confirm("Delete this review entry?")) {
+        remove(ref(db, `hardcodeReview/${id}`)).then(loadReviewResponses);
       }
     }
 
-    function saveApproved(id, button) {
-      const block = button.closest(".response-block");
-      const text = block.querySelector("textarea").value;
-      const role = block.querySelector("select").value;
-      const fileInput = block.querySelector(".trigger-upload");
-      const file = fileInput.files[0];
-
-      const updateRef = (triggerFile = "", triggerFileType = "") => {
-        const ref = firebase.database().ref("hardcodedResponses/" + id);
-        ref.update({
-          response: text,
-          role,
-          ...(triggerFile && { triggerFile }),
-          ...(triggerFileType && { triggerFileType })
-        }).then(() => alert("Saved."));
-      };
-
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const type = file.type.startsWith("image") ? "image" : "audio";
-          updateRef(reader.result, type);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        updateRef();
-      }
+    // ---- On load ----
+    window.onload = () => {
+      switchTab(currentTab);
     }
-
-    function deleteApproved(id) {
-      if (confirm("Delete this approved response?")) {
-        firebase.database().ref("hardcodedResponses/" + id).remove().then(loadApprovedResponses);
-      }
-    }
-
-    // Load default tab
-    switchTab("approved");
   </script>
-
 </body>
 </html>
