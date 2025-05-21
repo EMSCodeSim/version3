@@ -261,13 +261,38 @@
           triggerFileURL = approvedSnap.val().triggerFileURL;
         }
       }
+
+      // Generate new TTS audio (always)
+      let ttsAudio = null;
+      try {
+        const res = await fetch('/.netlify/functions/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: response, speaker: role.toLowerCase() })
+        });
+        const json = await res.json();
+        if (!res.ok || !json.audio) {
+          alert("TTS audio generation failed: " + (json.error || "Unknown error."));
+          button.disabled = false;
+          button.innerText = "💾 Save";
+          return;
+        }
+        ttsAudio = json.audio;
+      } catch (err) {
+        alert("TTS fetch failed: " + err.message);
+        button.disabled = false;
+        button.innerText = "💾 Save";
+        return;
+      }
+
       await update(ref(db, `hardcodedResponses/${id}`), {
         question,
         response,
         role,
-        triggerFileURL
+        triggerFileURL,
+        ttsAudio
       });
-      alert("Approved entry saved!");
+      alert("Approved entry saved and TTS updated!");
       button.disabled = false;
       button.innerText = "💾 Save";
       loadApprovedResponses();
