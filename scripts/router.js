@@ -6,18 +6,50 @@ export async function loadHardcodedResponses() {
   hardcodedResponses = Object.values(data);
 }
 
+async function rephraseWithGPT3(message) {
+  try {
+    const res = await fetch("/api/gpt3_rephrase", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message })
+    });
+    const data = await res.json();
+    if (res.ok && data.rephrased) {
+      return data.rephrased.trim();
+    }
+    throw new Error(data.error || "No rephrased output");
+  } catch (err) {
+    console.warn("GPT-3.5 rephrase failed:", err.message);
+    return message; // Fallback: use original if rephrase fails
+  }
+}
+
 export async function routeUserInput(message, { scenarioId, role }) {
   const normalized = message.trim().toLowerCase();
 
+  // 1. Exact match first
   const match = hardcodedResponses.find(entry =>
     entry.question?.trim().toLowerCase() === normalized ||
     entry.userQuestion?.trim().toLowerCase() === normalized
   );
-
   if (match && match.response) {
     return { response: match.response, source: "hardcoded" };
   }
 
+  // 2. Rephrase with GPT-3.5
+  const rephrased = await rephraseWithGPT3(message);
+  if (rephrased && rephrased !== message) {
+    const rephrasedNorm = rephrased.trim().toLowerCase();
+    const match2 = hardcodedResponses.find(entry =>
+      entry.question?.trim().toLowerCase() === rephrasedNorm ||
+      entry.userQuestion?.trim().toLowerCase() === rephrasedNorm
+    );
+    if (match2 && match2.response) {
+      return { response: match2.response, source: "hardcoded" };
+    }
+  }
+
+  // 3. Fallback to GPT-4 Turbo
   try {
     const res = await fetch("/api/gpt4-turbo", {
       method: "POST",
