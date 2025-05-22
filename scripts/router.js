@@ -8,7 +8,7 @@ export async function loadHardcodedResponses() {
 
 async function rephraseWithGPT3(message) {
   try {
-    const res = await fetch("./neflify/functions/gpt3_rephrase", {
+    const res = await fetch("/.netlify/functions/gpt3_rephrase", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message })
