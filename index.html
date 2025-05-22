@@ -2,55 +2,167 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <title>EMS Code Sim</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>EMS Simulator</title>
-  <link rel="stylesheet" href="styles/style.css" />
+  <style>
+    body {
+      margin: 0;
+      background: #e3f2fd;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      min-height: 100vh;
+    }
+    header {
+      padding: 10px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      position: relative;
+    }
+    header button, header a {
+      font-size: 1.1rem;
+      padding: 10px 22px;
+      border: none;
+      border-radius: 8px;
+      background: #00bcd4;
+      color: white;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-right: 10px;
+    }
+    header button:last-child, header a {
+      margin-right: 0;
+    }
+    header button:hover, header a:hover {
+      background: #0077cc;
+    }
+    .main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 80vh;
+      padding-bottom: 40px;
+    }
+    #chat-box {
+      width: 98vw;
+      max-width: 600px;
+      min-height: 340px;
+      background: white;
+      border-radius: 15px;
+      margin: 30px 0 0 0;
+      padding: 20px 12px 80px 12px;
+      box-shadow: 0 3px 16px rgba(0,0,0,0.09);
+      overflow-y: auto;
+      font-size: 1.08rem;
+      word-break: break-word;
+      min-height: 200px;
+    }
+    .question {
+      margin-bottom: 2px;
+      font-weight: 400;
+      color: #444;
+    }
+    .response {
+      margin-bottom: 16px;
+      padding: 12px;
+      border-radius: 12px;
+      background: #e3f7fa;
+      color: #222;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      max-width: 85%;
+    }
+    .proctor-bubble {
+      background: #ffe0b2;
+      color: #6d3f00;
+    }
+    .patient-bubble {
+      background: #f1f8e9;
+      color: #214900;
+    }
+    .input-row {
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      gap: 10px;
+      width: 98vw;
+      max-width: 600px;
+      margin: 18px auto 0 auto;
+    }
+    #user-input {
+      flex: 1;
+      font-size: 1.13rem;
+      padding: 14px;
+      border: 1.5px solid #bdbdbd;
+      border-radius: 8px;
+      outline: none;
+      min-width: 0;
+    }
+    #send-button {
+      font-size: 1.12rem;
+      background: #00bcd4;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 18px;
+      margin-left: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #send-button:hover {
+      background: #0077cc;
+    }
+    .mic-row {
+      width: 98vw;
+      max-width: 600px;
+      display: flex;
+      justify-content: center;
+      margin: 12px auto 0 auto;
+    }
+    #mic-button {
+      background: #ff5252;
+      color: white;
+      font-size: 2.3rem;
+      border: none;
+      border-radius: 50%;
+      width: 70px;
+      height: 70px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      outline: none;
+      transition: background 0.15s, box-shadow 0.15s;
+    }
+    #mic-button:active, #mic-button:focus {
+      background: #d32f2f;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    }
+    @media (max-width: 650px) {
+      #chat-box, .input-row, .mic-row {
+        max-width: 98vw;
+        width: 98vw;
+      }
+    }
+  </style>
 </head>
 <body>
-
-  <!-- Header -->
-  <header style="padding: 10px; display: flex; justify-content: center; gap: 10px;">
-    <button id="start-button" onclick="startScenario()">Start Scenario</button>
-    <button id="end-button" onclick="endScenario()">End Scenario</button>
+  <header>
+    <button id="start-button">Start Scenario</button>
+    <button id="end-button">End Scenario</button>
     <a href="admin_home.html" style="position: absolute; top: 10px; right: 10px; padding: 10px 20px; background: #0077cc; color: white; text-decoration: none; border-radius: 5px;">Admin</a>
   </header>
-
-  <!-- Chat Display -->
-  <div id="chat-box" style="height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin: 20px;"></div>
-
-  <!-- Input & Controls -->
-  <div style="display: flex; align-items: center; margin: 20px;">
-    <input type="text" id="user-input" placeholder="Type your message..." style="flex: 1; padding: 10px; font-size: 16px;">
-    <button id="send-button" style="margin-left: 10px;">Send</button>
-    <button id="mic-button" style="margin-left: 10px;">Mic</button>
+  <div class="main">
+    <div id="chat-box"></div>
+    <div class="input-row">
+      <input id="user-input" placeholder="Type your question or action..." autocomplete="off" />
+      <button id="send-button">Send</button>
+    </div>
+    <div class="mic-row">
+      <button id="mic-button" title="Hold or tap to speak">🎤</button>
+    </div>
   </div>
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
-      authDomain: "ems-code-sim.firebaseapp.com",
-      databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
-      projectId: "ems-code-sim",
-      storageBucket: "ems-code-sim.firebasestorage.app",
-      messagingSenderId: "190498607578",
-      appId: "1:190498607578:web:4cf6c8e999b027956070e3",
-      measurementId: "G-2Q3ZT01YT1"
-    };
-    firebase.initializeApp(firebaseConfig);
-  </script>
-
-  <!-- App Logic -->
-  <script type="module" src="scripts/app.js"></script>
-
-  <!-- Score Breakdown Modal -->
-<div id="scoreModal" class="modal" style="display:none; position:fixed; top:10%; left:50%; transform:translateX(-50%); background:white; border:1px solid #ccc; padding:20px; width:90%; max-width:600px; z-index:9999;">
-  <h2>Performance Summary</h2>
-  <div id="scoreDetails"></div>
-  <button onclick="document.getElementById('scoreModal').style.display='none'" style="margin-top:10px;">Close</button>
-</div>
-
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="app.js" type="module"></script>
 </body>
 </html>
