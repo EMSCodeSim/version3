@@ -7,6 +7,7 @@ export async function loadHardcodedResponses() {
 }
 
 async function rephraseWithGPT3(message) {
+  console.log("[router] Calling GPT-3.5 rephrase for:", message);
   try {
     const res = await fetch("/.netlify/functions/gpt3_rephrase", {
       method: "POST",
@@ -15,6 +16,7 @@ async function rephraseWithGPT3(message) {
     });
     const data = await res.json();
     if (res.ok && data.rephrased) {
+      console.log("[router] GPT-3.5 rephrased result:", data.rephrased);
       return data.rephrased.trim();
     }
     throw new Error(data.error || "No rephrased output");
@@ -51,7 +53,7 @@ export async function routeUserInput(message, { scenarioId, role }) {
 
   // 3. Fallback to GPT-4 Turbo
   try {
-    const res = await fetch("/api/gpt4-turbo", {
+    const res = await fetch("/.netlify/functions/gpt4-turbo", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content: message })
@@ -59,6 +61,15 @@ export async function routeUserInput(message, { scenarioId, role }) {
 
     const data = await res.json();
     if (!res.ok || !data.reply) throw new Error(data.error || "GPT failed");
+
+    // --- Log to hardcodeReview for future approval ---
+    firebase.database().ref('hardcodeReview').push({
+      userQuestion: message,
+      rephrasedQuestion: rephrased,
+      aiResponse: data.reply,
+      role: role || "patient",
+      timestamp: Date.now()
+    });
 
     return { response: data.reply, source: "gpt" };
   } catch (err) {
