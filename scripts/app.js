@@ -218,9 +218,10 @@ window.startScenario = async function () {
   }
 };
 
-// ========== GRADING SUMMARY FIX (ASYNC) ==========
+// ========== GRADING SUMMARY FIX (ASYNC, WITH DEBUG LOG) ==========
 
 window.endScenario = async function () {
+  console.log("End Scenario Clicked!"); // Debug log
   const feedback = await gradeScenario();
   const summaryHtml = `
     <hr><h3>Scenario Complete</h3>
@@ -239,23 +240,26 @@ document.addEventListener('DOMContentLoaded', () => {
   const endBtn = document.getElementById('end-button');
   const micBtn = document.getElementById('mic-button');
 
-  sendBtn?.addEventListener('click', () => {
-    const message = input.value.trim();
-    if (message) {
-      processUserMessage(message);
-      input.value = '';
-    }
-  });
+  if (sendBtn) {
+    sendBtn.addEventListener('click', () => {
+      const message = input.value.trim();
+      if (message) {
+        processUserMessage(message);
+        input.value = '';
+      }
+    });
+  }
 
-  input?.addEventListener('keypress', e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      sendBtn.click();
-    }
-  });
+  if (input) {
+    input.addEventListener('keypress', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        sendBtn.click();
+      }
+    });
+  }
 
-  // ONLY call the scenario function (do NOT call displayChatResponse here!)
-  startBtn?.addEventListener('click', () => window.startScenario?.());
-  endBtn?.addEventListener('click', () => window.endScenario?.());
-  micBtn?.addEventListener('click', () => startVoiceRecognition?.());
+  if (startBtn) startBtn.addEventListener('click', () => window.startScenario && window.startScenario());
+  if (endBtn) endBtn.addEventListener('click', () => window.endScenario && window.endScenario());
+  if (micBtn) micBtn.addEventListener('click', () => startVoiceRecognition && startVoiceRecognition());
 });
