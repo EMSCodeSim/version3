@@ -1,3 +1,4 @@
+
 import { initializeScoreTracker, updateScoreTracker, gradeScenario, gradeInput } from './grading.js';
 import { startVoiceRecognition, stopVoiceRecognition } from './mic.js';
 import { routeUserInput, loadHardcodedResponses } from './router.js';
@@ -8,6 +9,7 @@ let gradingTemplate = {};
 let scoreTracker = {};
 let scenarioStarted = false;
 let hardcodedResponses = {};
+let chatLog = [];
 
 function disableMic() {
   const micBtn = document.getElementById('mic-button');
@@ -55,9 +57,8 @@ async function getTTSAudioFromFirebase(question) {
 
 async function processUserMessage(message) {
   if (!message) return;
-
-  // Run grading input logic directly
   gradeInput(message);
+  chatLog.push("You: " + message);
 
   const role = isProctorQuestion(message) ? "Proctor" : "Patient";
 
@@ -66,6 +67,8 @@ async function processUserMessage(message) {
       scenarioId: scenarioPath,
       role: role.toLowerCase(),
     });
+
+    chatLog.push(role + ": " + response);
 
     let ttsAudio = null;
     if (source === "hardcoded") {
@@ -112,47 +115,6 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
     });
   } else {
     speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient");
-  }
-
-  if (source === "hardcoded") {
-    const match = Object.values(hardcodedResponses).find(entry =>
-      (entry.question || entry.userQuestion)?.trim().toLowerCase() === userInput.trim().toLowerCase()
-    );
-
-    if (match?.triggerFile && match?.triggerFileType) {
-      const triggerDiv = document.createElement("div");
-      triggerDiv.style.marginTop = "10px";
-
-      if (match.triggerFileType === "image") {
-        const img = document.createElement("img");
-        img.src = match.triggerFile;
-        img.alt = "Scenario Image";
-        img.style.maxWidth = "100%";
-        img.style.maxHeight = "200px";
-        triggerDiv.appendChild(img);
-      } else if (match.triggerFileType === "audio") {
-        const audio = document.createElement("audio");
-        audio.src = match.triggerFile;
-        audio.controls = true;
-        triggerDiv.appendChild(audio);
-      }
-
-      chatBox.appendChild(triggerDiv);
-    }
-
-    if (match?.ttsAudio) {
-      const button = document.createElement("button");
-      button.innerText = "▶ Preview TTS";
-      button.style.marginTop = "8px";
-      button.onclick = () => {
-        const previewAudio = new Audio(`data:audio/mp3;base64,${match.ttsAudio}`);
-        previewAudio.play().catch(err => {
-          console.warn("Preview playback failed:", err);
-          alert("Unable to play preview.");
-        });
-      };
-      chatBox.appendChild(button);
-    }
   }
 
   chatBox.scrollTop = chatBox.scrollHeight;
@@ -217,10 +179,36 @@ window.startScenario = async function () {
 
 window.endScenario = async function () {
   console.log("End Scenario Clicked!");
-  const feedback = await gradeScenario();
+  const baseFeedback = await gradeScenario();
+
+  // Prompt for handoff report
+  const handoff = prompt("Please give your full handoff report (type or paste it):");
+
+  let handoffGrade = "";
+  let aiFeedback = "";
+
+  if (handoff && handoff.length > 3) {
+    const res = await fetch("/.netlify/functions/grade_handoff", {
+      method: "POST",
+      body: JSON.stringify({ handoffText: handoff })
+    });
+    const data = await res.json();
+    handoffGrade = "<h4>Handoff Report Grading:</h4><div>" + data.result + "</div>";
+  }
+
+  const fullTranscript = chatLog.join("\n");
+  const feedbackRes = await fetch("/.netlify/functions/ai_feedback", {
+    method: "POST",
+    body: JSON.stringify({ transcript: fullTranscript })
+  });
+  const feedbackData = await feedbackRes.json();
+  aiFeedback = "<h4>AI Feedback Summary:</h4><div>" + feedbackData.result + "</div>";
+
   const summaryHtml = `
     <hr><h3>Scenario Complete</h3>
-    <div class="grading-summary">${feedback}</div>
+    <div class="grading-summary">${baseFeedback}</div>
+    ${handoffGrade}
+    ${aiFeedback}
   `;
   displayChatResponse(summaryHtml);
   scenarioStarted = false;
