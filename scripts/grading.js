@@ -22,17 +22,44 @@ export function updateScoreTracker(input) {
       scoreTracker[key] = true;
     }
   }
+
   // Example: critical fail logic (expand as needed)
   if (lower.includes("no gloves") || lower.includes("no ppe")) {
-    if (!scoreTracker.criticalFails.includes("Did not apply PPE"))
+    if (!scoreTracker.criticalFails.includes("Did not apply PPE")) {
       scoreTracker.criticalFails.push("Did not apply PPE");
+    }
+  }
+}
+
+// Allow direct grading from any raw mic or text input
+export function gradeInput(input) {
+  updateScoreTracker(input);
+
+  // Display live feedback (optional)
+  const feedback = [];
+  const lower = input.toLowerCase();
+
+  if (lower.includes("oxygen") && lower.includes("nrb")) {
+    feedback.push("✅ Recognized: Oxygen via NRB");
+  }
+  if (lower.includes("scene safe") || lower.includes("bsi")) {
+    feedback.push("✅ Recognized: Scene Safety");
+  }
+  if (lower.includes("check pulse") || lower.includes("carotid")) {
+    feedback.push("✅ Recognized: Pulse Check");
+  }
+
+  const chatBox = document.getElementById("chat-box");
+  if (chatBox && feedback.length > 0) {
+    const response = document.createElement("div");
+    response.className = "grading-msg";
+    response.innerHTML = feedback.join("<br>");
+    chatBox.appendChild(response);
   }
 }
 
 // Generate improvement tips (could be local or AI-backed)
 export async function getImprovementTips(missedLabels) {
-  // If you have an AI API for tips, use it here. 
-  // For demo, just join the missed steps.
   if (!missedLabels.length) return "";
   return "Review the missed steps and focus on assessment order. Remember to verbalize PPE and scene safety!";
 }
@@ -42,6 +69,7 @@ export async function gradeScenario() {
   let completed = [];
   let missed = [];
   let criticals = scoreTracker.criticalFails || [];
+
   for (const key in gradingTemplate) {
     if (scoreTracker[key]) completed.push(gradingTemplate[key].label);
     else missed.push(gradingTemplate[key].label);
