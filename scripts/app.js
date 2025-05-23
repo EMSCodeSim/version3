@@ -218,12 +218,10 @@ window.startScenario = async function () {
   }
 };
 
-// ========== GRADING SUMMARY FIX ==========
+// ========== GRADING SUMMARY FIX (ASYNC) ==========
 
-// This replaces window.endScenario to show a full styled summary in the chat window!
-window.endScenario = function () {
-  // gradeScenario returns raw HTML from grading.js, but let's wrap it for style.
-  const feedback = gradeScenario();
+window.endScenario = async function () {
+  const feedback = await gradeScenario();
   const summaryHtml = `
     <hr><h3>Scenario Complete</h3>
     <div class="grading-summary">${feedback}</div>
