@@ -1,4 +1,3 @@
-
 import { initializeScoreTracker, updateScoreTracker, gradeScenario, gradeInput } from './grading.js';
 import { startVoiceRecognition, stopVoiceRecognition } from './mic.js';
 import { routeUserInput, loadHardcodedResponses } from './router.js';
@@ -181,8 +180,43 @@ window.endScenario = async function () {
   console.log("End Scenario Clicked!");
   const baseFeedback = await gradeScenario();
 
-  // Prompt for handoff report
-  const handoff = prompt("Please give your full handoff report (type or paste it):");
+  // Whisper mic handoff input
+  const useMic = confirm("Would you like to speak your handoff report? Click 'Cancel' to type it instead.");
+  let handoff = "";
+
+  if (useMic) {
+    alert("Start speaking after clicking OK. Recording will stop automatically after ~20 seconds.");
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mediaRecorder = new MediaRecorder(stream);
+    const audioChunks = [];
+
+    mediaRecorder.ondataavailable = event => {
+      if (event.data.size > 0) audioChunks.push(event.data);
+    };
+
+    const stopRecording = () => new Promise(resolve => {
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const arrayBuffer = await audioBlob.arrayBuffer();
+        const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+
+        const res = await fetch("/.netlify/functions/whisper_transcribe", {
+          method: "POST",
+          body: JSON.stringify({ audio: base64Audio })
+        });
+        const data = await res.json();
+        handoff = data.transcript || "";
+        resolve();
+      };
+      mediaRecorder.stop();
+    });
+
+    mediaRecorder.start();
+    setTimeout(() => mediaRecorder.state === "recording" && mediaRecorder.stop(), 20000);
+    await stopRecording();
+  } else {
+    handoff = prompt("Please type your full handoff report:");
+  }
 
   let handoffGrade = "";
   let aiFeedback = "";
@@ -196,7 +230,7 @@ window.endScenario = async function () {
     handoffGrade = "<h4>Handoff Report Grading:</h4><div>" + data.result + "</div>";
   }
 
-  const fullTranscript = chatLog.join("\n");
+  const fullTranscript = chatLog.join("\\n");
   const feedbackRes = await fetch("/.netlify/functions/ai_feedback", {
     method: "POST",
     body: JSON.stringify({ transcript: fullTranscript })
