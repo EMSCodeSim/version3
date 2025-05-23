@@ -1,4 +1,4 @@
-import { initializeScoreTracker, updateScoreTracker, gradeScenario } from './grading.js';
+import { initializeScoreTracker, updateScoreTracker, gradeScenario, gradeInput } from './grading.js';
 import { startVoiceRecognition, stopVoiceRecognition } from './mic.js';
 import { routeUserInput, loadHardcodedResponses } from './router.js';
 
@@ -9,16 +9,16 @@ let scoreTracker = {};
 let scenarioStarted = false;
 let hardcodedResponses = {};
 
-// --- SMART MIC CONTROL HELPERS ---
 function disableMic() {
   const micBtn = document.getElementById('mic-button');
   if (micBtn) micBtn.disabled = true;
-  if (window.stopVoiceRecognition) window.stopVoiceRecognition();
+  if (typeof stopVoiceRecognition === "function") stopVoiceRecognition();
 }
+
 function enableMic() {
   const micBtn = document.getElementById('mic-button');
   if (micBtn) micBtn.disabled = false;
-  if (window.startVoiceRecognition) window.startVoiceRecognition();
+  if (typeof startVoiceRecognition === "function") startVoiceRecognition();
 }
 
 async function loadGradingTemplate(type = "medical") {
@@ -55,6 +55,10 @@ async function getTTSAudioFromFirebase(question) {
 
 async function processUserMessage(message) {
   if (!message) return;
+
+  // Run grading input logic directly
+  gradeInput(message);
+
   const role = isProctorQuestion(message) ? "Proctor" : "Patient";
 
   try {
@@ -85,16 +89,13 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
 
   chatBox.innerHTML += `<div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>`;
 
-  // --- SMART AUDIO/MIC LOGIC FOR HARD-CODED RESPONSES ---
   if (audioUrl && source === "hardcoded" && question && response) {
     let src = audioUrl.startsWith("http") ? audioUrl : `data:audio/mp3;base64,${audioUrl}`;
-    // Remove any previous scenario TTS audio element
     const oldAudio = document.getElementById("scenarioTTS");
     if (oldAudio) {
       oldAudio.pause();
       oldAudio.remove();
     }
-    // Create and play new audio
     const audioElement = document.createElement("audio");
     audioElement.id = "scenarioTTS";
     audioElement.src = src;
@@ -103,18 +104,16 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
     audioElement.style.marginTop = "10px";
     chatBox.appendChild(audioElement);
 
-    // SMART MIC CONTROL
     disableMic();
     audioElement.addEventListener('ended', enableMic);
     audioElement.play().catch(err => {
       console.warn("Autoplay failed:", err.message);
-      enableMic(); // fail-safe, re-enable mic if playback fails
+      enableMic();
     });
   } else {
     speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient");
   }
 
-  // Trigger file (image/audio)
   if (source === "hardcoded") {
     const match = Object.values(hardcodedResponses).find(entry =>
       (entry.question || entry.userQuestion)?.trim().toLowerCase() === userInput.trim().toLowerCase()
@@ -141,7 +140,6 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
       chatBox.appendChild(triggerDiv);
     }
 
-    // Preview Button
     if (match?.ttsAudio) {
       const button = document.createElement("button");
       button.innerText = "▶ Preview TTS";
@@ -160,7 +158,6 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// --- SMART MIC LOGIC FOR SPEAK() (browser speech synthesis) ---
 function speak(text, voice = "patient") {
   if (!window.speechSynthesis) return;
   const utterThis = new SpeechSynthesisUtterance(text);
@@ -218,10 +215,8 @@ window.startScenario = async function () {
   }
 };
 
-// ========== GRADING SUMMARY FIX (ASYNC, WITH DEBUG LOG) ==========
-
 window.endScenario = async function () {
-  console.log("End Scenario Clicked!"); // Debug log
+  console.log("End Scenario Clicked!");
   const feedback = await gradeScenario();
   const summaryHtml = `
     <hr><h3>Scenario Complete</h3>
@@ -230,8 +225,6 @@ window.endScenario = async function () {
   displayChatResponse(summaryHtml);
   scenarioStarted = false;
 };
-
-// ========== EVENT LISTENERS ==========
 
 document.addEventListener('DOMContentLoaded', () => {
   const sendBtn = document.getElementById('send-button');
