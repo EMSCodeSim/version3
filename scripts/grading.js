@@ -1,9 +1,11 @@
+// grading.js
+
 let gradingTemplate = {};
 let scoreTracker = {};
 
-export async function initializeScoreTracker(type = "medical") {
-  const res = await fetch(`grading_templates/${type}_assessment.json`);
-  gradingTemplate = await res.json();
+// Initializes tracker and template for this scenario
+export function initializeScoreTracker(template) {
+  gradingTemplate = template;
   scoreTracker = {};
   Object.keys(gradingTemplate).forEach(key => {
     scoreTracker[key] = false;
@@ -11,6 +13,7 @@ export async function initializeScoreTracker(type = "medical") {
   scoreTracker.criticalFails = [];
 }
 
+// Call this on each user action/input
 export function updateScoreTracker(input) {
   const lower = input.toLowerCase();
   for (let key in gradingTemplate) {
@@ -19,57 +22,44 @@ export function updateScoreTracker(input) {
       scoreTracker[key] = true;
     }
   }
-
-  // Example: critical fail logic
-  if (lower.includes("no gloves")) {
-    scoreTracker.criticalFails.push("Did not apply PPE");
+  // Example: critical fail logic (expand as needed)
+  if (lower.includes("no gloves") || lower.includes("no ppe")) {
+    if (!scoreTracker.criticalFails.includes("Did not apply PPE"))
+      scoreTracker.criticalFails.push("Did not apply PPE");
   }
 }
 
-async function generateImprovementTips(missedLabels) {
-  const prompt = `You are an EMT trainer. The student missed the following items during an EMT medical assessment: ${missedLabels.join(", ")}. Give 2 to 4 short friendly improvement tips.`;
-
-  const res = await fetch('/api/gpt4-turbo', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content: prompt })
-  });
-
-  const data = await res.json();
-  return data.reply || "Keep practicing — you'll improve with each run!";
+// Generate improvement tips (could be local or AI-backed)
+export async function getImprovementTips(missedLabels) {
+  // If you have an AI API for tips, use it here. 
+  // For demo, just join the missed steps.
+  if (!missedLabels.length) return "";
+  return "Review the missed steps and focus on assessment order. Remember to verbalize PPE and scene safety!";
 }
 
+// The main grading/report function!
 export async function gradeScenario() {
-  let score = 0;
-  let rows = [];
-
-  for (let key in gradingTemplate) {
-    if (key === "criticalFails") continue;
-    const label = gradingTemplate[key].label || key;
-    const points = gradingTemplate[key].points || 1;
-    const earned = !!scoreTracker[key];
-    if (earned) score += points;
-    rows.push({ label, earned });
+  let completed = [];
+  let missed = [];
+  let criticals = scoreTracker.criticalFails || [];
+  for (const key in gradingTemplate) {
+    if (scoreTracker[key]) completed.push(gradingTemplate[key].label);
+    else missed.push(gradingTemplate[key].label);
   }
 
-  const total = rows.length;
-  const missed = rows.filter(r => !r.earned).map(r => r.label);
-  const criticalFails = scoreTracker.criticalFails;
+  let improvementTips = "";
+  if (missed.length > 0 && typeof getImprovementTips === 'function') {
+    improvementTips = await getImprovementTips(missed);
+  }
 
-  const tips = await generateImprovementTips(missed);
-
-  const listItems = rows.map(row =>
-    `<li>${row.earned ? '✅' : '❌'} ${row.label}</li>`
-  ).join("");
-
-  const feedbackText = `
-    <strong>Score:</strong> ${score}/${total}<br><br>
-    ${criticalFails.length > 0 ? `<strong>Critical Fails:</strong><br>❌ ${criticalFails.join("<br>")}<br><br>` : ""}
-    <strong>Skill Breakdown:</strong><br>
-    <ul style="list-style-type: none; padding-left: 0;">${listItems}</ul>
-    <br><strong>Tips for Improvement:</strong><br>
-    ${tips}
+  let html = `
+    <p><strong>Score:</strong> ${completed.length} / ${Object.keys(gradingTemplate).length}</p>
+    ${criticals.length ? `<p style="color:red;"><strong>Critical Failures:</strong> ${criticals.join(', ')}</p>` : ''}
+    <h4>Completed Steps:</h4>
+    <ul>${completed.map(i => `<li>${i}</li>`).join('')}</ul>
+    <h4>Missed Steps:</h4>
+    <ul>${missed.map(i => `<li>${i}</li>`).join('')}</ul>
+    ${improvementTips ? `<h4>Improvement Tips:</h4><div>${improvementTips}</div>` : ''}
   `;
-
-  return { score, feedbackText };
+  return html;
 }
