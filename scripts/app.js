@@ -218,11 +218,21 @@ window.startScenario = async function () {
   }
 };
 
+// ========== GRADING SUMMARY FIX ==========
+
+// This replaces window.endScenario to show a full styled summary in the chat window!
 window.endScenario = function () {
+  // gradeScenario returns raw HTML from grading.js, but let's wrap it for style.
   const feedback = gradeScenario();
-  displayChatResponse("📦 Scenario ended. Here's your performance summary:<br><br>" + feedback);
+  const summaryHtml = `
+    <hr><h3>Scenario Complete</h3>
+    <div class="grading-summary">${feedback}</div>
+  `;
+  displayChatResponse(summaryHtml);
   scenarioStarted = false;
 };
+
+// ========== EVENT LISTENERS ==========
 
 document.addEventListener('DOMContentLoaded', () => {
   const sendBtn = document.getElementById('send-button');
