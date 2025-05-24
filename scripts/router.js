@@ -3,19 +3,20 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, push } from "firebase/database";
 
-// Initialize Firebase (use your own config here!)
+// ==== FIREBASE CONFIGURATION ====
+// Replace these values with your actual Firebase project details!
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  databaseURL: "YOUR_DB_URL",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_BUCKET",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyD-YourApiKeyHere",
+  authDomain: "ems-code-sim.firebaseapp.com",
+  databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+  projectId: "ems-code-sim",
+  storageBucket: "ems-code-sim.appspot.com",
+  messagingSenderId: "1074994257470",
+  appId: "1:1074994257470:web:yourappid"
 };
 const app = initializeApp(firebaseConfig);
 
-// Helper: Send user input to GPT-3.5 rephrase endpoint
+// ==== REPHRASE WITH GPT-3.5 ====
 async function rephraseWithGPT3(userInput) {
   try {
     const response = await fetch('/.netlify/functions/gpt3_rephrase', {
@@ -25,19 +26,19 @@ async function rephraseWithGPT3(userInput) {
     });
     const data = await response.json();
     if (data.result) return data.result.trim().toLowerCase();
-    return userInput.trim().toLowerCase(); // fallback
+    return userInput.trim().toLowerCase();
   } catch (e) {
     return userInput.trim().toLowerCase();
   }
 }
 
-// Helper: Search for a hardcoded response (implement or import as needed)
-import { getHardcodedResponse } from "./hardcodedsearch"; // Your own function
+// ==== GET HARDCODED RESPONSE ====
+import { getHardcodedResponse } from "./hardcodedsearch"; // Plug in your function here
 
-// Helper: Get GPT-4 Turbo answer (implement or import as needed)
-import { getGpt4TurboResponse } from "./gpt4_turbo"; // Your own function
+// ==== GET GPT-4 TURBO RESPONSE ====
+import { getGpt4TurboResponse } from "./gpt4_turbo"; // Plug in your function here
 
-// Helper: Log for admin review in Firebase
+// ==== LOG FOR ADMIN REVIEW IN FIREBASE ====
 async function logForAdminReview({ originalInput, rephrasedInput, gpt4Response, context }) {
   const db = getDatabase();
   const reviewRef = ref(db, 'hardcodedReview');
@@ -50,12 +51,12 @@ async function logForAdminReview({ originalInput, rephrasedInput, gpt4Response, 
   });
 }
 
-// === MAIN ROUTER FUNCTION ===
+// ==== MAIN ROUTER FUNCTION ====
 export async function processUserInput(userInput, context = {}) {
-  // 1. Rephrase
+  // 1. Rephrase user input
   const rephrasedInput = await rephraseWithGPT3(userInput);
 
-  // 2. Hardcoded match
+  // 2. Try to find a hardcoded response
   let hardcodeResponse = await getHardcodedResponse(rephrasedInput);
 
   if (hardcodeResponse) {
@@ -66,10 +67,10 @@ export async function processUserInput(userInput, context = {}) {
     };
   }
 
-  // 3. No match, use GPT-4 Turbo
+  // 3. No match: Get GPT-4 Turbo answer
   const gpt4Answer = await getGpt4TurboResponse(rephrasedInput, context);
 
-  // 4. Log for admin approval
+  // 4. Log for admin approval in Firebase
   await logForAdminReview({
     originalInput: userInput,
     rephrasedInput,
@@ -85,5 +86,4 @@ export async function processUserInput(userInput, context = {}) {
   };
 }
 
-// Export for other scripts
 export default processUserInput;
