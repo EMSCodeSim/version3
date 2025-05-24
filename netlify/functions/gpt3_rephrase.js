@@ -1,38 +1,52 @@
-import { OpenAI } from 'openai';
+// netlify/functions/gpt3_rephrase.js
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const { Configuration, OpenAIApi } = require("openai");
 
-export async function handler(event, context) {
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
+
+exports.handler = async function(event, context) {
   try {
-    const { message } = JSON.parse(event.body);
+    const { input } = JSON.parse(event.body);
 
+    // The new, strict, minimal-action prompt:
     const prompt = `
-Simplify this EMS question so that it matches a basic training format.
-Do not explain or change the meaning — just turn it into a standard training phrase.
-Respond with just the rephrased sentence.  Fix any spelling or typos.  Example "at this time I would check a blood pressure" = check a blood pressure
+Rewrite the following EMS instruction or question as the shortest, simplest possible command or phrase suitable for a checklist. Do not include names, context, or extra details—only the core action.
 
-Original: "${message}"
+Example:
+Input: "I would instruct my partner to take a blood pressure on the patient's left arm."
+Output: "check blood pressure"
+
+Input: "Tell the patient to sit up and take slow deep breaths."
+Output: "coach breathing"
+
+Input: "I'm going to apply high-flow oxygen to the patient."
+Output: "apply oxygen"
+
+Input: "${input}"
+Output:
 `;
 
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.3,
+    const response = await openai.createCompletion({
+      model: "gpt-3.5-turbo-instruct",
+      prompt: prompt,
+      max_tokens: 20,
+      temperature: 0.2,
+      stop: ["\n"]
     });
 
-    const rephrased = completion.choices[0].message.content.trim();
-
+    // Clean up output, return the result.
+    const result = response.data.choices[0].text.trim().replace(/^["']|["']$/g, "");
     return {
       statusCode: 200,
-      body: JSON.stringify({ rephrased })
+      body: JSON.stringify({ result })
     };
-
-  } catch (err) {
-    console.error("GPT-3.5 rephrase failed:", err.message);
+  } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Rephrase failed", message: err.message })
+      body: JSON.stringify({ error: error.message })
     };
   }
-}
+};
