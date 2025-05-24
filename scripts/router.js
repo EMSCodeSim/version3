@@ -1,79 +1,89 @@
-let hardcodedResponses = [];
+// scripts/router.js
 
-export async function loadHardcodedResponses() {
-  const snapshot = await firebase.database().ref("hardcodedResponses").once("value");
-  const data = snapshot.val() || {};
-  hardcodedResponses = Object.values(data);
-}
+import { initializeApp } from "firebase/app";
+import { getDatabase, ref, push } from "firebase/database";
 
-async function rephraseWithGPT3(message) {
-  console.log("[router] Calling GPT-3.5 rephrase for:", message);
+// Initialize Firebase (use your own config here!)
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  databaseURL: "YOUR_DB_URL",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_BUCKET",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+const app = initializeApp(firebaseConfig);
+
+// Helper: Send user input to GPT-3.5 rephrase endpoint
+async function rephraseWithGPT3(userInput) {
   try {
-    const res = await fetch("/.netlify/functions/gpt3_rephrase", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message })
+    const response = await fetch('/.netlify/functions/gpt3_rephrase', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input: userInput })
     });
-    const data = await res.json();
-    if (res.ok && data.rephrased) {
-      console.log("[router] GPT-3.5 rephrased result:", data.rephrased);
-      return data.rephrased.trim();
-    }
-    throw new Error(data.error || "No rephrased output");
-  } catch (err) {
-    console.warn("GPT-3.5 rephrase failed:", err.message);
-    return message; // Fallback: use original if rephrase fails
+    const data = await response.json();
+    if (data.result) return data.result.trim().toLowerCase();
+    return userInput.trim().toLowerCase(); // fallback
+  } catch (e) {
+    return userInput.trim().toLowerCase();
   }
 }
 
-export async function routeUserInput(message, { scenarioId, role }) {
-  const normalized = message.trim().toLowerCase();
+// Helper: Search for a hardcoded response (implement or import as needed)
+import { getHardcodedResponse } from "./hardcodedsearch"; // Your own function
 
-  // 1. Exact match first
-  const match = hardcodedResponses.find(entry =>
-    entry.question?.trim().toLowerCase() === normalized ||
-    entry.userQuestion?.trim().toLowerCase() === normalized
-  );
-  if (match && match.response) {
-    return { response: match.response, source: "hardcoded" };
-  }
+// Helper: Get GPT-4 Turbo answer (implement or import as needed)
+import { getGpt4TurboResponse } from "./gpt4_turbo"; // Your own function
 
-  // 2. Rephrase with GPT-3.5
-  const rephrased = await rephraseWithGPT3(message);
-  if (rephrased && rephrased !== message) {
-    const rephrasedNorm = rephrased.trim().toLowerCase();
-    const match2 = hardcodedResponses.find(entry =>
-      entry.question?.trim().toLowerCase() === rephrasedNorm ||
-      entry.userQuestion?.trim().toLowerCase() === rephrasedNorm
-    );
-    if (match2 && match2.response) {
-      return { response: match2.response, source: "hardcoded" };
-    }
-  }
-
-  // 3. Fallback to GPT-4 Turbo
-  try {
-    const res = await fetch("/.netlify/functions/gpt4-turbo", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: message })
-    });
-
-    const data = await res.json();
-    if (!res.ok || !data.reply) throw new Error(data.error || "GPT failed");
-
-    // --- Log to hardcodeReview for future approval ---
-    firebase.database().ref('hardcodeReview').push({
-      userQuestion: message,
-      rephrasedQuestion: rephrased,
-      aiResponse: data.reply,
-      role: role || "patient",
-      timestamp: Date.now()
-    });
-
-    return { response: data.reply, source: "gpt" };
-  } catch (err) {
-    console.error("GPT fallback failed:", err.message);
-    return { response: "❌ No response from AI.", source: "gpt" };
-  }
+// Helper: Log for admin review in Firebase
+async function logForAdminReview({ originalInput, rephrasedInput, gpt4Response, context }) {
+  const db = getDatabase();
+  const reviewRef = ref(db, 'hardcodedReview');
+  await push(reviewRef, {
+    originalInput,
+    rephrasedInput,
+    gpt4Response,
+    context: context || {},
+    timestamp: Date.now()
+  });
 }
+
+// === MAIN ROUTER FUNCTION ===
+export async function processUserInput(userInput, context = {}) {
+  // 1. Rephrase
+  const rephrasedInput = await rephraseWithGPT3(userInput);
+
+  // 2. Hardcoded match
+  let hardcodeResponse = await getHardcodedResponse(rephrasedInput);
+
+  if (hardcodeResponse) {
+    return {
+      response: hardcodeResponse,
+      source: 'hardcode',
+      rephrased: rephrasedInput
+    };
+  }
+
+  // 3. No match, use GPT-4 Turbo
+  const gpt4Answer = await getGpt4TurboResponse(rephrasedInput, context);
+
+  // 4. Log for admin approval
+  await logForAdminReview({
+    originalInput: userInput,
+    rephrasedInput,
+    gpt4Response: gpt4Answer,
+    context
+  });
+
+  // 5. Return GPT-4 response to user
+  return {
+    response: gpt4Answer,
+    source: 'gpt4',
+    rephrased: rephrasedInput
+  };
+}
+
+// Export for other scripts
+export default processUserInput;
