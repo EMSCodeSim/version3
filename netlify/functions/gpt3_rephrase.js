@@ -1,16 +1,13 @@
-const { Configuration, OpenAIApi } = require("openai");
+const OpenAI = require("openai");
 
-// Use your OpenAI API Key
-const configuration = new Configuration({
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-const openai = new OpenAIApi(configuration);
 
 exports.handler = async function(event, context) {
   try {
     const { message } = JSON.parse(event.body);
 
-    // Strict prompt for the shortest, checklist-style command:
     const prompt = `
 Rewrite the following EMS instruction or question as the shortest, simplest command or checklist phrase. 
 Use 2-4 words only. Remove any extra words, names, context, or details—return only the essential EMS action.
@@ -32,22 +29,19 @@ Input: "${message}"
 Output:
 `;
 
-    // Use GPT-3.5-turbo-instruct for best effect; fall back to text-davinci-003 if needed
-    const response = await openai.createCompletion({
-      model: "gpt-3.5-turbo-instruct", // Or use "text-davinci-003" if not available
+    const completion = await openai.completions.create({
+      model: "gpt-3.5-turbo-instruct",
       prompt: prompt,
       max_tokens: 16,
       temperature: 0.1,
       stop: ["\n"]
     });
 
-    // Return in your expected structure { rephrased: ... }
-    const rephrased = response.data.choices[0].text.trim();
+    const rephrased = completion.choices[0].text.trim();
     return {
       statusCode: 200,
       body: JSON.stringify({ rephrased })
     };
-
   } catch (error) {
     return {
       statusCode: 500,
