@@ -67,7 +67,7 @@ async function processUserMessage(message) {
       role: role.toLowerCase(),
     });
 
-    chatLog.push(role + ": " + response);
+    chatLog.push(`${role}: ${response}`);
 
     let ttsAudio = null;
     if (source === "hardcoded") {
@@ -91,8 +91,8 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
 
   chatBox.innerHTML += `<div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>`;
 
-  if (audioUrl && source === "hardcoded" && question && response) {
-    let src = audioUrl.startsWith("http") ? audioUrl : `data:audio/mp3;base64,${audioUrl}`;
+  if (audioUrl && source === "hardcoded") {
+    const src = audioUrl.startsWith("http") ? audioUrl : `data:audio/mp3;base64,${audioUrl}`;
     const oldAudio = document.getElementById("scenarioTTS");
     if (oldAudio) {
       oldAudio.pause();
@@ -101,17 +101,14 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
     const audioElement = document.createElement("audio");
     audioElement.id = "scenarioTTS";
     audioElement.src = src;
-    audioElement.setAttribute("controls", "controls");
-    audioElement.setAttribute("autoplay", "autoplay");
+    audioElement.controls = true;
+    audioElement.autoplay = true;
     audioElement.style.marginTop = "10px";
     chatBox.appendChild(audioElement);
 
     disableMic();
     audioElement.addEventListener('ended', enableMic);
-    audioElement.play().catch(err => {
-      console.warn("Autoplay failed:", err.message);
-      enableMic();
-    });
+    audioElement.play().catch(() => enableMic());
   } else {
     speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient");
   }
@@ -180,12 +177,11 @@ window.endScenario = async function () {
   console.log("End Scenario Clicked!");
   const baseFeedback = await gradeScenario();
 
-  // Whisper mic handoff input
-  const useMic = confirm("Would you like to speak your handoff report? Click 'Cancel' to type it instead.");
   let handoff = "";
+  const useMic = confirm("Would you like to speak your handoff report? Click 'Cancel' to type it instead.");
 
   if (useMic) {
-    alert("Start speaking after clicking OK. Recording will stop automatically after ~20 seconds.");
+    alert("Start speaking after clicking OK. Recording will stop automatically after 20 seconds.");
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const mediaRecorder = new MediaRecorder(stream);
     const audioChunks = [];
@@ -200,19 +196,26 @@ window.endScenario = async function () {
         const arrayBuffer = await audioBlob.arrayBuffer();
         const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
 
-        const res = await fetch("/.netlify/functions/whisper_transcribe", {
-          method: "POST",
-          body: JSON.stringify({ audio: base64Audio })
-        });
-        const data = await res.json();
-        handoff = data.transcript || "";
+        try {
+          const res = await fetch("/.netlify/functions/whisper_transcribe", {
+            method: "POST",
+            body: JSON.stringify({ audio: base64Audio })
+          });
+          const data = await res.json();
+          handoff = data.transcript || "";
+        } catch (err) {
+          console.error("Whisper error:", err.message);
+        }
         resolve();
       };
       mediaRecorder.stop();
-    });
+    };
 
     mediaRecorder.start();
-    setTimeout(() => mediaRecorder.state === "recording" && mediaRecorder.stop(), 20000);
+    setTimeout(() => {
+      if (mediaRecorder.state === "recording") mediaRecorder.stop();
+    }, 20000);
+
     await stopRecording();
   } else {
     handoff = prompt("Please type your full handoff report:");
@@ -221,22 +224,26 @@ window.endScenario = async function () {
   let handoffGrade = "";
   let aiFeedback = "";
 
-  if (handoff && handoff.length > 3) {
-    const res = await fetch("/.netlify/functions/grade_handoff", {
-      method: "POST",
-      body: JSON.stringify({ handoffText: handoff })
-    });
-    const data = await res.json();
-    handoffGrade = "<h4>Handoff Report Grading:</h4><div>" + data.result + "</div>";
-  }
+  try {
+    if (handoff && handoff.length > 3) {
+      const res = await fetch("/.netlify/functions/grade_handoff", {
+        method: "POST",
+        body: JSON.stringify({ handoffText: handoff })
+      });
+      const data = await res.json();
+      handoffGrade = `<h4>Handoff Report Grading:</h4><div>${data.result}</div>`;
+    }
 
-  const fullTranscript = chatLog.join("\\n");
-  const feedbackRes = await fetch("/.netlify/functions/ai_feedback", {
-    method: "POST",
-    body: JSON.stringify({ transcript: fullTranscript })
-  });
-  const feedbackData = await feedbackRes.json();
-  aiFeedback = "<h4>AI Feedback Summary:</h4><div>" + feedbackData.result + "</div>";
+    const fullTranscript = chatLog.join("\\n");
+    const feedbackRes = await fetch("/.netlify/functions/ai_feedback", {
+      method: "POST",
+      body: JSON.stringify({ transcript: fullTranscript })
+    });
+    const feedbackData = await feedbackRes.json();
+    aiFeedback = `<h4>AI Feedback Summary:</h4><div>${feedbackData.result}</div>`;
+  } catch (err) {
+    console.error("Feedback error:", err.message);
+  }
 
   const summaryHtml = `
     <hr><h3>Scenario Complete</h3>
