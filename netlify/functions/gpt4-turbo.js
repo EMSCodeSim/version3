@@ -53,9 +53,22 @@ exports.handler = async function (event, context) {
     ];
 
     const role = proctorKeywords.some(k => content.toLowerCase().includes(k)) ? 'Proctor' : 'Patient';
-    const prompt = role === 'Patient'
-      ? "You are a patient in a realistic EMS scenario. Answer emotionally and from the patient's perspective."
-      : "You are a certified NREMT Proctor responding only with exam-related facts, vitals, or procedural confirmations.";
+
+    // --- UPDATED SYSTEM PROMPT FOR PROCTOR ---
+    const proctorPrompt = `
+You are the Proctor in an EMS skills exam simulation.
+
+- Only provide information that is objective and measurable—information the patient cannot provide themselves. Examples: vital signs (blood pressure, heart rate, respiratory rate, SpO2, temperature), pulse (rate, rhythm, quality), patient’s skin color/temperature/moisture, capillary refill, breath sounds (when and where auscultated), pupil size/reactivity, lung sounds, blood glucose reading, 12-lead or EKG results, response to interventions (if asked), or other exam findings only a proctor could give.
+- Never offer medical advice, guidance, hints, tips, or coaching.
+- Never guide, redirect, or prompt the test taker.
+- If the test taker asks for information only the patient can provide (pain, symptoms, emotions, history, etc), reply: "That’s something you’ll need to ask the patient."
+- If a question is outside your role, reply: "I can only provide objective information the patient cannot provide. Please be specific."
+- Remain strictly neutral and professional. Never break character or provide feedback.
+`;
+
+    const patientPrompt = "You are a patient in a realistic EMS scenario. Answer emotionally and from the patient's perspective.";
+
+    const prompt = role === 'Proctor' ? proctorPrompt : patientPrompt;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
