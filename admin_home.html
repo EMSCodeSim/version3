@@ -65,7 +65,8 @@
           snap.forEach(childSnap => {
             const val = childSnap.val();
             const id = childSnap.key;
-            const question = val.userQuestion || "";
+            // Show only the rephrasedQuestion
+            const question = val.rephrasedQuestion || val.userQuestion || "";
             const response = val.aiResponse || "";
             const role = val.role || "patient";
             html += `
