@@ -157,12 +157,18 @@ window.startScenario = async function () {
   if (scenarioStarted) return;
 
   try {
+    console.log("🚀 Start button tapped. Starting scenario...");
     await loadHardcodedResponses();
+
     const snapshot = await firebase.database().ref('hardcodedResponses').once('value');
     hardcodedResponses = snapshot.val() || {};
+    console.log("✅ Hardcoded responses loaded.");
 
     const configRes = await fetch(`${scenarioPath}config.json`);
+    if (!configRes.ok) throw new Error("Missing config.json");
     const config = await configRes.json();
+    console.log("✅ Config file loaded:", config);
+
     await loadGradingTemplate(config.grading || "medical");
 
     const dispatch = await loadDispatchInfo();
@@ -171,8 +177,9 @@ window.startScenario = async function () {
     displayChatResponse(`🚑 Dispatch: ${dispatch}`);
     scenarioStarted = true;
   } catch (err) {
-    logErrorToDatabase("startScenario error: " + err.message);
-    displayChatResponse("❌ Failed to load scenario. Missing config or files.");
+    console.error("❌ startScenario error:", err.message);
+    displayChatResponse("❌ Failed to load scenario. Check config.json, dispatch.txt, and patient.txt.");
+    scenarioStarted = false;
   }
 };
 
