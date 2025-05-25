@@ -28,6 +28,34 @@ const handoffRubricHtml = `
 `;
 // ------------------------------
 
+// ---- Scenario Grading Rubric Function ----
+function displayScenarioGrading(gradingResults) {
+  const items = [
+    { key: 'ageSex', label: 'Age/Sex' },
+    { key: 'chiefComplaint', label: 'Chief Complaint' },
+    { key: 'moiNoi', label: 'MOI/NOI' },
+    { key: 'history', label: 'Pertinent History' },
+    { key: 'assessment', label: 'Assessment Findings' },
+    { key: 'interventions', label: 'Interventions Provided' },
+    { key: 'response', label: 'Response to Interventions / Trends' },
+    { key: 'ongoingNeeds', label: 'Ongoing Needs / Requests' }
+  ];
+  let html = `<div class="chat-message system" id="mainGradingRubric"
+    style="background:#f3faff; border-left:4px solid #36b37e; border-radius:8px; margin:12px 0 8px 0; padding:10px 16px; font-size:1rem; max-width:430px;">
+    <b>Scenario Grading Summary</b>
+    <ul style="margin:9px 0 0 0; padding-left:20px;">`;
+  items.forEach(item => {
+    let value = gradingResults[item.key];
+    if (!value || value.toLowerCase().includes('missing') || value.toLowerCase().includes('not documented')) {
+      value = `<span style="color:#e23c3c;">${value || "missing"}</span>`;
+    }
+    html += `<li><b>${item.label}:</b> ${value}</li>`;
+  });
+  html += `</ul></div>`;
+  document.getElementById('chat-box').insertAdjacentHTML('beforeend', html);
+}
+// ------------------------------------------
+
 function disableMic() {
   const micBtn = document.getElementById('mic-button');
   if (micBtn) micBtn.disabled = true;
@@ -203,7 +231,21 @@ window.startScenario = async function () {
 
 window.endScenario = async function () {
   console.log("End Scenario Clicked!");
-  const baseFeedback = await gradeScenario();
+  // ------- Scenario Grading Summary (new section) -------
+  // EXAMPLE: Replace this with actual grading extraction if you have automated scoring!
+  // If your gradeScenario() already returns this object, just use it.
+  const gradingResults = {
+    ageSex: "62 y/o male",
+    chiefComplaint: "Chest pain",
+    moiNoi: "Sudden onset, no trauma",
+    history: "missing allergies", // Example of missing field, will be highlighted in red
+    assessment: "BP 148/92, pulse 96, RR 18, SpO2 97%; skin pale, diaphoretic",
+    interventions: "Oxygen via NC, aspirin given, IV started",
+    response: "Pain improved after aspirin",
+    ongoingNeeds: "Monitor for arrhythmia, notify receiving ER"
+  };
+  displayScenarioGrading(gradingResults);
+  // ------------------------------------------------------
 
   // ---- Show the handoff grading rubric in the chat ----
   const chatBox = document.getElementById("chat-box");
@@ -271,7 +313,6 @@ window.endScenario = async function () {
 
   const summaryHtml = `
     <hr><h3>Scenario Complete</h3>
-    <div class="grading-summary">${baseFeedback}</div>
     ${handoffGrade}
     ${aiFeedback}
   `;
