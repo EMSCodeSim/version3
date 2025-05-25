@@ -6,22 +6,24 @@
   <title>EMS Simulator</title>
   <link rel="stylesheet" href="styles/style.css" />
   <style>
-    /* Inline enhancements for mic button */
+    /* Inline enhancements for mic button and toggle */
     #mic-row {
       display: flex;
       justify-content: center;
+      align-items: center;
       margin-top: 0;
       margin-bottom: 20px;
       width: 100%;
+      gap: 18px;
     }
     #mic-button {
-      background: #ff5252;
+      background: #1ca7ec;
       color: white;
-      font-size: 2rem;
+      font-size: 1.6rem;
       border: none;
-      border-radius: 16px;
-      width: 200px;
-      height: 60px;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.10);
       display: flex;
       align-items: center;
@@ -29,16 +31,28 @@
       cursor: pointer;
       outline: none;
       transition: background 0.15s, box-shadow 0.15s;
-      margin-top: 4px;
+      margin-top: 0;
+      margin-left: 0;
+      margin-right: 0;
+      padding: 0;
     }
     #mic-button:active, #mic-button:focus {
-      background: #d32f2f;
+      background: #1471a6;
       box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    }
+    #mic-button[disabled] {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+    #mic-toggle-label {
+      margin-right: 10px;
+      user-select: none;
+      font-size: 1.05rem;
     }
     @media (max-width: 450px) {
       #mic-button {
-        width: 98vw;
-        max-width: 98vw;
+        width: 42vw;
+        max-width: 50px;
         font-size: 1.35rem;
       }
     }
@@ -50,7 +64,7 @@
   <header style="padding: 10px; display: flex; justify-content: center; gap: 10px;">
     <button id="start-button">Start Scenario</button>
     <button id="end-button">End Scenario</button>
-    <a href="admin_home.html" style="position: absolute; top: 10px; right: 10px; padding: 10px 20px; background: #0077cc; color: white; text-decoration: none; border-radius: 5px;">Admin</a>
+    <!-- Admin button removed -->
   </header>
 
   <!-- Chat Display -->
@@ -62,7 +76,13 @@
     <button id="send-button" style="margin-left: 10px;">Send</button>
   </div>
   <div id="mic-row">
-    <button id="mic-button" title="Tap or hold to speak">🎤 Speak</button>
+    <!-- Smart Mic Toggle -->
+    <label id="mic-toggle-label">
+      <input type="checkbox" id="mic-toggle" checked />
+      <span id="mic-toggle-span">Mic On</span>
+    </label>
+    <!-- Compact Speak Button -->
+    <button id="mic-button" title="Tap or hold to speak">🎤</button>
   </div>
 
   <!-- Firebase SDK -->
@@ -85,6 +105,31 @@
   <!-- App Logic -->
   <script type="module" src="scripts/app.js"></script>
   <script type="module" src="scripts/grading.js"></script>
+
+  <!-- Smart Mic JS -->
+  <script>
+    // Smart Mic Toggle and Button Logic
+    const micToggle = document.getElementById('mic-toggle');
+    const micToggleSpan = document.getElementById('mic-toggle-span');
+    const micBtn = document.getElementById('mic-button');
+    let smartMicEnabled = true;
+
+    micToggle.addEventListener('change', function() {
+      smartMicEnabled = micToggle.checked;
+      micToggleSpan.textContent = smartMicEnabled ? "Mic On" : "Mic Off";
+      micBtn.disabled = !smartMicEnabled;
+    });
+
+    micBtn.addEventListener('click', function() {
+      if (!smartMicEnabled) return;
+      // Place your smart mic (speech-to-text) activation logic here!
+      if (typeof window.startSmartMic === "function") {
+        window.startSmartMic();
+      } else {
+        console.log("Smart mic activated (stub)");
+      }
+    });
+  </script>
 
   <!-- Score Breakdown Modal -->
   <div id="scoreModal" class="modal" style="display:none; position:fixed; top:10%; left:50%; transform:translateX(-50%); background:white; border:1px solid #ccc; padding:20px; width:90%; max-width:600px; z-index:9999;">
