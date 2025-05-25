@@ -6,7 +6,6 @@
   <title>EMS Simulator</title>
   <link rel="stylesheet" href="styles/style.css" />
   <style>
-    /* Inline enhancements for mic button and toggle */
     #mic-row {
       display: flex;
       justify-content: center;
@@ -58,6 +57,19 @@
       padding-bottom: 8px;
       background: #fff;
     }
+    .timer-display {
+      font-size: 1.6rem;
+      font-weight: bold;
+      color: #1877f2;
+      background: #f3f8ff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 28px;
+      margin-right: 8px;
+      letter-spacing: 2px;
+      min-width: 105px;
+      text-align: center;
+    }
     @media (max-width: 700px) {
       .ems-logo-row svg { width: 99vw !important; }
     }
@@ -90,10 +102,9 @@
   </div>
 
   <!-- Header -->
-  <header style="padding: 10px; display: flex; justify-content: center; gap: 10px;">
+  <header id="main-header" style="padding: 10px; display: flex; justify-content: center; gap: 10px;">
     <button id="start-button">Start Scenario</button>
     <button id="end-button">End Scenario</button>
-    <!-- Admin button removed -->
   </header>
 
   <!-- Chat Display -->
@@ -158,6 +169,70 @@
         console.log("Smart mic activated (stub)");
       }
     });
+  </script>
+
+  <!-- Start Button Timer Script -->
+  <script>
+    const startButton = document.getElementById('start-button');
+    const endButton = document.getElementById('end-button');
+    let timerInterval = null;
+    let timeRemaining = 15 * 60; // 15 minutes in seconds
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+      const s = (seconds % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function showTimer() {
+      // Remove Start button, insert timer span
+      const parent = startButton.parentNode;
+      const timerSpan = document.createElement('span');
+      timerSpan.id = "timer-display";
+      timerSpan.className = "timer-display";
+      timerSpan.textContent = formatTime(timeRemaining);
+      parent.replaceChild(timerSpan, startButton);
+
+      timerInterval = setInterval(() => {
+        timeRemaining--;
+        timerSpan.textContent = formatTime(timeRemaining);
+        if (timeRemaining <= 0) {
+          clearInterval(timerInterval);
+          timerSpan.textContent = "00:00";
+        }
+      }, 1000);
+    }
+
+    function resetTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      timeRemaining = 15 * 60;
+      const timerSpan = document.getElementById('timer-display');
+      if (timerSpan) {
+        // Recreate Start button
+        const newBtn = document.createElement('button');
+        newBtn.id = "start-button";
+        newBtn.textContent = "Start Scenario";
+        timerSpan.parentNode.replaceChild(newBtn, timerSpan);
+        // Re-bind timer logic
+        newBtn.addEventListener('click', function() {
+          showTimer();
+          // Start scenario logic still handled in app.js
+        });
+      }
+    }
+
+    if (startButton) {
+      startButton.addEventListener('click', function() {
+        showTimer();
+        // Your original start scenario logic still runs from app.js, so no further action here
+      });
+    }
+
+    if (endButton) {
+      endButton.addEventListener('click', function() {
+        resetTimer();
+      });
+    }
   </script>
 
   <!-- Score Breakdown Modal -->
