@@ -53,6 +53,16 @@ button:hover {
   max-height: 400px;
 }
 
+@media (max-width: 700px) {
+  #chat-box {
+    max-height: 320px !important;
+    min-height: 100px;
+    margin: 12px;
+    padding: 10px;
+    font-size: 15px;
+  }
+}
+
 /* Chat Messages */
 .response {
   background-color: #e6f0ff;
@@ -91,6 +101,6 @@ input, button {
   margin-top: 10px;
 }
 
-div[style*=\"display: flex\"] {
+div[style*="display: flex"] {
   padding: 10px 20px;
 }
