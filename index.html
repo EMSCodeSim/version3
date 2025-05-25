@@ -20,8 +20,8 @@
       color: white;
       font-size: 1.6rem;
       border: none;
-      border-radius: 50%;
-      width: 48px;
+      border-radius: 24px;
+      width: 120px;
       height: 48px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.10);
       display: flex;
@@ -29,11 +29,18 @@
       justify-content: center;
       cursor: pointer;
       outline: none;
-      transition: background 0.15s, box-shadow 0.15s;
+      transition: background 0.15s, box-shadow 0.15s, width 0.15s;
       margin-top: 0;
       margin-left: 0;
       margin-right: 0;
-      padding: 0;
+      padding: 0 22px;
+      /* Added for pill shape */
+    }
+    #mic-button span {
+      margin-left: 10px;
+      font-size: 1.15rem;
+      font-weight: bold;
+      letter-spacing: 1px;
     }
     #mic-button:active, #mic-button:focus {
       background: #1471a6;
@@ -43,10 +50,16 @@
       background: #aaa;
       cursor: not-allowed;
     }
-    #mic-toggle-label {
+    #mic-toggle-label, #mute-toggle-label {
       margin-right: 10px;
       user-select: none;
       font-size: 1.05rem;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    #mute-toggle-label {
+      margin-right: 0;
     }
     .ems-logo-row {
       width: 100%;
@@ -80,9 +93,10 @@
         padding-bottom: 2px !important;
       }
       #mic-button {
-        width: 42vw;
-        max-width: 50px;
-        font-size: 1.35rem;
+        width: 90vw;
+        min-width: 140px;
+        max-width: 100vw;
+        font-size: 1.25rem;
       }
     }
   </style>
@@ -126,8 +140,15 @@
       <input type="checkbox" id="mic-toggle" checked />
       <span id="mic-toggle-span">Mic On</span>
     </label>
-    <!-- Compact Speak Button -->
-    <button id="mic-button" title="Tap or hold to speak">🎤</button>
+    <!-- Mute Checkbox -->
+    <label id="mute-toggle-label">
+      <input type="checkbox" id="mute-toggle" />
+      <span>Mute</span>
+    </label>
+    <!-- Long Pill Mic Button -->
+    <button id="mic-button" title="Tap or hold to speak">
+      🎤 <span>Speak</span>
+    </button>
   </div>
 
   <!-- Firebase SDK -->
@@ -151,13 +172,15 @@
   <script type="module" src="scripts/app.js"></script>
   <script type="module" src="scripts/grading.js"></script>
 
-  <!-- Smart Mic JS -->
+  <!-- Smart Mic & Mute JS -->
   <script>
     // Smart Mic Toggle and Button Logic
     const micToggle = document.getElementById('mic-toggle');
     const micToggleSpan = document.getElementById('mic-toggle-span');
     const micBtn = document.getElementById('mic-button');
+    const muteToggle = document.getElementById('mute-toggle');
     let smartMicEnabled = true;
+    let isMuted = false;
 
     micToggle.addEventListener('change', function() {
       smartMicEnabled = micToggle.checked;
@@ -166,12 +189,24 @@
     });
 
     micBtn.addEventListener('click', function() {
-      if (!smartMicEnabled) return;
+      if (!smartMicEnabled || isMuted) return;
       // Place your smart mic (speech-to-text) activation logic here!
       if (typeof window.startSmartMic === "function") {
         window.startSmartMic();
       } else {
         console.log("Smart mic activated (stub)");
+      }
+    });
+
+    muteToggle.addEventListener('change', function() {
+      isMuted = muteToggle.checked;
+      // Place your mute logic here, e.g., mute/unmute app sounds
+      if(isMuted){
+        // Example: window.muteAllSounds && window.muteAllSounds();
+        console.log("Muted");
+      }else{
+        // Example: window.unmuteAllSounds && window.unmuteAllSounds();
+        console.log("Unmuted");
       }
     });
   </script>
