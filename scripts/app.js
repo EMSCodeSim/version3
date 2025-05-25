@@ -10,6 +10,24 @@ let scenarioStarted = false;
 let hardcodedResponses = {};
 let chatLog = [];
 
+// ---- Handoff Rubric HTML ----
+const handoffRubricHtml = `
+  <div class="chat-message system" id="handoffRubricMsg" style="background:#eafdff; border-left:4px solid #1976d2; border-radius:8px; margin:10px 0; padding:10px 18px; font-size:1rem;">
+    <b>Handoff Grading Rubric:</b>
+    <ul style="margin:8px 0 0 0; padding-left:20px;">
+      <li><b>Age/Sex</b></li>
+      <li><b>Chief Complaint</b></li>
+      <li><b>MOI/NOI</b> (Mechanism/Nature of Illness)</li>
+      <li><b>Pertinent History</b> (meds, allergies, relevant hx)</li>
+      <li><b>Assessment Findings</b> (incl. most recent vitals)</li>
+      <li><b>Interventions Provided</b></li>
+      <li><b>Response to Interventions / Trends</b></li>
+      <li><b>Ongoing Needs / Requests</b></li>
+    </ul>
+  </div>
+`;
+// ------------------------------
+
 function disableMic() {
   const micBtn = document.getElementById('mic-button');
   if (micBtn) micBtn.disabled = true;
@@ -186,6 +204,12 @@ window.startScenario = async function () {
 window.endScenario = async function () {
   console.log("End Scenario Clicked!");
   const baseFeedback = await gradeScenario();
+
+  // ---- Show the handoff grading rubric in the chat ----
+  const chatBox = document.getElementById("chat-box");
+  chatBox.innerHTML += handoffRubricHtml;
+  chatBox.scrollTop = chatBox.scrollHeight;
+  // -----------------------------------------------------
 
   // Whisper mic handoff input
   const useMic = confirm("Would you like to speak your handoff report? Click 'Cancel' to type it instead.");
