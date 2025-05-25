@@ -6,99 +6,143 @@
   <title>EMS Simulator</title>
   <link rel="stylesheet" href="styles/style.css" />
   <style>
-    #mic-row {
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: #f2f9ff;
+    }
+    body {
+      min-height: 100vh;
+      height: 100vh;
       display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-top: 0;
-      margin-bottom: 20px;
-      width: 100%;
-      gap: 18px;
-    }
-    #mic-button {
-      background: #1ca7ec;
-      color: white;
-      font-size: 1.6rem;
-      border: none;
-      border-radius: 24px;
-      width: 120px;
-      height: 48px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.10);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      outline: none;
-      transition: background 0.15s, box-shadow 0.15s, width 0.15s;
-      margin-top: 0;
-      margin-left: 0;
-      margin-right: 0;
-      padding: 0 22px;
-      /* Added for pill shape */
-    }
-    #mic-button span {
-      margin-left: 10px;
-      font-size: 1.15rem;
-      font-weight: bold;
-      letter-spacing: 1px;
-    }
-    #mic-button:active, #mic-button:focus {
-      background: #1471a6;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-    }
-    #mic-button[disabled] {
-      background: #aaa;
-      cursor: not-allowed;
-    }
-    #mic-toggle-label, #mute-toggle-label {
-      margin-right: 10px;
-      user-select: none;
-      font-size: 1.05rem;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    #mute-toggle-label {
-      margin-right: 0;
+      flex-direction: column;
     }
     .ems-logo-row {
       width: 100%;
       display: flex;
       justify-content: center;
       align-items: flex-start;
-      padding-top: 20px;
-      padding-bottom: 8px;
+      padding-top: 12px;
+      padding-bottom: 4px;
       background: #fff;
       transition: padding 0.2s;
     }
+    header#main-header {
+      padding: 6px 0;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      background: none;
+    }
+    #chat-box {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 6px;
+      margin: 6px 8px;
+      border-radius: 14px;
+      background: #fff;
+      min-height: 80px;
+      max-height: 300px;
+      font-size: 1rem;
+    }
+    #mic-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 4px 0 4px 0;
+      width: 100%;
+      gap: 10px;
+    }
+    #mic-button {
+      background: #1ca7ec;
+      color: white;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 24px;
+      width: 90px;
+      height: 38px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      outline: none;
+      transition: background 0.15s, box-shadow 0.15s, width 0.15s;
+      margin: 0;
+      padding: 0 12px;
+    }
+    #mic-button span { margin-left: 7px; font-size: 1.05rem; }
+    #mic-button:active, #mic-button:focus {
+      background: #1471a6;
+    }
+    #mic-button[disabled] { background: #aaa; cursor: not-allowed; }
+    #mic-toggle-label, #mute-toggle-label {
+      margin-right: 4px;
+      user-select: none;
+      font-size: 1.01rem;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    #mute-toggle-label { margin-right: 0; }
     .timer-display {
-      font-size: 1.6rem;
+      font-size: 1.1rem;
       font-weight: bold;
       color: #1877f2;
       background: #f3f8ff;
       border: none;
-      border-radius: 8px;
-      padding: 8px 28px;
-      margin-right: 8px;
+      border-radius: 7px;
+      padding: 4px 10px;
+      margin-right: 6px;
       letter-spacing: 2px;
-      min-width: 105px;
+      min-width: 60px;
       text-align: center;
     }
+    /* Input & send */
+    .input-row {
+      display: flex;
+      align-items: center;
+      margin: 4px 8px;
+      gap: 6px;
+    }
+    #user-input {
+      flex: 1;
+      padding: 7px;
+      font-size: 15px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    #send-button {
+      padding: 7px 14px;
+      font-size: 15px;
+      background: #1a8af8;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    #send-button:active { background: #1566bb; }
+    /* Responsive logo and overall spacing */
     @media (max-width: 700px) {
-      .ems-logo-row svg { width: 99vw !important; }
+      .ems-logo-row svg { width: 98vw !important; }
+      #chat-box { max-height: 170px; min-height: 60px; }
     }
     @media (max-width: 450px) {
-      .ems-logo-row {
-        padding-top: 6px !important;
-        padding-bottom: 2px !important;
-      }
-      #mic-button {
-        width: 90vw;
-        min-width: 140px;
-        max-width: 100vw;
-        font-size: 1.25rem;
-      }
+      .ems-logo-row { padding-top: 4px !important; padding-bottom: 1px !important; }
+      header#main-header { padding: 2px 0; gap: 6px; }
+      #mic-button { width: 85px; min-width: 72px; font-size: 1.05rem; height: 36px; }
+      .timer-display { font-size: 1rem; min-width: 44px; }
+      #chat-box { max-height: 110px; min-height: 35px; }
+      .input-row { gap: 3px; margin: 3px 3px; }
+      #user-input { font-size: 13px; padding: 5px; }
+      #send-button { font-size: 13px; padding: 6px 10px; }
     }
+    /* Ensure the main flexbox fills height */
+    html, body { height: 100%; }
+    body { height: 100vh; }
   </style>
 </head>
 <body>
@@ -121,18 +165,18 @@
   </div>
 
   <!-- Header -->
-  <header id="main-header" style="padding: 10px; display: flex; justify-content: center; gap: 10px;">
+  <header id="main-header">
     <button id="start-button">Start Scenario</button>
     <button id="end-button">End Scenario</button>
   </header>
 
   <!-- Chat Display -->
-  <div id="chat-box" style="height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin: 20px;"></div>
+  <div id="chat-box"></div>
 
   <!-- Input & Controls -->
-  <div style="display: flex; align-items: center; margin: 20px;">
-    <input type="text" id="user-input" placeholder="Type your message..." style="flex: 1; padding: 10px; font-size: 16px;">
-    <button id="send-button" style="margin-left: 10px;">Send</button>
+  <div class="input-row">
+    <input type="text" id="user-input" placeholder="Type your message...">
+    <button id="send-button">Send</button>
   </div>
   <div id="mic-row">
     <!-- Smart Mic Toggle -->
