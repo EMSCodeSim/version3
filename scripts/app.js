@@ -83,6 +83,7 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
     audioElement.setAttribute("controls", "controls");
     audioElement.setAttribute("autoplay", "autoplay");
     audioElement.style.marginTop = "10px";
+    audioElement.playbackRate = 1.25; // <<<<<<<<<<<<< FASTER AUDIO
     chatBox.appendChild(audioElement);
 
     disableMic();
@@ -99,6 +100,29 @@ async function displayChatResponse(response, question = "", role = "", audioUrl 
   }
 
   chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// UPGRADED TTS FUNCTION FOR RELIABLE VOICES AND FASTER RATE
+function speak(text, voice = "patient") {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel(); // always clear any existing utterance
+
+  function actuallySpeak() {
+    const utterThis = new SpeechSynthesisUtterance(text);
+    const voices = speechSynthesis.getVoices();
+    utterThis.voice = voices.find(v => v.name.toLowerCase().includes(voice)) || null;
+    utterThis.rate = 1.25; // <<<<<<<<<<< FASTER PLAYBACK
+    disableMic();
+    utterThis.onend = enableMic;
+    window.speechSynthesis.speak(utterThis);
+  }
+
+  if (!speechSynthesis.getVoices().length) {
+    speechSynthesis.onvoiceschanged = actuallySpeak;
+    setTimeout(actuallySpeak, 400);
+  } else {
+    actuallySpeak();
+  }
 }
 
 function disableMic() {
@@ -170,15 +194,6 @@ async function processUserMessage(message) {
     logErrorToDatabase("processUserMessage error: " + err.message);
     displayChatResponse("❌ AI response failed. Try again.");
   }
-}
-
-function speak(text, voice = "patient") {
-  if (!window.speechSynthesis) return;
-  const utterThis = new SpeechSynthesisUtterance(text);
-  utterThis.voice = speechSynthesis.getVoices().find(v => v.name.toLowerCase().includes(voice)) || null;
-  disableMic();
-  utterThis.onend = enableMic;
-  window.speechSynthesis.speak(utterThis);
 }
 
 async function loadDispatchInfo() {
