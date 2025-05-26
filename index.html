@@ -28,8 +28,8 @@
       background: #fff;
       transition: padding 0.2s;
     }
-    header#main-header {
-      padding: 6px 0;
+    #main-header {
+      padding: 8px 0 4px 0;
       display: flex;
       justify-content: center;
       gap: 8px;
@@ -39,83 +39,30 @@
       flex: 1 1 auto;
       overflow-y: auto;
       border: 1px solid #ccc;
-      padding: 6px;
-      margin: 6px 8px;
-      border-radius: 14px;
+      padding: 10px 14px;
+      margin: 8px 10px;
+      border-radius: 12px;
       background: #fff;
-      min-height: 80px;
-      max-height: 300px;
       font-size: 1rem;
+      min-height: 120px;
+      max-height: 340px;
+      box-sizing: border-box;
     }
-    #mic-row {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin: 4px 0 4px 0;
-      width: 100%;
-      gap: 10px;
-    }
-    #mic-button {
-      background: #1ca7ec;
-      color: white;
-      font-size: 1.2rem;
-      border: none;
-      border-radius: 24px;
-      width: 90px;
-      height: 38px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      outline: none;
-      transition: background 0.15s, box-shadow 0.15s, width 0.15s;
-      margin: 0;
-      padding: 0 12px;
-    }
-    #mic-button span { margin-left: 7px; font-size: 1.05rem; }
-    #mic-button:active, #mic-button:focus {
-      background: #1471a6;
-    }
-    #mic-button[disabled] { background: #aaa; cursor: not-allowed; }
-    #mic-toggle-label, #mute-toggle-label {
-      margin-right: 4px;
-      user-select: none;
-      font-size: 1.01rem;
-      display: flex;
-      align-items: center;
-      gap: 3px;
-    }
-    #mute-toggle-label { margin-right: 0; }
-    .timer-display {
-      font-size: 1.1rem;
-      font-weight: bold;
-      color: #1877f2;
-      background: #f3f8ff;
-      border: none;
-      border-radius: 7px;
-      padding: 4px 10px;
-      margin-right: 6px;
-      letter-spacing: 2px;
-      min-width: 60px;
-      text-align: center;
-    }
-    /* Input & send */
     .input-row {
       display: flex;
       align-items: center;
-      margin: 4px 8px;
-      gap: 6px;
+      gap: 7px;
+      margin: 2px 10px 0 10px;
     }
     #user-input {
       flex: 1;
-      padding: 7px;
+      padding: 10px;
       font-size: 15px;
       border-radius: 8px;
       border: 1px solid #ccc;
     }
     #send-button {
-      padding: 7px 14px;
+      padding: 10px 16px;
       font-size: 15px;
       background: #1a8af8;
       color: #fff;
@@ -125,29 +72,69 @@
       font-weight: bold;
     }
     #send-button:active { background: #1566bb; }
-    /* Responsive logo and overall spacing */
+
+    /* Big Speak Button Section */
+    .mic-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 6px;
+      margin-bottom: 8px;
+    }
+    #mic-button {
+      background: #1ca7ec;
+      color: white;
+      font-size: 1.4rem;
+      border: none;
+      border-radius: 32px;
+      width: 95vw;
+      max-width: 360px;
+      min-width: 120px;
+      height: 54px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      outline: none;
+      margin: 0;
+      padding: 0 0.5em;
+      font-weight: bold;
+      letter-spacing: 1px;
+      transition: background 0.15s;
+    }
+    #mic-button span { margin-left: 13px; font-size: 1.2rem; }
+    #mic-button:active, #mic-button:focus { background: #1471a6; }
+    #mic-button[disabled] { background: #aaa; cursor: not-allowed; }
+
+    .mic-toggles {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-top: 5px;
+    }
+    .mic-toggle-label {
+      user-select: none;
+      font-size: 1.06rem;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
     @media (max-width: 700px) {
       .ems-logo-row svg { width: 98vw !important; }
-      #chat-box { max-height: 170px; min-height: 60px; }
+      #chat-box { max-height: 320px; min-height: 100px; }
+      #mic-button { font-size: 1.14rem; height: 48px; }
+      .input-row { margin: 2px 2vw 0 2vw; }
     }
-    @media (max-width: 450px) {
-      .ems-logo-row { padding-top: 4px !important; padding-bottom: 1px !important; }
-      header#main-header { padding: 2px 0; gap: 6px; }
-      #mic-button { width: 85px; min-width: 72px; font-size: 1.05rem; height: 36px; }
-      .timer-display { font-size: 1rem; min-width: 44px; }
-      #chat-box { max-height: 110px; min-height: 35px; }
-      .input-row { gap: 3px; margin: 3px 3px; }
-      #user-input { font-size: 13px; padding: 5px; }
-      #send-button { font-size: 13px; padding: 6px 10px; }
+    @media (max-width: 480px) {
+      #chat-box { max-height: 260px; min-height: 75px; }
+      #mic-button { font-size: 1.05rem; height: 44px; }
     }
-    /* Ensure the main flexbox fills height */
-    html, body { height: 100%; }
-    body { height: 100vh; }
   </style>
 </head>
 <body>
-
-  <!-- EMS CODE SIM Gradient Capsule Logo Header -->
+  <!-- EMS CODE SIM Logo -->
   <div class="ems-logo-row">
     <svg width="90%" height="100" viewBox="0 0 900 100" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -164,35 +151,36 @@
     </svg>
   </div>
 
-  <!-- Header -->
+  <!-- Scenario Buttons -->
   <header id="main-header">
     <button id="start-button">Start Scenario</button>
     <button id="end-button">End Scenario</button>
   </header>
 
-  <!-- Chat Display -->
+  <!-- Chat Box -->
   <div id="chat-box"></div>
 
-  <!-- Input & Controls -->
+  <!-- Input Row -->
   <div class="input-row">
     <input type="text" id="user-input" placeholder="Type your message...">
     <button id="send-button">Send</button>
   </div>
-  <div id="mic-row">
-    <!-- Smart Mic Toggle -->
-    <label id="mic-toggle-label">
-      <input type="checkbox" id="mic-toggle" checked />
-      <span id="mic-toggle-span">Mic On</span>
-    </label>
-    <!-- Mute Checkbox -->
-    <label id="mute-toggle-label">
-      <input type="checkbox" id="mute-toggle" />
-      <span>Mute</span>
-    </label>
-    <!-- Long Pill Mic Button -->
+
+  <!-- Mic Section: Big Speak Button, Toggles Below -->
+  <div class="mic-section">
     <button id="mic-button" title="Tap or hold to speak">
       🎤 <span>Speak</span>
     </button>
+    <div class="mic-toggles">
+      <label class="mic-toggle-label">
+        <input type="checkbox" id="mute-toggle" />
+        <span>Mute</span>
+      </label>
+      <label class="mic-toggle-label">
+        <input type="checkbox" id="mic-toggle" checked />
+        <span>Mic On</span>
+      </label>
+    </div>
   </div>
 
   <!-- Firebase SDK -->
@@ -212,119 +200,34 @@
     firebase.initializeApp(firebaseConfig);
   </script>
 
-  <!-- App Logic -->
+  <!-- App JS scripts here as needed -->
   <script type="module" src="scripts/app.js"></script>
   <script type="module" src="scripts/grading.js"></script>
 
-  <!-- Smart Mic & Mute JS -->
+  <!-- Mic logic -->
   <script>
-    // Smart Mic Toggle and Button Logic
     const micToggle = document.getElementById('mic-toggle');
-    const micToggleSpan = document.getElementById('mic-toggle-span');
-    const micBtn = document.getElementById('mic-button');
     const muteToggle = document.getElementById('mute-toggle');
-    let smartMicEnabled = true;
-    let isMuted = false;
+    const micBtn = document.getElementById('mic-button');
+    let smartMicEnabled = micToggle.checked;
+    let isMuted = muteToggle.checked;
 
     micToggle.addEventListener('change', function() {
       smartMicEnabled = micToggle.checked;
-      micToggleSpan.textContent = smartMicEnabled ? "Mic On" : "Mic Off";
       micBtn.disabled = !smartMicEnabled;
     });
-
+    muteToggle.addEventListener('change', function() {
+      isMuted = muteToggle.checked;
+      // Insert your mute logic here
+    });
     micBtn.addEventListener('click', function() {
       if (!smartMicEnabled || isMuted) return;
-      // Place your smart mic (speech-to-text) activation logic here!
       if (typeof window.startSmartMic === "function") {
         window.startSmartMic();
       } else {
         console.log("Smart mic activated (stub)");
       }
     });
-
-    muteToggle.addEventListener('change', function() {
-      isMuted = muteToggle.checked;
-      // Place your mute logic here, e.g., mute/unmute app sounds
-      if(isMuted){
-        // Example: window.muteAllSounds && window.muteAllSounds();
-        console.log("Muted");
-      }else{
-        // Example: window.unmuteAllSounds && window.unmuteAllSounds();
-        console.log("Unmuted");
-      }
-    });
   </script>
-
-  <!-- Start Button Timer Script -->
-  <script>
-    const startButton = document.getElementById('start-button');
-    const endButton = document.getElementById('end-button');
-    let timerInterval = null;
-    let timeRemaining = 15 * 60; // 15 minutes in seconds
-
-    function formatTime(seconds) {
-      const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-      const s = (seconds % 60).toString().padStart(2, '0');
-      return `${m}:${s}`;
-    }
-
-    function showTimer() {
-      // Remove Start button, insert timer span
-      const parent = startButton.parentNode;
-      const timerSpan = document.createElement('span');
-      timerSpan.id = "timer-display";
-      timerSpan.className = "timer-display";
-      timerSpan.textContent = formatTime(timeRemaining);
-      parent.replaceChild(timerSpan, startButton);
-
-      timerInterval = setInterval(() => {
-        timeRemaining--;
-        timerSpan.textContent = formatTime(timeRemaining);
-        if (timeRemaining <= 0) {
-          clearInterval(timerInterval);
-          timerSpan.textContent = "00:00";
-        }
-      }, 1000);
-    }
-
-    function resetTimer() {
-      if (timerInterval) clearInterval(timerInterval);
-      timeRemaining = 15 * 60;
-      const timerSpan = document.getElementById('timer-display');
-      if (timerSpan) {
-        // Recreate Start button
-        const newBtn = document.createElement('button');
-        newBtn.id = "start-button";
-        newBtn.textContent = "Start Scenario";
-        timerSpan.parentNode.replaceChild(newBtn, timerSpan);
-        // Re-bind timer logic
-        newBtn.addEventListener('click', function() {
-          showTimer();
-          // Start scenario logic still handled in app.js
-        });
-      }
-    }
-
-    if (startButton) {
-      startButton.addEventListener('click', function() {
-        showTimer();
-        // Your original start scenario logic still runs from app.js, so no further action here
-      });
-    }
-
-    if (endButton) {
-      endButton.addEventListener('click', function() {
-        resetTimer();
-      });
-    }
-  </script>
-
-  <!-- Score Breakdown Modal -->
-  <div id="scoreModal" class="modal" style="display:none; position:fixed; top:10%; left:50%; transform:translateX(-50%); background:white; border:1px solid #ccc; padding:20px; width:90%; max-width:600px; z-index:9999;">
-    <h2>Performance Summary</h2>
-    <div id="scoreDetails"></div>
-    <button onclick="document.getElementById('scoreModal').style.display='none'" style="margin-top:10px;">Close</button>
-  </div>
-
 </body>
 </html>
