@@ -54,14 +54,13 @@ function displayScenarioGrading(gradingResults) {
   document.getElementById('chat-box').insertAdjacentHTML('beforeend', html);
 }
 
-// ---- Utility: Play an audio file at 1.25x speed ----
+// ---- Utility: Play an audio file at 1.25x speed and ALWAYS clean up previous audio ----
 function playAudio(src, callback) {
-  // Remove old audio
-  const oldAudio = document.getElementById("scenarioTTS");
-  if (oldAudio) {
-    try { oldAudio.pause(); } catch (e) {}
-    oldAudio.remove();
-  }
+  // Remove ALL old audio elements (by ID, and any left behind)
+  document.querySelectorAll("audio#scenarioTTS").forEach(audio => {
+    try { audio.pause(); } catch (e) {}
+    audio.remove();
+  });
 
   const chatBox = document.getElementById("chat-box");
   const audioElement = document.createElement("audio");
@@ -74,15 +73,20 @@ function playAudio(src, callback) {
   chatBox.appendChild(audioElement);
 
   disableMic();
-  audioElement.addEventListener('ended', () => {
+
+  // Clean up on end or error
+  const cleanup = () => {
     enableMic();
+    try { audioElement.remove(); } catch (e) {}
     if (typeof callback === "function") callback();
-  });
+  };
+
+  audioElement.addEventListener('ended', cleanup);
+  audioElement.addEventListener('error', cleanup);
 
   audioElement.play().catch(err => {
     console.warn("Autoplay failed:", err.message);
-    enableMic();
-    if (typeof callback === "function") callback();
+    cleanup();
   });
 }
 
