@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>OpenAI TTS-1 Voice Saver</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; background: #f7fafc; color: #222;}
+    h2 { color: #1976d2; }
+    .row { margin-bottom: 16px; }
+    label { font-weight: bold; }
+    select, input[type="text"], textarea { font-size: 16px; padding: 6px; border-radius: 6px; border: 1px solid #aaa; width: 100%; max-width: 400px; margin-bottom: 8px; }
+    button { font-size: 16px; padding: 7px 20px; margin-right: 8px; border-radius: 8px; border: none; background: #1976d2; color: white; cursor: pointer;}
+    button:active { background: #12509b;}
+    #audio-preview { margin-top: 18px; }
+    #apikey { width: 340px; }
+  </style>
+</head>
+<body>
+  <h2>OpenAI TTS-1 Voice Saver</h2>
+  <div class="row">
+    <label for="apikey">OpenAI API Key:</label>
+    <input type="password" id="apikey" placeholder="sk-..." autocomplete="off">
+  </div>
+  <div class="row">
+    <label for="tts-text">Text to synthesize:</label><br>
+    <textarea id="tts-text" rows="3" placeholder="Type your text here..."></textarea>
+  </div>
+  <div class="row">
+    <label for="tts-voice">TTS-1 Voice:</label><br>
+    <select id="tts-voice">
+      <option value="alloy">Alloy (M)</option>
+      <option value="echo">Echo (F)</option>
+      <option value="fable">Fable (M)</option>
+      <option value="onyx">Onyx (M)</option>
+      <option value="nova">Nova (F)</option>
+      <option value="shimmer">Shimmer (F)</option>
+    </select>
+  </div>
+  <div class="row">
+    <label for="tts-speed">Speed:</label>
+    <input type="range" id="tts-speed" min="0.25" max="4" value="1.0" step="0.01" style="width:200px;">
+    <span id="tts-speed-value">1.0</span>
+  </div>
+  <div class="row">
+    <button id="test-btn">🔊 Generate & Play</button>
+    <button id="save-btn" disabled>💾 Save MP3</button>
+  </div>
+  <div id="audio-preview"></div>
+  <p style="color:#555;margin-top:20px;">
+    <b>Note:</b> Uses your OpenAI API key. Audio never leaves your device except to OpenAI.<br>
+    See <a href="https://platform.openai.com/docs/guides/text-to-speech" target="_blank">OpenAI TTS API docs</a>.<br>
+    <b>Voices:</b> Alloy, Echo, Fable, Onyx, Nova, Shimmer.<br>
+    <b>Speed:</b> 1 = normal, 1.25 = ~25% faster, 0.9 = slower.
+  </p>
+
+<script>
+let lastBlob = null;
+
+document.getElementById('tts-speed').addEventListener('input', function() {
+  document.getElementById('tts-speed-value').innerText = this.value;
+});
+
+async function fetchTTS(text, voice, speed, apikey) {
+  const url = "https://api.openai.com/v1/audio/speech";
+  const headers = {
+    "Authorization": "Bearer " + apikey,
+    "Content-Type": "application/json"
+  };
+  const data = {
+    model: "tts-1",
+    input: text,
+    voice: voice,
+    speed: parseFloat(speed)
+  };
+  const resp = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(data)
+  });
+  if (!resp.ok) throw new Error(await resp.text());
+  return await resp.blob();
+}
+
+document.getElementById('test-btn').onclick = async function() {
+  const apikey = document.getElementById('apikey').value.trim();
+  const text = document.getElementById('tts-text').value.trim();
+  const voice = document.getElementById('tts-voice').value;
+  const speed = document.getElementById('tts-speed').value;
+  if (!apikey.startsWith("sk-")) { alert("Enter a valid OpenAI API key."); return; }
+  if (!text) { alert("Enter some text!"); return; }
+
+  this.disabled = true;
+  this.innerText = "Generating...";
+  document.getElementById('audio-preview').innerHTML = "";
+  document.getElementById('save-btn').disabled = true;
+
+  try {
+    const blob = await fetchTTS(text, voice, speed, apikey);
+    lastBlob = blob;
+    const url = URL.createObjectURL(blob);
+    document.getElementById('audio-preview').innerHTML = `<b>Audio preview:</b><br><audio controls src="${url}" style="width:100%"></audio>`;
+    document.getElementById('save-btn').disabled = false;
+  } catch (e) {
+    alert("TTS API error:\n" + e.message);
+  }
+  this.disabled = false;
+  this.innerText = "🔊 Generate & Play";
+};
+
+document.getElementById('save-btn').onclick = function() {
+  if (!lastBlob) return;
+  const voice = document.getElementById('tts-voice').value;
+  const text = document.getElementById('tts-text').value.trim();
+  const fname = "tts-" + voice + "-" + (text.slice(0,12).replace(/[^a-z0-9]/gi,'_') || "audio") + ".mp3";
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(lastBlob);
+  a.download = fname;
+  a.click();
+};
+</script>
+</body>
+</html>
