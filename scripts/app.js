@@ -27,7 +27,6 @@ const handoffRubricHtml = `
   </div>
 `;
 
-// ---- Scenario Grading Rubric Function ----
 function displayScenarioGrading(gradingResults) {
   const items = [
     { key: 'ageSex', label: 'Age/Sex' },
@@ -54,9 +53,7 @@ function displayScenarioGrading(gradingResults) {
   document.getElementById('chat-box').insertAdjacentHTML('beforeend', html);
 }
 
-// ---- Utility: Play an audio file at 1.25x speed and ALWAYS clean up previous audio ----
 function playAudio(src, callback) {
-  // Remove ALL old audio elements (by ID, and any left behind)
   document.querySelectorAll("audio#scenarioTTS").forEach(audio => {
     try { audio.pause(); } catch (e) {}
     audio.remove();
@@ -74,9 +71,7 @@ function playAudio(src, callback) {
 
   disableMic();
 
-  // Clean up on end or error
   const cleanup = () => {
-    // Do NOT auto start mic, just enable the button
     const micBtn = document.getElementById('mic-button');
     if (micBtn) micBtn.disabled = false;
     try { audioElement.remove(); } catch (e) {}
@@ -92,7 +87,6 @@ function playAudio(src, callback) {
   });
 }
 
-// ---- Utility: Speak text ONCE with browser TTS, then turn off for rest of scenario ----
 function speakOnce(text, voiceName = "", rate = 1.0, callback) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
@@ -106,7 +100,6 @@ function speakOnce(text, voiceName = "", rate = 1.0, callback) {
   window.speechSynthesis.speak(utter);
 }
 
-// ---- Display chat response (AUDIO-ONLY; NO browser TTS fallback except dispatch) ----
 async function displayChatResponse(
   response,
   question = "",
@@ -114,7 +107,7 @@ async function displayChatResponse(
   audioUrl = null,
   source = "",
   userInput = "",
-  doSpeak = true // Only controls if audio should play (never uses browser TTS except dispatch)
+  doSpeak = true
 ) {
   const chatBox = document.getElementById("chat-box");
   const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
@@ -125,16 +118,13 @@ async function displayChatResponse(
 
   chatBox.innerHTML += `<div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>`;
 
-  // ----- AUDIO ONLY -----
   if (audioUrl && doSpeak) {
     let src = audioUrl.startsWith("http") || audioUrl.startsWith("data:audio") ? audioUrl : `data:audio/mp3;base64,${audioUrl}`;
     playAudio(src);
   }
-  // If no audio, show text only (do nothing).
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// ---- Load pre-recorded audio for chat responses (from Firebase or elsewhere) ----
 async function getTTSAudioFromFirebase(question) {
   const snapshot = await firebase.database().ref(`hardcodedResponses`).once('value');
   let result = null;
@@ -157,7 +147,6 @@ function disableMic() {
 function enableMic() {
   const micBtn = document.getElementById('mic-button');
   if (micBtn) micBtn.disabled = false;
-  // Do NOT auto start voice recognition!
 }
 
 async function loadGradingTemplate(type = "medical") {
@@ -254,10 +243,8 @@ window.startScenario = async function () {
     const dispatch = await loadDispatchInfo();
     patientContext = await loadPatientInfo();
 
-    // Display dispatch info in chat
     displayChatResponse(`🚑 Dispatch: ${dispatch}`, "", "", null, "", "", false);
 
-    // SPEAK dispatch ONCE with browser TTS (not pre-recorded, for maximum compatibility)
     speakOnce(dispatch, "", 1.0);
 
     scenarioStarted = true;
@@ -270,7 +257,6 @@ window.startScenario = async function () {
 
 window.endScenario = async function () {
   console.log("End Scenario Clicked!");
-  // ------- Scenario Grading Summary (new section) -------
   const gradingResults = {
     ageSex: "62 y/o male",
     chiefComplaint: "Chest pain",
@@ -283,12 +269,10 @@ window.endScenario = async function () {
   };
   displayScenarioGrading(gradingResults);
 
-  // ---- Show the handoff grading rubric in the chat ----
   const chatBox = document.getElementById("chat-box");
   chatBox.innerHTML += handoffRubricHtml;
   chatBox.scrollTop = chatBox.scrollHeight;
 
-  // Whisper mic handoff input
   const useMic = confirm("Would you like to speak your handoff report? Click 'Cancel' to type it instead.");
   let handoff = "";
 
@@ -375,4 +359,21 @@ document.addEventListener('DOMContentLoaded', () => {
   if (input) {
     input.addEventListener('keypress', e => {
       if (e.key === 'Enter') {
-       
+        e.preventDefault();
+        if (sendBtn) sendBtn.click();
+      }
+    });
+  }
+
+  if (startBtn) startBtn.addEventListener('click', () => {
+    if (typeof window.startScenario === 'function') window.startScenario();
+  });
+
+  if (endBtn) endBtn.addEventListener('click', () => {
+    if (typeof window.endScenario === 'function') window.endScenario();
+  });
+
+  if (micBtn) micBtn.addEventListener('click', () => {
+    if (typeof startVoiceRecognition === 'function') startVoiceRecognition();
+  });
+});
