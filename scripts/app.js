@@ -56,6 +56,51 @@ function displayScenarioGrading(gradingResults) {
 }
 // ------------------------------------------
 
+// AUDIO/RESPONSE FIXED VERSION BELOW:
+async function displayChatResponse(response, question = "", role = "", audioUrl = null, source = "", userInput = "") {
+  const chatBox = document.getElementById("chat-box");
+  const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
+
+  if (question) {
+    chatBox.innerHTML += `<div class="question">🗣️ <b>You:</b> ${question}</div>`;
+  }
+
+  chatBox.innerHTML += `<div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>`;
+
+  // --- FIX: Always remove any old audio player before playing new one ---
+  const oldAudio = document.getElementById("scenarioTTS");
+  if (oldAudio) {
+    try { oldAudio.pause(); } catch (e) {}
+    oldAudio.remove();
+  }
+  // ---------------------------------------------------------------------
+
+  if (audioUrl && source === "hardcoded" && question && response) {
+    let src = audioUrl.startsWith("http") ? audioUrl : `data:audio/mp3;base64,${audioUrl}`;
+    const audioElement = document.createElement("audio");
+    audioElement.id = "scenarioTTS";
+    audioElement.src = src;
+    audioElement.setAttribute("controls", "controls");
+    audioElement.setAttribute("autoplay", "autoplay");
+    audioElement.style.marginTop = "10px";
+    chatBox.appendChild(audioElement);
+
+    disableMic();
+    audioElement.addEventListener('ended', enableMic);
+
+    // Always call play() after src set, and handle errors
+    audioElement.play().catch(err => {
+      console.warn("Autoplay failed:", err.message);
+      enableMic();
+    });
+  } else {
+    // TTS fallback if no audio URL
+    speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient");
+  }
+
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
 function disableMic() {
   const micBtn = document.getElementById('mic-button');
   if (micBtn) micBtn.disabled = true;
@@ -125,44 +170,6 @@ async function processUserMessage(message) {
     logErrorToDatabase("processUserMessage error: " + err.message);
     displayChatResponse("❌ AI response failed. Try again.");
   }
-}
-
-async function displayChatResponse(response, question = "", role = "", audioUrl = null, source = "", userInput = "") {
-  const chatBox = document.getElementById("chat-box");
-  const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
-
-  if (question) {
-    chatBox.innerHTML += `<div class="question">🗣️ <b>You:</b> ${question}</div>`;
-  }
-
-  chatBox.innerHTML += `<div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>`;
-
-  if (audioUrl && source === "hardcoded" && question && response) {
-    let src = audioUrl.startsWith("http") ? audioUrl : `data:audio/mp3;base64,${audioUrl}`;
-    const oldAudio = document.getElementById("scenarioTTS");
-    if (oldAudio) {
-      oldAudio.pause();
-      oldAudio.remove();
-    }
-    const audioElement = document.createElement("audio");
-    audioElement.id = "scenarioTTS";
-    audioElement.src = src;
-    audioElement.setAttribute("controls", "controls");
-    audioElement.setAttribute("autoplay", "autoplay");
-    audioElement.style.marginTop = "10px";
-    chatBox.appendChild(audioElement);
-
-    disableMic();
-    audioElement.addEventListener('ended', enableMic);
-    audioElement.play().catch(err => {
-      console.warn("Autoplay failed:", err.message);
-      enableMic();
-    });
-  } else {
-    speak(response, role.toLowerCase().includes("proctor") ? "proctor" : "patient");
-  }
-
-  chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 function speak(text, voice = "patient") {
