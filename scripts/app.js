@@ -86,7 +86,21 @@ function playAudio(src, callback) {
   });
 }
 
-// ---- Display chat response (AUDIO-ONLY; NO browser TTS fallback) ----
+// ---- Utility: Speak text ONCE with browser TTS, then turn off for rest of scenario ----
+function speakOnce(text, voiceName = "", rate = 1.0, callback) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  if (voiceName) {
+    const voices = speechSynthesis.getVoices();
+    utter.voice = voices.find(v => v.name === voiceName) || null;
+  }
+  utter.rate = rate;
+  utter.onend = () => { if (callback) callback(); };
+  window.speechSynthesis.speak(utter);
+}
+
+// ---- Display chat response (AUDIO-ONLY; NO browser TTS fallback except dispatch) ----
 async function displayChatResponse(
   response,
   question = "",
@@ -94,7 +108,7 @@ async function displayChatResponse(
   audioUrl = null,
   source = "",
   userInput = "",
-  doSpeak = true // Only controls if audio should play (never uses browser TTS)
+  doSpeak = true // Only controls if audio should play (never uses browser TTS except dispatch)
 ) {
   const chatBox = document.getElementById("chat-box");
   const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
@@ -114,12 +128,6 @@ async function displayChatResponse(
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// ---- Get dispatch audio (static file) ----
-async function getDispatchAudio() {
-  // Use your custom uploaded file here:
-  return `${scenarioPath}tts-shimmer-___You_are_d.mp3`;
-}
-
 // ---- Load pre-recorded audio for chat responses (from Firebase or elsewhere) ----
 async function getTTSAudioFromFirebase(question) {
   const snapshot = await firebase.database().ref(`hardcodedResponses`).once('value');
@@ -134,7 +142,6 @@ async function getTTSAudioFromFirebase(question) {
   return result;
 }
 
-// ---- All other support functions unchanged below ----
 function disableMic() {
   const micBtn = document.getElementById('mic-button');
   if (micBtn) micBtn.disabled = true;
@@ -241,9 +248,12 @@ window.startScenario = async function () {
     const dispatch = await loadDispatchInfo();
     patientContext = await loadPatientInfo();
 
-    // ---- Play dispatch with your static MP3 ----
-    const dispatchAudioUrl = await getDispatchAudio();
-    displayChatResponse(`🚑 Dispatch: ${dispatch}`, "", "", dispatchAudioUrl, "hardcoded", "", true);
+    // Display dispatch info in chat
+    displayChatResponse(`🚑 Dispatch: ${dispatch}`, "", "", null, "", "", false);
+
+    // SPEAK dispatch ONCE with browser TTS (not pre-recorded, for maximum compatibility)
+    speakOnce(dispatch, "", 1.0);
+
     scenarioStarted = true;
   } catch (err) {
     console.error("❌ startScenario error:", err.message);
