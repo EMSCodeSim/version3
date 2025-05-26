@@ -76,7 +76,9 @@ function playAudio(src, callback) {
 
   // Clean up on end or error
   const cleanup = () => {
-    enableMic();
+    // Do NOT auto start mic, just enable the button
+    const micBtn = document.getElementById('mic-button');
+    if (micBtn) micBtn.disabled = false;
     try { audioElement.remove(); } catch (e) {}
     if (typeof callback === "function") callback();
   };
@@ -155,7 +157,7 @@ function disableMic() {
 function enableMic() {
   const micBtn = document.getElementById('mic-button');
   if (micBtn) micBtn.disabled = false;
-  if (typeof startVoiceRecognition === "function") startVoiceRecognition();
+  // Do NOT auto start voice recognition!
 }
 
 async function loadGradingTemplate(type = "medical") {
@@ -373,13 +375,4 @@ document.addEventListener('DOMContentLoaded', () => {
   if (input) {
     input.addEventListener('keypress', e => {
       if (e.key === 'Enter') {
-        e.preventDefault();
-        sendBtn.click();
-      }
-    });
-  }
-
-  if (startBtn) startBtn.addEventListener('click', () => window.startScenario && window.startScenario());
-  if (endBtn) endBtn.addEventListener('click', () => window.endScenario && window.endScenario());
-  if (micBtn) micBtn.addEventListener('click', () => startVoiceRecognition && startVoiceRecognition());
-});
+       
