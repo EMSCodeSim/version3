@@ -116,10 +116,8 @@ async function displayChatResponse(
 
 // ---- Get dispatch audio (static file) ----
 async function getDispatchAudio() {
-  // Replace this with your scenario's dispatch MP3 URL
-  // Example: Place "dispatch.mp3" in your scenario folder and load as below:
-  // e.g., scenarios/chest_pain_002/dispatch.mp3
-  return `${scenarioPath}dispatch.mp3`;
+  // Return the path to your static dispatch MP3 (uploaded file)
+  return `${scenarioPath}tts-shimmer-___You_are_d.mp3`;
 }
 
 // ---- Load pre-recorded audio for chat responses (from Firebase or elsewhere) ----
@@ -136,7 +134,6 @@ async function getTTSAudioFromFirebase(question) {
   return result;
 }
 
-// ---- All other support functions unchanged below ----
 function disableMic() {
   const micBtn = document.getElementById('mic-button');
   if (micBtn) micBtn.disabled = true;
@@ -235,7 +232,7 @@ window.startScenario = async function () {
 
     const configRes = await fetch(`${scenarioPath}config.json`);
     if (!configRes.ok) throw new Error("Missing config.json");
-    const config = await configRes.json();
+    const config = await res.json();
     console.log("✅ Config file loaded:", config);
 
     await loadGradingTemplate(config.grading || "medical");
@@ -243,8 +240,8 @@ window.startScenario = async function () {
     const dispatch = await loadDispatchInfo();
     patientContext = await loadPatientInfo();
 
-    // ---- Play dispatch with special TTS voice (as static MP3) ----
-    const dispatchAudioUrl = await getDispatchAudio(); // static .mp3 or base64 URL
+    // ---- Play dispatch with uploaded static MP3 ----
+    const dispatchAudioUrl = await getDispatchAudio();
     displayChatResponse(`🚑 Dispatch: ${dispatch}`, "", "", dispatchAudioUrl, "hardcoded", "", true);
     scenarioStarted = true;
   } catch (err) {
