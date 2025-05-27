@@ -72,8 +72,6 @@
       font-weight: bold;
     }
     #send-button:active { background: #1566bb; }
-
-    /* Big Speak Button Section */
     .mic-section {
       width: 100%;
       display: flex;
@@ -88,146 +86,67 @@
       font-size: 1.4rem;
       border: none;
       border-radius: 32px;
-      width: 95vw;
-      max-width: 360px;
-      min-width: 120px;
-      height: 54px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    /* === Learning Mode === */
+    .flex-container {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      outline: none;
-      margin: 0;
-      padding: 0 0.5em;
+      flex-direction: row;
+    }
+    #simulatorPane {
+      width: 70%;
+      padding: 10px;
+    }
+    #skillSheetPane {
+      width: 30%;
+      padding: 10px;
+      border-left: 2px solid #ccc;
+      display: none;
+    }
+    .status {
+      color: green;
       font-weight: bold;
-      letter-spacing: 1px;
-      transition: background 0.15s;
     }
-    #mic-button span { margin-left: 13px; font-size: 1.2rem; }
-    #mic-button:active, #mic-button:focus { background: #1471a6; }
-    #mic-button[disabled] { background: #aaa; cursor: not-allowed; }
-
-    .mic-toggles {
-      display: flex;
-      gap: 20px;
-      justify-content: center;
-      margin-top: 5px;
-    }
-    .mic-toggle-label {
-      user-select: none;
-      font-size: 1.06rem;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    @media (max-width: 700px) {
-      .ems-logo-row svg { width: 98vw !important; }
-      #chat-box { max-height: 320px; min-height: 100px; }
-      #mic-button { font-size: 1.14rem; height: 48px; }
-      .input-row { margin: 2px 2vw 0 2vw; }
-    }
-    @media (max-width: 480px) {
-      #chat-box { max-height: 260px; min-height: 75px; }
-      #mic-button { font-size: 1.05rem; height: 44px; }
+    @media (max-width: 900px) {
+      #skillSheetPane {
+        display: none !important;
+      }
     }
   </style>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const toggle = document.getElementById("learningModeToggle");
+      const skillPane = document.getElementById("skillSheetPane");
+      toggle?.addEventListener("change", () => {
+        skillPane.style.display = toggle.checked ? "block" : "none";
+      });
+    });
+  </script>
 </head>
 <body>
-  <!-- EMS CODE SIM Logo -->
-  <div class="ems-logo-row">
-    <svg width="90%" height="100" viewBox="0 0 900 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="grad1" x1="0" y1="0" x2="900" y2="0" gradientUnits="userSpaceOnUse">
-          <stop stop-color="#1976d2"/>
-          <stop offset="1" stop-color="#20e3c2"/>
-        </linearGradient>
-      </defs>
-      <rect x="60" y="18" width="780" height="64" rx="32" fill="url(#grad1)"/>
-      <text x="450" y="65" text-anchor="middle" font-family="Arial Black, Arial, sans-serif"
-        font-size="46" fill="#fff" font-weight="bold" letter-spacing="10">
-        EMS CODE SIM
-      </text>
-    </svg>
+
+<!-- Learning Mode Toggle -->
+<div id="learning-toggle-bar" style="padding: 8px; font-weight: bold;">
+  <label><input type="checkbox" id="learningModeToggle"> Enable Learning Mode</label>
+</div>
+
+<!-- Main Split Layout -->
+<div id="mainLayout" class="flex-container">
+  <div id="simulatorPane">
+    <!-- Your existing simulator goes here -->
   </div>
-
-  <!-- Scenario Buttons -->
-  <header id="main-header">
-    <button id="start-button">Start Scenario</button>
-    <button id="end-button">End Scenario</button>
-  </header>
-
-  <!-- Chat Box -->
-  <div id="chat-box"></div>
-
-  <!-- Input Row -->
-  <div class="input-row">
-    <input type="text" id="user-input" placeholder="Type your message...">
-    <button id="send-button">Send</button>
+  <div id="skillSheetPane">
+    <h3>Skill Sheet (Live)</h3>
+    <ul id="skillChecklist">
+      <li id="EMT-B-MED-13">General Impression <span class="status"></span></li>
+      <li id="EMT-B-MED-15">AVPU <span class="status"></span></li>
+      <li id="EMT-B-MED-19">Pulse <span class="status"></span></li>
+      <li id="EMT-B-MED-20">Blood Pressure <span class="status"></span></li>
+      <li id="EMT-B-MED-24">Chief Complaint <span class="status"></span></li>
+      <li id="EMT-B-MED-25">Onset <span class="status"></span></li>
+      <li id="EMT-B-MED-36">Oxygen <span class="status"></span></li>
+    </ul>
   </div>
+</div>
 
-  <!-- Mic Section: Big Speak Button, Toggles Below -->
-  <div class="mic-section">
-    <button id="mic-button" title="Tap or hold to speak">
-      🎤 <span>Speak</span>
-    </button>
-    <div class="mic-toggles">
-      <label class="mic-toggle-label">
-        <input type="checkbox" id="mute-toggle" />
-        <span>Mute</span>
-      </label>
-      <label class="mic-toggle-label">
-        <input type="checkbox" id="mic-toggle" checked />
-        <span>Mic On</span>
-      </label>
-    </div>
-  </div>
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
-      authDomain: "ems-code-sim.firebaseapp.com",
-      databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
-      projectId: "ems-code-sim",
-      storageBucket: "ems-code-sim.firebasestorage.app",
-      messagingSenderId: "190498607578",
-      appId: "1:190498607578:web:4cf6c8e999b027956070e3",
-      measurementId: "G-2Q3ZT01YT1"
-    };
-    firebase.initializeApp(firebaseConfig);
-  </script>
-
-  <!-- App JS scripts here as needed -->
-  <script type="module" src="scripts/app.js"></script>
-  <script type="module" src="scripts/grading.js"></script>
-
-  <!-- Mic logic -->
-  <script>
-    const micToggle = document.getElementById('mic-toggle');
-    const muteToggle = document.getElementById('mute-toggle');
-    const micBtn = document.getElementById('mic-button');
-    let smartMicEnabled = micToggle.checked;
-    let isMuted = muteToggle.checked;
-
-    micToggle.addEventListener('change', function() {
-      smartMicEnabled = micToggle.checked;
-      micBtn.disabled = !smartMicEnabled;
-    });
-    muteToggle.addEventListener('change', function() {
-      isMuted = muteToggle.checked;
-      // Insert your mute logic here
-    });
-    micBtn.addEventListener('click', function() {
-      if (!smartMicEnabled || isMuted) return;
-      if (typeof window.startSmartMic === "function") {
-        window.startSmartMic();
-      } else {
-        console.log("Smart mic activated (stub)");
-      }
-    });
-  </script>
 </body>
 </html>
