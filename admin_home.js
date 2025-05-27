@@ -99,14 +99,23 @@ window.updateSingleResponse = async function(id, existingData = null) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userInput: val.question || val.userQuestion || "", answer: val.answer || val.response || "" })
       });
-      const data = await res.json();
-      val.tags = val.tags || data.tags;
-      val.skillSheetID = val.skillSheetID || data.skillSheetID;
-      val.scoreCategory = val.scoreCategory || data.scoreCategory;
-      val.points = val.points !== undefined ? val.points : data.points;
-      val.criticalFail = val.criticalFail !== undefined ? val.criticalFail : data.criticalFail;
+
+      const raw = await res.text();  // fetch as text to debug bad JSON
+      console.log("🔎 GPT raw output:", raw);
+
+      const data = JSON.parse(raw);
+
+      if (data.tags || data.skillSheetID || data.points !== undefined) {
+        val.tags = val.tags || data.tags;
+        val.skillSheetID = val.skillSheetID || data.skillSheetID;
+        val.scoreCategory = val.scoreCategory || data.scoreCategory;
+        val.points = val.points !== undefined ? val.points : data.points;
+        val.criticalFail = val.criticalFail !== undefined ? val.criticalFail : data.criticalFail;
+      } else {
+        console.warn("❌ GPT data missing expected fields:", data);
+      }
     } catch (err) {
-      console.warn(`❌ GPT tag/score failed for ${id}:`, err);
+      console.warn(`❌ GPT tag/score failed for ${id}:`, err.message);
     }
   }
 
