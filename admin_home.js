@@ -40,6 +40,7 @@ async function loadApprovedResponses() {
           <div class="response-block">
             <div><b>Question:</b> ${val.question || "<i>Missing</i>"}</div>
             <div><b>Answer:</b> ${val.answer || val.response || "<i>Missing</i>"}</div>
+            <div><b>Role:</b> ${val.role || "<i>patient</i>"}</div>
             <div><b>Tags:</b> ${val.tags ? val.tags.join(", ") : "<span style='color:red'>❌ Missing</span>"}</div>
             <div><b>SkillSheetID:</b> ${val.skillSheetID || "<span style='color:red'>❌ Missing</span>"}</div>
             <div><b>Score Category:</b> ${val.scoreCategory || "<span style='color:red'>❌ Missing</span>"}</div>
@@ -85,7 +86,12 @@ window.updateSingleResponse = async function(id, existingData = null) {
   const refPath = ref(db, `hardcodedResponses/${id}`);
   let val = existingData || (await get(refPath)).val();
 
-  // Get missing scoring/tags via GPT
+  if (!val) {
+    console.warn(`❌ No data found for ID ${id}`);
+    return;
+  }
+
+  // Fetch tags and scoring if missing
   if (!val.tags || !val.skillSheetID || val.points === undefined) {
     try {
       const res = await fetch("/.netlify/functions/gpt_tags_score", {
@@ -104,7 +110,7 @@ window.updateSingleResponse = async function(id, existingData = null) {
     }
   }
 
-  // Get missing TTS
+  // Fetch TTS audio if missing
   if (!val.ttsAudio) {
     try {
       const res = await fetch("/.netlify/functions/tts", {
@@ -119,9 +125,29 @@ window.updateSingleResponse = async function(id, existingData = null) {
     }
   }
 
-  await update(refPath, val);
-  console.log(`✅ Updated: ${id}`);
-  loadApprovedResponses();
+  const updatePayload = {
+    question: val.question || val.userQuestion || "",
+    answer: val.answer || val.response || "",
+    tags: val.tags || [],
+    skillSheetID: val.skillSheetID || null,
+    scoreCategory: val.scoreCategory || null,
+    points: val.points ?? null,
+    criticalFail: val.criticalFail ?? false,
+    role: val.role || "patient",
+    ttsAudio: val.ttsAudio || null,
+    trigger: val.trigger || val.triggerFileURL || null
+  };
+
+  console.log(`🔄 Updating Firebase for ${id}:`, updatePayload);
+
+  try {
+    await update(refPath, updatePayload);
+    console.log(`✅ Updated successfully: ${id}`);
+    loadApprovedResponses();
+  } catch (err) {
+    console.error(`❌ Firebase update failed for ${id}:`, err.message);
+    alert(`Update failed for ${id}: ${err.message}`);
+  }
 };
 
 window.onload = () => switchTab(currentTab);
