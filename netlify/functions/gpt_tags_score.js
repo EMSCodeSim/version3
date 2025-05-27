@@ -6,13 +6,14 @@ exports.handler = async (event) => {
 
   const systemPrompt = `
 You are an EMS grading assistant. Given a user input and AI-generated answer, return a single JSON object with the following fields:
+
 - "tags": 1–3 keywords
-- "skillSheetID": the NREMT skill ID (or null if unknown)
+- "skillSheetID": use the format EMT-B-MED-## based on the official NREMT medical skill sheet step the action fulfills (e.g., EMT-B-MED-19 for taking pulse). If unsure, return null.
 - "scoreCategory": e.g., Vitals, Treatment, Assessment
 - "points": a number from 0–2
 - "criticalFail": true or false
 
-Only return a valid JSON object.
+Only return a valid JSON object. Do not explain. Do not wrap in code blocks.
 `;
 
   const completion = await openai.chat.completions.create({
