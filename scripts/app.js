@@ -415,3 +415,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof startVoiceRecognition === 'function') startVoiceRecognition();
   });
 });
+function markSkillSheetStep(skillSheetID) {
+  const el = document.getElementById(skillSheetID);
+  if (el && el.querySelector(".status").textContent !== "✅") {
+    el.querySelector(".status").textContent = "✅";
+  }
+}
+
+function onResponseScored(entry) {
+  if (document.getElementById("learningModeToggle")?.checked && entry.skillSheetID) {
+    markSkillSheetStep(entry.skillSheetID);
+  }
+}
