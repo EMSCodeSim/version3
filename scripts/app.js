@@ -10,6 +10,39 @@ let scenarioStarted = false;
 let hardcodedResponses = {};
 let chatLog = [];
 
+// ---- New: Multi-action Handler ----
+async function handleMultiActionInput(userInput) {
+  const response = await fetch('/.netlify/functions/parseAndTagMultiAction', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userInput })
+  });
+
+  const parsedActions = await response.json();
+
+  parsedActions.forEach(action => {
+    const entry = {
+      question: userInput,
+      answer: action.actionText,
+      tags: action.tags,
+      skillSheetID: action.skillSheetID,
+      scoreCategory: action.scoreCategory,
+      points: action.points,
+      criticalFail: action.criticalFail,
+      parentInput: userInput,
+      source: "gpt3.5_auto"
+    };
+
+    firebase.database().ref("/hardcodedResponses/").push(entry);
+  });
+
+  return parsedActions.map(a => a.actionText).join(" | ");
+}
+
+function containsMultipleActions(text) {
+  return text.includes(" and ") || text.includes(",") || text.includes(" then ");
+}
+
 // ---- Handoff Rubric HTML ----
 const handoffRubricHtml = `
   <div class="chat-message system" id="handoffRubricMsg" style="background:#eafdff; border-left:4px solid #1976d2; border-radius:8px; margin:10px 0; padding:10px 18px; font-size:1rem;">
@@ -99,7 +132,6 @@ function speakOnce(text, voiceName = "", rate = 1.0, callback) {
   utter.onend = () => { if (callback) callback(); };
   window.speechSynthesis.speak(utter);
 }
-
 async function displayChatResponse(
   response,
   question = "",
@@ -176,6 +208,12 @@ async function processUserMessage(message) {
   const role = isProctorQuestion(message) ? "Proctor" : "Patient";
 
   try {
+    if (containsMultipleActions(message)) {
+      const multiResponse = await handleMultiActionInput(message);
+      displayChatResponse(multiResponse, message, `${role} (multi-action)`, null, "gpt3.5_auto");
+      return;
+    }
+
     const { response, source } = await routeUserInput(message, {
       scenarioId: scenarioPath,
       role: role.toLowerCase(),
