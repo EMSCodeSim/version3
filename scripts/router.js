@@ -22,14 +22,26 @@ async function rephraseWithGPT3(message) {
     throw new Error(data.error || "No rephrased output");
   } catch (err) {
     console.warn("GPT-3.5 rephrase failed:", err.message);
-    return message; // Fallback: use original if rephrase fails
+    return message;
   }
+}
+
+function matchByTags(userInput) {
+  const normalized = userInput.trim().toLowerCase();
+  for (const entry of hardcodedResponses) {
+    if (!entry.tags || !Array.isArray(entry.tags)) continue;
+    if (entry.tags.some(tag => normalized.includes(tag.toLowerCase()))) {
+      console.log("[router] ✅ Matched by tag:", entry.tags);
+      return entry;
+    }
+  }
+  return null;
 }
 
 export async function routeUserInput(message, { scenarioId, role }) {
   const normalized = message.trim().toLowerCase();
 
-  // 1. Exact match first
+  // 1. Exact match
   const match = hardcodedResponses.find(entry =>
     entry.question?.trim().toLowerCase() === normalized ||
     entry.userQuestion?.trim().toLowerCase() === normalized
@@ -38,7 +50,7 @@ export async function routeUserInput(message, { scenarioId, role }) {
     return { response: match.response, source: "hardcoded" };
   }
 
-  // 2. Rephrase with GPT-3.5
+  // 2. Rephrase match
   const rephrased = await rephraseWithGPT3(message);
   if (rephrased && rephrased !== message) {
     const rephrasedNorm = rephrased.trim().toLowerCase();
@@ -51,7 +63,13 @@ export async function routeUserInput(message, { scenarioId, role }) {
     }
   }
 
-  // 3. Fallback to GPT-4 Turbo
+  // 3. Tag-based match
+  const tagMatch = matchByTags(message);
+  if (tagMatch) {
+    return { response: tagMatch.response || tagMatch.answer, source: "tag-match" };
+  }
+
+  // 4. Fallback to GPT-4
   try {
     const res = await fetch("/.netlify/functions/gpt4-turbo", {
       method: "POST",
@@ -62,7 +80,6 @@ export async function routeUserInput(message, { scenarioId, role }) {
     const data = await res.json();
     if (!res.ok || !data.reply) throw new Error(data.error || "GPT failed");
 
-    // --- Log to hardcodeReview for future approval ---
     firebase.database().ref('hardcodeReview').push({
       userQuestion: message,
       rephrasedQuestion: rephrased,
