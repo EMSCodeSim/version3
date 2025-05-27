@@ -2,31 +2,29 @@ const { OpenAI } = require("openai");
 const openai = new OpenAI();
 
 exports.handler = async (event) => {
-  const { userInput } = JSON.parse(event.body);
+  const { userInput, answer } = JSON.parse(event.body);
 
   const systemPrompt = `
-You are an EMS simulation assistant. A student may submit one sentence with multiple actions. Parse it into clear medical actions. For each, return:
-
-- "actionText": plain English version of the action
+You are an EMS grading assistant. Given a user input and AI-generated answer, return a single JSON object with the following fields:
 - "tags": 1–3 keywords
-- "skillSheetID": NREMT skill reference (or null if unknown)
+- "skillSheetID": the NREMT skill ID (or null if unknown)
 - "scoreCategory": e.g., Vitals, Treatment, Assessment
-- "points": 0–2 (but ignore for now)
-- "criticalFail": true/false (but ignore for now)
+- "points": a number from 0–2
+- "criticalFail": true or false
 
-Format output as a JSON array.
+Only return a valid JSON object.
 `;
 
-  const response = await openai.chat.completions.create({
+  const completion = await openai.chat.completions.create({
     model: "gpt-3.5-turbo-0125",
     messages: [
       { role: "system", content: systemPrompt },
-      { role: "user", content: userInput }
+      { role: "user", content: `Input: ${userInput}\nAnswer: ${answer}` }
     ]
   });
 
   return {
     statusCode: 200,
-    body: response.choices[0].message.content
+    body: completion.choices[0].message.content.trim()
   };
 };
