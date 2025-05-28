@@ -1,0 +1,97 @@
+<!-- version3-main/admin_panel.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Panel</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f4f4f4; }
+    .tab { padding: 10px; margin: 10px; border-radius: 5px; cursor: pointer; display: inline-block; background: #ccc; }
+    .active { background: #007bff; color: white; }
+    .response { background: white; margin: 15px 0; padding: 10px; border-radius: 5px; box-shadow: 0 0 5px #aaa; }
+    textarea { width: 100%; margin-top: 5px; }
+    audio { width: 100%; margin-top: 5px; }
+  </style>
+</head>
+  <script>
+  console.log("DEBUG: inline script in admin_panel.html is running!");
+</script>
+
+<body>
+
+<h1>Admin Panel</h1>
+
+<div>
+  <span class="tab active" id="tab-approved" onclick="switchTab('approved')">✅ Approved</span>
+  <span class="tab" id="tab-review" onclick="switchTab('review')">📝 Review</span>
+</div>
+
+<div style="margin-top:10px;"><button onclick="upgradeMissingTTS()">🔊 Upgrade Missing TTS</button></div>
+
+<div id="responsesContainer"></div>
+
+<script src="admin_panel.js"></script>
+
+<script>
+function renderReviewCard(key, data) {
+  const container = document.getElementById("responsesContainer");
+  const card = document.createElement("div");
+  card.className = "response";
+  card.innerHTML = `
+    <strong>Question:</strong> <div contenteditable="true" id="q-${key}">${data.question || ''}</div>
+    <strong>Response:</strong> <div contenteditable="true" id="r-${key}">${data.response || ''}</div>
+    <strong>Score Category:</strong> <div contenteditable="true" id="cat-${key}">${data.scoreCategory || ''}</div>
+    <strong>Points:</strong> <div contenteditable="true" id="pts-${key}">${data.points || '1'}</div>
+    <strong>Critical Fail:</strong> <div contenteditable="true" id="cf-${key}">${data.criticalFail || 'false'}</div>
+    <button onclick="saveReview('${key}')">✅ Save</button>
+    <button onclick="deleteReview('${key}')">🗑 Delete</button>
+  `;
+  container.appendChild(card);
+}
+
+async function loadReviewTab() {
+  const snap = await db.ref("hardcodedReview").once("value");
+  document.getElementById("responsesContainer").innerHTML = "";
+  snap.forEach(child => {
+    renderReviewCard(child.key, child.val());
+  });
+}
+
+async function saveReview(key) {
+  const update = {
+    question: document.getElementById(`q-${key}`).innerText,
+    response: document.getElementById(`r-${key}`).innerText,
+    scoreCategory: document.getElementById(`cat-${key}`).innerText,
+    points: parseInt(document.getElementById(`pts-${key}`).innerText),
+    criticalFail: document.getElementById(`cf-${key}`).innerText === "true"
+  };
+  await db.ref(`hardcodedResponses/${key}`).set(update);
+  await db.ref(`hardcodedReview/${key}`).remove();
+  alert("Saved and moved to hardcodedResponses.");
+  location.reload();
+}
+
+async function deleteReview(key) {
+  await db.ref(`hardcodedReview/${key}`).remove();
+  alert("Deleted from review list.");
+  location.reload();
+}
+
+function switchTab(tab) {
+  document.getElementById("tab-approved").classList.remove("active");
+  document.getElementById("tab-review").classList.remove("active");
+  document.getElementById(`tab-${tab}`).classList.add("active");
+
+  if (tab === "review") {
+    loadReviewTab();
+  } else {
+    location.reload(); // Reuse default approved display logic in JS
+  }
+}
+
+window.onload = () => switchTab('approved');
+</script>
+
+</body>
+</html>
