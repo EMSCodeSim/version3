@@ -133,19 +133,18 @@
 
   <div id="mainLayout">
     <div id="simulatorPane">
-      <div id="chat-box"></div>
-      <div class="input-row">
-        <input type="text" id="user-input" placeholder="Type your response here..." />
-        <button id="send-button">Send</button>
+      <div id="chat-box" style="height: 380px; overflow-y: auto; border: 1px solid #ccc; background: #fff; padding: 10px; border-radius: 8px; margin-bottom: 10px;"></div>
+      <div class="input-row" style="display: flex; flex-direction: row; gap: 8px; align-items: center;">
+        <input type="text" id="user-input" style="flex: 1;" placeholder="Type your response here..." />
+        <button id="send-button" style="padding: 10px 14px; font-size: 14px;">Send</button>
       </div>
       <div class="mic-section">
         <button id="mic-button">🎤</button>
-        <div class="mic-toggles">
-          <label><input type="checkbox" id="mute-toggle" /> Mute</label>
-          <label><input type="checkbox" id="mic-toggle" checked /> Mic On</label>
+        
+          
+          
         </div>
       </div>
-    </div>
     <div id="skillSheetPane">
       <h3>Skill Sheet (Live)</h3>
       <ul id="skillChecklist">
