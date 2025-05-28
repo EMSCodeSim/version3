@@ -145,3 +145,73 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
+
+// NREMT Skill Sheet Mappings
+const scoreCategoryMap = {
+  bsi: "BSI Scene Safe",
+  ppe: "BSI Scene Safe",
+  "scene safe": "BSI Scene Safe",
+  moi: "Determine MOI/NOI",
+  noi: "Determine MOI/NOI",
+  "number of patients": "Number of Patients",
+  "additional ems": "Additional Resources",
+  cspine: "C-Spine Consideration",
+  impression: "General Impression",
+  loc: "Determine Responsiveness (LOC)",
+  complaint: "Determine Chief Complaint",
+  airway: "Assess Airway",
+  breathing: "Assess Breathing",
+  oxygen: "Initiates Oxygen",
+  pulse: "Assess Circulation",
+  skin: "Assess Circulation",
+  bleeding: "Assess Circulation",
+  transport: "Transport Decision",
+  onset: "OPQRST - Onset",
+  provocation: "OPQRST - Provocation",
+  quality: "OPQRST - Quality",
+  radiation: "OPQRST - Radiation",
+  severity: "OPQRST - Severity",
+  time: "OPQRST - Time",
+  signs: "SAMPLE - Signs/Symptoms",
+  symptoms: "SAMPLE - Signs/Symptoms",
+  allergies: "SAMPLE - Allergies",
+  medications: "SAMPLE - Medications",
+  history: "SAMPLE - Past History",
+  oral: "SAMPLE - Oral Intake",
+  events: "SAMPLE - Events Prior",
+  systems: "Secondary Assessment",
+  body: "Secondary Assessment",
+  bp: "Vitals - Blood Pressure",
+  pressure: "Vitals - Blood Pressure",
+  heart: "Vitals - Heart Rate",
+  respiratory: "Vitals - Respiratory Rate",
+  impression: "Field Impression",
+  intervention: "Interventions",
+  reassess: "Reassessment"
+};
+
+// Auto-update function for filling missing fields
+async function updateAllResponses() {
+  const snap = await db.ref('hardcodedResponses').once('value');
+  const updates = {};
+  snap.forEach(child => {
+    const key = child.key;
+    const val = child.val();
+    if (!val.scoreCategory) {
+      const lowerResp = (val.response || "").toLowerCase();
+      for (const [keyword, category] of Object.entries(scoreCategoryMap)) {
+        if (lowerResp.includes(keyword)) {
+          updates[`hardcodedResponses/${key}/scoreCategory`] = category;
+          break;
+        }
+      }
+    }
+  });
+
+  if (Object.keys(updates).length > 0) {
+    await db.ref().update(updates);
+    alert("Updated scoreCategory for missing entries!");
+  } else {
+    alert("No missing scoreCategory fields found.");
+  }
+}
