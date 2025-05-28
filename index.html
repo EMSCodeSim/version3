@@ -269,5 +269,78 @@
       if (sendBtn) sendBtn.addEventListener("click", () => window.sendMessage?.());
     });
   </script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const userInput = document.getElementById("user-input");
+  const sendButton = document.getElementById("send-button");
+
+  const checklistMap = {
+    "bsi": "status-1",
+    "ppe": "status-1",
+    "scene safety": "status-2",
+    "moi": "status-3",
+    "noi": "status-3",
+    "number of patients": "status-4",
+    "additional ems": "status-5",
+    "c-spine": "status-6",
+    "general impression": "status-7",
+    "loc": "status-8",
+    "chief complaint": "status-9",
+    "airway": "status-10",
+    "breathing": "status-10",
+    "oxygen": "status-11",
+    "pulse": "status-12",
+    "skin": "status-12",
+    "bleeding": "status-12",
+    "priority": "status-13",
+    "transport": "status-13",
+    "onset": "status-14",
+    "provocation": "status-15",
+    "quality": "status-16",
+    "radiation": "status-17",
+    "severity": "status-18",
+    "time": "status-19",
+    "signs": "status-20",
+    "symptoms": "status-20",
+    "allergies": "status-21",
+    "medications": "status-22",
+    "past history": "status-23",
+    "oral intake": "status-24",
+    "events": "status-25",
+    "affected body": "status-26",
+    "system": "status-26",
+    "blood pressure": "status-27",
+    "heart rate": "status-28",
+    "respiratory rate": "status-29",
+    "field impression": "status-30",
+    "intervention": "status-31",
+    "reassess": "status-32"
+  };
+
+  function updateChecklist(text) {
+    const input = text.toLowerCase();
+    for (const [key, id] of Object.entries(checklistMap)) {
+      if (input.includes(key)) {
+        const el = document.getElementById(id);
+        if (el && !el.textContent.includes("✔")) {
+          el.textContent = "✔";
+        }
+      }
+    }
+  }
+
+  sendButton.addEventListener("click", () => {
+    updateChecklist(userInput.value);
+  });
+
+  userInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      updateChecklist(userInput.value);
+    }
+  });
+});
+</script>
+
 </body>
 </html>
