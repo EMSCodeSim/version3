@@ -132,7 +132,14 @@
       #chat-box { max-height: 260px; min-height: 75px; }
       #mic-button { font-size: 1.05rem; height: 44px; }
     }
-  </style>
+  
+
+@media (min-width: 900px) {
+  body.learning-mode #user-input {
+    max-width: 60%;
+  }
+}
+</style>
 <style>
 .flex-container {
   display: flex;
@@ -187,7 +194,9 @@ document.addEventListener("DOMContentLoaded", function () {
 <!-- Scenario Buttons -->
 <header id="main-header">
 <button id="start-button">Start Scenario</button>
-<button id="end-button">End Scenario</button>
+<button id="end-button">End Scenario</button><div id="learning-toggle-bar" style="padding: 8px; font-weight: bold;">
+<label><input id="learningModeToggle" type="checkbox"/> Enable Learning Mode</label>
+</div>
 </header>
 <!-- Chat Box -->
 <div id="chat-box"></div>
@@ -203,9 +212,9 @@ document.addEventListener("DOMContentLoaded", function () {
 </button>
 <div class="mic-toggles">
 <label class="mic-toggle-label">
-<input id="mute-toggle" type="checkbox">
+<input id="mute-toggle" type="checkbox"/>
 <span>Mute</span>
-</input></label>
+</label>
 <label class="mic-toggle-label">
 <input checked="" id="mic-toggle" type="checkbox"/>
 <span>Mic On</span>
@@ -257,21 +266,17 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   </script>
 <!-- Learning Mode Toggle -->
-<div id="learning-toggle-bar" style="padding: 8px; font-weight: bold;">
-<label><input id="learningModeToggle" type="checkbox"/> Enable Learning Mode</label>
-</div>
-<!-- Main Split Layout -->
-<div class="flex-container" id="mainLayout">
-<div id="simulatorPane">
 
+<!-- Main Split Layout -->
+<div class="flex-container" id="mainLayout" style="display: flex; flex-direction: row; height: 100%; align-items: flex-start; gap: 20px;">
+<div id="simulatorPane">
 <div class="input-row">
 </div>
 <div class="mic-section">
-
 </div>
 <!-- Existing simulator content should go here -->
 </div>
-<div id="skillSheetPane">
+<div id="skillSheetPane" style="flex: 1; height: 100%; overflow-y: auto; background: #f4f4f4; border-radius: 8px; padding: 12px;">
 <h3>Skill Sheet (Live)</h3>
 <ul id="skillChecklist">
 <li id="EMT-B-MED-13">General Impression <span class="status"></span></li>
