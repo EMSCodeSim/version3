@@ -1,21 +1,24 @@
+// Import Firebase SDKs
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-import { getDatabase, ref, onValue, set, remove, get, child } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
-// Firebase config
+// ✅ Your Firebase config
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
+  authDomain: "ems-code-sim.firebaseapp.com",
+  databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+  projectId: "ems-code-sim",
+  storageBucket: "ems-code-sim.firebasestorage.app",
+  messagingSenderId: "190498607578",
+  appId: "1:190498607578:web:4cf6c8e999b027956070e3",
+  measurementId: "G-2Q3ZT01YT1"
 };
 
+// ✅ Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-let currentTab = "approved";
 
+// 🔢 Categories for auto-tagging logic
 const validSkillSheet = [
   { id: "1", name: "BSI Scene Safe" },
   { id: "2", name: "Scene Safety" },
@@ -26,9 +29,9 @@ const validSkillSheet = [
   { id: "7", name: "General Impression" },
   { id: "8", name: "Determines Chief Complaint" },
   { id: "9", name: "Assesses Airway" }
-  // Add more based on full skill sheet
 ];
 
+// 🔁 Render entries
 function renderResponseCard(key, data, isReview = false) {
   const container = document.getElementById("responsesContainer");
   const div = document.createElement("div");
@@ -48,6 +51,7 @@ function renderResponseCard(key, data, isReview = false) {
   container.appendChild(div);
 }
 
+// 🔍 Suggest best scoreCategory match
 function suggestCategory(data) {
   const combined = `${data.question} ${data.response}`.toLowerCase();
   for (let item of validSkillSheet) {
@@ -56,6 +60,7 @@ function suggestCategory(data) {
   return "";
 }
 
+// 🔄 Load Tabs
 window.loadApproved = async function () {
   currentTab = "approved";
   switchTabs();
@@ -72,6 +77,7 @@ window.loadReview = async function () {
   snap.forEach(child => renderResponseCard(child.key, child.val(), true));
 };
 
+// 💾 Save Approved
 window.saveResponse = async function (key) {
   const question = document.getElementById(`q-${key}`).innerText.trim();
   const response = document.getElementById(`r-${key}`).innerText.trim();
@@ -86,12 +92,14 @@ window.saveResponse = async function (key) {
   location.reload();
 };
 
+// 🗑 Delete
 window.deleteResponse = async function (key, path) {
   await remove(ref(db, `${path}/${key}`));
   alert("🗑 Deleted.");
   location.reload();
 };
 
+// 🧠 Check for missing fields
 window.updateAllResponses = async function () {
   const snap = await get(ref(db, "hardcodedReview"));
   let issues = [];
@@ -114,7 +122,10 @@ window.updateAllResponses = async function () {
   }
 };
 
+// 👇 Visual tab switcher
 function switchTabs() {
   document.getElementById("approvedTab").classList.toggle("active", currentTab === "approved");
   document.getElementById("reviewTab").classList.toggle("active", currentTab === "review");
 }
+
+let currentTab = "approved"; // default
