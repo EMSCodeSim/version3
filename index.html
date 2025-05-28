@@ -31,51 +31,12 @@
     #main-header {
       padding: 8px 0;
       display: flex;
+      align-items: center;
+      justify-content: center;
       gap: 8px;
     }
 
-    #learning-toggle-bar {
-      padding: 10px 20px;
-      font-weight: bold;
-    }
-
-    body.learning-mode header,
-    body.learning-mode #learning-toggle-bar {
-      text-align: left;
-      padding-left: 5%;
-    }
-    body.learning-mode #main-header,
-    body.learning-mode #learning-toggle-bar {
-      justify-content: flex-start;
-    }
-    body.learning-mode #main-header button {
-      margin-right: 10px;
-    }
-
-    body:not(.learning-mode) #main-header,
-    body:not(.learning-mode) #learning-toggle-bar {
-      text-align: center;
-      justify-content: center;
-    }
-
-    #main-header button,
-    #learning-toggle-bar {
-      width: auto;
-    }
-
-    #user-input {
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    body:not(.learning-mode) #simulatorPane input,
-    body:not(.learning-mode) #simulatorPane button {
-      width: 100%;
-      box-sizing: border-box;
-      margin: 5px 0;
-    }
-
-    .flex-container {
+    #mainLayout {
       display: flex;
       flex-direction: row;
       flex: 1;
@@ -104,6 +65,35 @@
         display: none !important;
       }
     }
+
+    body.learning-mode #main-header {
+      justify-content: flex-start;
+      padding-left: 5%;
+    }
+
+    #chat-box {
+      height: 280px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      background: #fff;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .input-row {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #user-input {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    #learningModeToggle {
+      margin-left: 10px;
+    }
   </style>
 
   <script>
@@ -119,7 +109,6 @@
 </head>
 
 <body>
-
   <div class="ems-logo-row">
     <svg width="90%" height="100" viewBox="0 0 900 100" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -139,13 +128,10 @@
   <header id="main-header">
     <button id="start-button">Start Scenario</button>
     <button id="end-button">End Scenario</button>
+    <label><input type="checkbox" id="learningModeToggle"> Learning Mode</label>
   </header>
 
-  <div id="learning-toggle-bar">
-    <label><input type="checkbox" id="learningModeToggle"> Enable Learning Mode</label>
-  </div>
-
-  <div id="mainLayout" class="flex-container">
+  <div id="mainLayout">
     <div id="simulatorPane">
       <div id="chat-box"></div>
       <div class="input-row">
@@ -155,18 +141,11 @@
       <div class="mic-section">
         <button id="mic-button">🎤</button>
         <div class="mic-toggles">
-          <label class="mic-toggle-label">
-            <input type="checkbox" id="mute-toggle" />
-            <span>Mute</span>
-          </label>
-          <label class="mic-toggle-label">
-            <input type="checkbox" id="mic-toggle" checked />
-            <span>Mic On</span>
-          </label>
+          <label><input type="checkbox" id="mute-toggle" /> Mute</label>
+          <label><input type="checkbox" id="mic-toggle" checked /> Mic On</label>
         </div>
       </div>
     </div>
-
     <div id="skillSheetPane">
       <h3>Skill Sheet (Live)</h3>
       <ul id="skillChecklist">
@@ -180,6 +159,5 @@
       </ul>
     </div>
   </div>
-
 </body>
 </html>
