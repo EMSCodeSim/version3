@@ -1,167 +1,120 @@
-// admin_home.js
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getDatabase, ref, get, set, push, remove, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
-import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+import { getDatabase, ref, onValue, set, remove, get, child } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
+// Firebase config
 const firebaseConfig = {
-  apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
-  authDomain: "ems-code-sim.firebaseapp.com",
-  databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
-  projectId: "ems-code-sim",
-  storageBucket: "ems-code-sim.appspot.com",
-  messagingSenderId: "190498607578",
-  appId: "1:190498607578:web:4cf6c8e999b027956070e3"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const storage = getStorage(app);
-
 let currentTab = "approved";
 
-window.switchTab = function(tab) {
-  currentTab = tab;
-  if (tab === "approved") loadApprovedResponses();
-  else loadReviewResponses();
-};
+const validSkillSheet = [
+  { id: "1", name: "BSI Scene Safe" },
+  { id: "2", name: "Scene Safety" },
+  { id: "3", name: "Determines MOI/NOI" },
+  { id: "4", name: "Determines Number of Patients" },
+  { id: "5", name: "Requests Additional EMS Assistance" },
+  { id: "6", name: "Considers C-Spine Stabilization" },
+  { id: "7", name: "General Impression" },
+  { id: "8", name: "Determines Chief Complaint" },
+  { id: "9", name: "Assesses Airway" }
+  // Add more based on full skill sheet
+];
 
-async function loadApprovedResponses() {
-  const dbRef = ref(db, "hardcodedResponses");
-  const list = document.getElementById("response-list");
-  list.innerHTML = "<b>Loading...</b>";
-  try {
-    const snap = await get(dbRef);
-    let html = "";
-    if (snap.exists()) {
-      snap.forEach(child => {
-        const val = child.val();
-        const id = child.key;
-        html += `
-          <div class="response-block">
-            <div><b>Question:</b> ${val.question || "<i>Missing</i>"}</div>
-            <div><b>Answer:</b> ${val.answer || val.response || "<i>Missing</i>"}</div>
-            <div><b>Role:</b> ${val.role || "<i>patient</i>"}</div>
-            <div><b>Tags:</b> ${val.tags ? val.tags.join(", ") : "<span style='color:red'>❌ Missing</span>"}</div>
-            <div><b>SkillSheetID:</b> ${val.skillSheetID || "<span style='color:red'>❌ Missing</span>"}</div>
-            <div><b>Score Category:</b> ${val.scoreCategory || "<span style='color:red'>❌ Missing</span>"}</div>
-            <div><b>Points:</b> ${val.points !== undefined ? val.points : "<span style='color:red'>❌ Missing</span>"}</div>
-            <div><b>Critical Fail:</b> ${val.criticalFail ? "✅ Yes" : "❌ No"}</div>
-            <div><b>Trigger:</b> ${val.trigger || "<span style='color:red'>❌ Missing</span>"}</div>
-            <div><b>Audio:</b><br>
-              ${val.ttsAudio ? `<audio controls src="data:audio/mp3;base64,${val.ttsAudio}"></audio>` : "<span style='color:red'>❌ Missing</span>"}
-            </div>
-            <button onclick="updateSingleResponse('${id}')">🛠 Update This Response</button>
-          </div>
-        `;
-      });
-    }
-    list.innerHTML = html || "<i>No approved responses found.</i>";
-  } catch (e) {
-    console.error("Error loading approved responses:", e);
-    list.innerHTML = "<span style='color:red;'>Failed to load approved responses.</span>";
-  }
+function renderResponseCard(key, data, isReview = false) {
+  const container = document.getElementById("responsesContainer");
+  const div = document.createElement("div");
+  const missing = !data.scoreCategory || data.scoreCategory.trim() === "" || data.points === undefined;
+
+  div.className = "response" + (missing ? " missing" : "");
+  div.innerHTML = `
+    <div class="field"><strong>Question:</strong> <div contenteditable="true" id="q-${key}">${data.question || ""}</div></div>
+    <div class="field"><strong>Response:</strong> <div contenteditable="true" id="r-${key}">${data.response || ""}</div></div>
+    <div class="field"><strong>Score Category:</strong> <div contenteditable="true" id="cat-${key}">${data.scoreCategory || suggestCategory(data)}</div></div>
+    <div class="field"><strong>Points:</strong> <div contenteditable="true" id="pts-${key}">${data.points !== undefined ? data.points : 1}</div></div>
+    <div class="field"><strong>Critical Fail (true/false):</strong> <div contenteditable="true" id="cf-${key}">${data.criticalFail || "false"}</div></div>
+    ${isReview
+      ? `<button onclick="saveResponse('${key}')">✅ Approve</button><button onclick="deleteResponse('${key}', 'hardcodedReview')">🗑 Delete</button>`
+      : `<button onclick="deleteResponse('${key}', 'hardcodedResponses')">🗑 Delete</button>`}
+  `;
+  container.appendChild(div);
 }
 
-window.updateAllResponses = async function() {
-  const snap = await get(ref(db, "hardcodedResponses"));
-  if (!snap.exists()) return alert("No responses found.");
+function suggestCategory(data) {
+  const combined = `${data.question} ${data.response}`.toLowerCase();
+  for (let item of validSkillSheet) {
+    if (combined.includes(item.name.toLowerCase())) return item.name;
+  }
+  return "";
+}
 
-  const updates = [];
+window.loadApproved = async function () {
+  currentTab = "approved";
+  switchTabs();
+  const snap = await get(ref(db, "hardcodedResponses"));
+  document.getElementById("responsesContainer").innerHTML = "";
+  snap.forEach(child => renderResponseCard(child.key, child.val(), false));
+};
+
+window.loadReview = async function () {
+  currentTab = "review";
+  switchTabs();
+  const snap = await get(ref(db, "hardcodedReview"));
+  document.getElementById("responsesContainer").innerHTML = "";
+  snap.forEach(child => renderResponseCard(child.key, child.val(), true));
+};
+
+window.saveResponse = async function (key) {
+  const question = document.getElementById(`q-${key}`).innerText.trim();
+  const response = document.getElementById(`r-${key}`).innerText.trim();
+  const scoreCategory = document.getElementById(`cat-${key}`).innerText.trim();
+  const points = parseInt(document.getElementById(`pts-${key}`).innerText.trim()) || 0;
+  const criticalFail = document.getElementById(`cf-${key}`).innerText.trim() === "true";
+
+  const data = { question, response, scoreCategory, points, criticalFail };
+  await set(ref(db, `hardcodedResponses/${key}`), data);
+  await remove(ref(db, `hardcodedReview/${key}`));
+  alert("✅ Approved and moved.");
+  location.reload();
+};
+
+window.deleteResponse = async function (key, path) {
+  await remove(ref(db, `${path}/${key}`));
+  alert("🗑 Deleted.");
+  location.reload();
+};
+
+window.updateAllResponses = async function () {
+  const snap = await get(ref(db, "hardcodedReview"));
+  let issues = [];
   snap.forEach(child => {
-    const data = child.val();
-    const key = child.key;
-    if (!data.tags || !data.skillSheetID || data.points === undefined || !data.ttsAudio) {
-      updates.push({ key, data });
+    const val = child.val();
+    if (!val.scoreCategory || val.scoreCategory.trim() === "") {
+      issues.push(`Missing scoreCategory: ${child.key}`);
+    }
+    if (val.points === undefined) {
+      issues.push(`Missing points: ${child.key}`);
+    }
+    if (val.criticalFail === undefined) {
+      issues.push(`Missing criticalFail: ${child.key}`);
     }
   });
-
-  for (const { key, data } of updates) {
-    await updateSingleResponse(key, data);
+  if (issues.length === 0) {
+    alert("✅ All reviewed entries have valid fields.");
+  } else {
+    alert("⚠️ Issues found:\n" + issues.join("\n"));
   }
-
-  alert("✅ All missing info has been updated.");
 };
 
-window.updateSingleResponse = async function(id, existingData = null) {
-  const refPath = ref(db, `hardcodedResponses/${id}`);
-  let val = existingData || (await get(refPath)).val();
-  if (!val) return;
-
-  try {
-    const res = await fetch("/.netlify/functions/gpt_tags_score", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userInput: val.question || val.userQuestion || "",
-        answer: val.answer || val.response || ""
-      })
-    });
-
-    const raw = await res.text();
-    console.log("🔎 GPT raw output:", raw);
-    const data = JSON.parse(raw);
-
-    val.tags = val.tags || data.tags;
-    val.scoreCategory = val.scoreCategory || data.scoreCategory;
-    val.points = val.points !== undefined ? val.points : data.points;
-    val.criticalFail = val.criticalFail !== undefined ? data.criticalFail : false;
-
-    function getSkillSheetIDFromTags(tags) {
-      const map = {
-        pulse: "EMT-B-MED-19",
-        bp: "EMT-B-MED-20",
-        respirations: "EMT-B-MED-21",
-        oxygen: "EMT-B-MED-36",
-        aspirin: "EMT-B-MED-37",
-        glucose: "EMT-B-MED-37",
-        avpu: "EMT-B-MED-15",
-        general_impression: "EMT-B-MED-13",
-        transport_decision: "EMT-B-MED-33",
-        onset: "EMT-B-MED-25",
-        quality: "EMT-B-MED-26",
-        radiation: "EMT-B-MED-27",
-        severity: "EMT-B-MED-28",
-        time: "EMT-B-MED-29",
-        allergies: "EMT-B-MED-30",
-        medications: "EMT-B-MED-31",
-        history: "EMT-B-MED-32",
-        chief_complaint: "EMT-B-MED-24",
-        interventions: "EMT-B-MED-35"
-      };
-      if (!tags || !Array.isArray(tags)) return null;
-      for (const tag of tags) {
-        if (map[tag.toLowerCase()]) return map[tag.toLowerCase()];
-      }
-      return null;
-    }
-
-    val.skillSheetID = val.skillSheetID || getSkillSheetIDFromTags(val.tags);
-    console.log("📌 skillSheetID set to:", val.skillSheetID);
-  } catch (err) {
-    console.warn("❌ GPT failed:", err.message);
-  }
-
-  try {
-    const updatePayload = {
-      question: val.question || val.userQuestion || "",
-      answer: val.answer || val.response || "",
-      tags: val.tags || [],
-      scoreCategory: val.scoreCategory || null,
-      points: val.points ?? null,
-      criticalFail: val.criticalFail ?? false,
-      role: val.role || "patient",
-      ttsAudio: val.ttsAudio || null,
-      trigger: val.trigger || val.triggerFileURL || null,
-      skillSheetID: val.skillSheetID || null
-    };
-
-    await set(refPath, updatePayload);
-    console.log(`✅ Updated: ${id}`);
-  } catch (err) {
-    console.error("❌ Firebase write failed:", err.message);
-  }
-
-  loadApprovedResponses();
-};
-
-window.onload = () => switchTab(currentTab);
+function switchTabs() {
+  document.getElementById("approvedTab").classList.toggle("active", currentTab === "approved");
+  document.getElementById("reviewTab").classList.toggle("active", currentTab === "review");
+}
