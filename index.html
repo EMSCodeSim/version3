@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,9 +31,48 @@
     #main-header {
       padding: 8px 0;
       display: flex;
-      justify-content: center;
       gap: 8px;
-      background: none;
+    }
+
+    #learning-toggle-bar {
+      padding: 10px 20px;
+      font-weight: bold;
+    }
+
+    body.learning-mode header,
+    body.learning-mode #learning-toggle-bar {
+      text-align: left;
+      padding-left: 5%;
+    }
+    body.learning-mode #main-header,
+    body.learning-mode #learning-toggle-bar {
+      justify-content: flex-start;
+    }
+    body.learning-mode #main-header button {
+      margin-right: 10px;
+    }
+
+    body:not(.learning-mode) #main-header,
+    body:not(.learning-mode) #learning-toggle-bar {
+      text-align: center;
+      justify-content: center;
+    }
+
+    #main-header button,
+    #learning-toggle-bar {
+      width: auto;
+    }
+
+    #user-input {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    body:not(.learning-mode) #simulatorPane input,
+    body:not(.learning-mode) #simulatorPane button {
+      width: 100%;
+      box-sizing: border-box;
+      margin: 5px 0;
     }
 
     .flex-container {
@@ -64,11 +104,6 @@
         display: none !important;
       }
     }
-
-    #learning-toggle-bar {
-      padding: 10px 20px;
-      font-weight: bold;
-    }
   </style>
 
   <script>
@@ -76,6 +111,7 @@
       const toggle = document.getElementById("learningModeToggle");
       const skillPane = document.getElementById("skillSheetPane");
       toggle.addEventListener("change", () => {
+        document.body.classList.toggle("learning-mode", toggle.checked);
         skillPane.style.display = toggle.checked ? "block" : "none";
       });
     });
@@ -84,7 +120,6 @@
 
 <body>
 
-  <!-- Logo -->
   <div class="ems-logo-row">
     <svg width="90%" height="100" viewBox="0 0 900 100" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -101,28 +136,22 @@
     </svg>
   </div>
 
-  <!-- Scenario Buttons -->
   <header id="main-header">
     <button id="start-button">Start Scenario</button>
     <button id="end-button">End Scenario</button>
   </header>
 
-  <!-- Learning Mode Toggle -->
   <div id="learning-toggle-bar">
     <label><input type="checkbox" id="learningModeToggle"> Enable Learning Mode</label>
   </div>
 
-  <!-- Main Simulator Layout -->
   <div id="mainLayout" class="flex-container">
-    <!-- Left Pane: Simulator -->
     <div id="simulatorPane">
       <div id="chat-box"></div>
-
       <div class="input-row">
         <input type="text" id="user-input" placeholder="Type your response here..." />
         <button id="send-button">Send</button>
       </div>
-
       <div class="mic-section">
         <button id="mic-button">🎤</button>
         <div class="mic-toggles">
@@ -138,7 +167,6 @@
       </div>
     </div>
 
-    <!-- Right Pane: Skill Sheet -->
     <div id="skillSheetPane">
       <h3>Skill Sheet (Live)</h3>
       <ul id="skillChecklist">
@@ -152,27 +180,6 @@
       </ul>
     </div>
   </div>
-
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
-      authDomain: "ems-code-sim.firebaseapp.com",
-      databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
-      projectId: "ems-code-sim",
-      storageBucket: "ems-code-sim.appspot.com",
-      messagingSenderId: "190498607578",
-      appId: "1:190498607578:web:4cf6c8e999b027956070e3",
-      measurementId: "G-2Q3ZT01YT1"
-    };
-    firebase.initializeApp(firebaseConfig);
-  </script>
-
-  <!-- App Scripts -->
-  <script type="module" src="scripts/app.js"></script>
-  <script type="module" src="scripts/grading.js"></script>
 
 </body>
 </html>
