@@ -168,15 +168,15 @@
     </div>
   </div>
 
-  <!-- ✅ Working Script Connections -->
+  <!-- Scripts -->
   <script src="scripts/app.js" type="module"></script>
   <script src="scripts/grading.js" type="module"></script>
 
-  <!-- ✅ Working Button Logic -->
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const toggle = document.getElementById("learningModeToggle");
       const skillPane = document.getElementById("skillSheetPane");
+
       if (toggle && skillPane) {
         toggle.addEventListener("change", () => {
           document.body.classList.toggle("learning-mode", toggle.checked);
