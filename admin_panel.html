@@ -32,5 +32,66 @@
 <div id="responsesContainer"></div>
 
 <script src="admin_panel.js"></script>
+
+<script>
+function renderReviewCard(key, data) {
+  const container = document.getElementById("responsesContainer");
+  const card = document.createElement("div");
+  card.className = "response";
+  card.innerHTML = `
+    <strong>Question:</strong> <div contenteditable="true" id="q-${key}">${data.question || ''}</div>
+    <strong>Response:</strong> <div contenteditable="true" id="r-${key}">${data.response || ''}</div>
+    <strong>Score Category:</strong> <div contenteditable="true" id="cat-${key}">${data.scoreCategory || ''}</div>
+    <strong>Points:</strong> <div contenteditable="true" id="pts-${key}">${data.points || '1'}</div>
+    <strong>Critical Fail:</strong> <div contenteditable="true" id="cf-${key}">${data.criticalFail || 'false'}</div>
+    <button onclick="saveReview('${key}')">✅ Save</button>
+    <button onclick="deleteReview('${key}')">🗑 Delete</button>
+  `;
+  container.appendChild(card);
+}
+
+async function loadReviewTab() {
+  const snap = await db.ref("hardcodedReview").once("value");
+  document.getElementById("responsesContainer").innerHTML = "";
+  snap.forEach(child => {
+    renderReviewCard(child.key, child.val());
+  });
+}
+
+async function saveReview(key) {
+  const update = {
+    question: document.getElementById(`q-${key}`).innerText,
+    response: document.getElementById(`r-${key}`).innerText,
+    scoreCategory: document.getElementById(`cat-${key}`).innerText,
+    points: parseInt(document.getElementById(`pts-${key}`).innerText),
+    criticalFail: document.getElementById(`cf-${key}`).innerText === "true"
+  };
+  await db.ref(`hardcodedResponses/${key}`).set(update);
+  await db.ref(`hardcodedReview/${key}`).remove();
+  alert("Saved and moved to hardcodedResponses.");
+  location.reload();
+}
+
+async function deleteReview(key) {
+  await db.ref(`hardcodedReview/${key}`).remove();
+  alert("Deleted from review list.");
+  location.reload();
+}
+
+function switchTab(tab) {
+  document.getElementById("tab-approved").classList.remove("active");
+  document.getElementById("tab-review").classList.remove("active");
+  document.getElementById(`tab-${tab}`).classList.add("active");
+
+  if (tab === "review") {
+    loadReviewTab();
+  } else {
+    location.reload(); // Reuse default approved display logic in JS
+  }
+}
+
+window.onload = () => switchTab('approved');
+</script>
+
 </body>
 </html>
