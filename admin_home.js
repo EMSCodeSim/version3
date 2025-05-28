@@ -1,7 +1,8 @@
-import { initializeApp } from "firebase/app";
-import { getDatabase, ref, get, update, remove } from "firebase/database";
+// admin_home.js
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getDatabase, ref, get, set, push, remove, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
 
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
   authDomain: "ems-code-sim.firebaseapp.com",
@@ -9,97 +10,158 @@ const firebaseConfig = {
   projectId: "ems-code-sim",
   storageBucket: "ems-code-sim.appspot.com",
   messagingSenderId: "190498607578",
-  appId: "1:190498607578:web:4cf6c8e999b027956070e3",
-  measurementId: "G-2Q3ZT01YT1"
+  appId: "1:190498607578:web:4cf6c8e999b027956070e3"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const storage = getStorage(app);
 
-const validSkillSheet = [ // abbreviated list, full version in previous message
-  { id: "1", name: "BSI Scene Safe", points: 1 },
-  { id: "2", name: "Scene Safety", points: 1 },
-  ...
-];
+let currentTab = "approved";
 
-function suggestCategory(text) {
-  if (!text) return "Missing";
-  const lower = text.toLowerCase();
-  const match = validSkillSheet.find(item => lower.includes(item.name.toLowerCase()));
-  return match ? match.name : "Unknown";
+window.switchTab = function(tab) {
+  currentTab = tab;
+  if (tab === "approved") loadApprovedResponses();
+  else loadReviewResponses();
+};
+
+async function loadApprovedResponses() {
+  const dbRef = ref(db, "hardcodedResponses");
+  const list = document.getElementById("response-list");
+  list.innerHTML = "<b>Loading...</b>";
+  try {
+    const snap = await get(dbRef);
+    let html = "";
+    if (snap.exists()) {
+      snap.forEach(child => {
+        const val = child.val();
+        const id = child.key;
+        html += `
+          <div class="response-block">
+            <div><b>Question:</b> ${val.question || "<i>Missing</i>"}</div>
+            <div><b>Answer:</b> ${val.answer || val.response || "<i>Missing</i>"}</div>
+            <div><b>Role:</b> ${val.role || "<i>patient</i>"}</div>
+            <div><b>Tags:</b> ${val.tags ? val.tags.join(", ") : "<span style='color:red'>❌ Missing</span>"}</div>
+            <div><b>SkillSheetID:</b> ${val.skillSheetID || "<span style='color:red'>❌ Missing</span>"}</div>
+            <div><b>Score Category:</b> ${val.scoreCategory || "<span style='color:red'>❌ Missing</span>"}</div>
+            <div><b>Points:</b> ${val.points !== undefined ? val.points : "<span style='color:red'>❌ Missing</span>"}</div>
+            <div><b>Critical Fail:</b> ${val.criticalFail ? "✅ Yes" : "❌ No"}</div>
+            <div><b>Trigger:</b> ${val.trigger || "<span style='color:red'>❌ Missing</span>"}</div>
+            <div><b>Audio:</b><br>
+              ${val.ttsAudio ? `<audio controls src="data:audio/mp3;base64,${val.ttsAudio}"></audio>` : "<span style='color:red'>❌ Missing</span>"}
+            </div>
+            <button onclick="updateSingleResponse('${id}')">🛠 Update This Response</button>
+          </div>
+        `;
+      });
+    }
+    list.innerHTML = html || "<i>No approved responses found.</i>";
+  } catch (e) {
+    console.error("Error loading approved responses:", e);
+    list.innerHTML = "<span style='color:red;'>Failed to load approved responses.</span>";
+  }
 }
 
-function loadResponses() {
-  const reviewRef = ref(db, "hardcodedReview");
-  const approvedRef = ref(db, "hardcodedResponses");
+window.updateAllResponses = async function() {
+  const snap = await get(ref(db, "hardcodedResponses"));
+  if (!snap.exists()) return alert("No responses found.");
 
-  get(reviewRef).then(snapshot => {
-    if (snapshot.exists()) {
-      const data = snapshot.val();
-      Object.keys(data).forEach(key => renderResponseCard(key, data[key], true));
+  const updates = [];
+  snap.forEach(child => {
+    const data = child.val();
+    const key = child.key;
+    if (!data.tags || !data.skillSheetID || data.points === undefined || !data.ttsAudio) {
+      updates.push({ key, data });
     }
   });
 
-  get(approvedRef).then(snapshot => {
-    if (snapshot.exists()) {
-      const data = snapshot.val();
-      Object.keys(data).forEach(key => renderResponseCard(key, data[key], false));
+  for (const { key, data } of updates) {
+    await updateSingleResponse(key, data);
+  }
+
+  alert("✅ All missing info has been updated.");
+};
+
+window.updateSingleResponse = async function(id, existingData = null) {
+  const refPath = ref(db, `hardcodedResponses/${id}`);
+  let val = existingData || (await get(refPath)).val();
+  if (!val) return;
+
+  try {
+    const res = await fetch("/.netlify/functions/gpt_tags_score", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userInput: val.question || val.userQuestion || "",
+        answer: val.answer || val.response || ""
+      })
+    });
+
+    const raw = await res.text();
+    console.log("🔎 GPT raw output:", raw);
+    const data = JSON.parse(raw);
+
+    val.tags = val.tags || data.tags;
+    val.scoreCategory = val.scoreCategory || data.scoreCategory;
+    val.points = val.points !== undefined ? val.points : data.points;
+    val.criticalFail = val.criticalFail !== undefined ? data.criticalFail : false;
+
+    function getSkillSheetIDFromTags(tags) {
+      const map = {
+        pulse: "EMT-B-MED-19",
+        bp: "EMT-B-MED-20",
+        respirations: "EMT-B-MED-21",
+        oxygen: "EMT-B-MED-36",
+        aspirin: "EMT-B-MED-37",
+        glucose: "EMT-B-MED-37",
+        avpu: "EMT-B-MED-15",
+        general_impression: "EMT-B-MED-13",
+        transport_decision: "EMT-B-MED-33",
+        onset: "EMT-B-MED-25",
+        quality: "EMT-B-MED-26",
+        radiation: "EMT-B-MED-27",
+        severity: "EMT-B-MED-28",
+        time: "EMT-B-MED-29",
+        allergies: "EMT-B-MED-30",
+        medications: "EMT-B-MED-31",
+        history: "EMT-B-MED-32",
+        chief_complaint: "EMT-B-MED-24",
+        interventions: "EMT-B-MED-35"
+      };
+      if (!tags || !Array.isArray(tags)) return null;
+      for (const tag of tags) {
+        if (map[tag.toLowerCase()]) return map[tag.toLowerCase()];
+      }
+      return null;
     }
-  });
-}
 
-function renderResponseCard(key, data, isReview) {
-  const container = document.getElementById("responsesContainer");
+    val.skillSheetID = val.skillSheetID || getSkillSheetIDFromTags(val.tags);
+    console.log("📌 skillSheetID set to:", val.skillSheetID);
+  } catch (err) {
+    console.warn("❌ GPT failed:", err.message);
+  }
 
-  const invalidCategory = !data.scoreCategory || data.scoreCategory === "Assessment";
-  const missingResponse = !data.response;
+  try {
+    const updatePayload = {
+      question: val.question || val.userQuestion || "",
+      answer: val.answer || val.response || "",
+      tags: val.tags || [],
+      scoreCategory: val.scoreCategory || null,
+      points: val.points ?? null,
+      criticalFail: val.criticalFail ?? false,
+      role: val.role || "patient",
+      ttsAudio: val.ttsAudio || null,
+      trigger: val.trigger || val.triggerFileURL || null,
+      skillSheetID: val.skillSheetID || null
+    };
 
-  const div = document.createElement("div");
-  div.className = "response" + (invalidCategory || missingResponse ? " missing" : "");
+    await set(refPath, updatePayload);
+    console.log(`✅ Updated: ${id}`);
+  } catch (err) {
+    console.error("❌ Firebase write failed:", err.message);
+  }
 
-  div.innerHTML = `
-    <div><strong>Question:</strong> <div contenteditable="true" id="q-${key}">${data.question || "Missing"}</div></div>
-    <div><strong>Response:</strong> <div contenteditable="true" id="r-${key}">${data.response || "Missing"}</div></div>
-    <div><strong>Score Category:</strong> <div contenteditable="true" id="cat-${key}">${data.scoreCategory || "Missing"}</div></div>
-    <div><strong>Points:</strong> <div contenteditable="true" id="pts-${key}">${data.points ?? "1"}</div></div>
-    <div><strong>Critical Fail:</strong> <div contenteditable="true" id="cf-${key}">${data.criticalFail ?? "false"}</div></div>
-    <div><strong>Role:</strong> <div contenteditable="true" id="role-${key}">${data.role || "Unknown"}</div></div>
-    <div><strong>Tags:</strong> <div contenteditable="true" id="tags-${key}">${Array.isArray(data.tags) ? data.tags.join(", ") : (data.tags || "")}</div></div>
-    <div><strong>Trigger:</strong> <div contenteditable="true" id="trig-${key}">${data.trigger || ""}</div></div>
-    <div><strong>TTS Audio:</strong> ${data.ttsAudio ? `<audio controls src="${data.ttsAudio}"></audio>` : "None"}</div>
-    ${isReview
-      ? `<button onclick="saveResponse('${key}')">✅ Approve</button>
-         <button onclick="deleteResponse('${key}', 'hardcodedReview')">🗑 Delete</button>`
-      : `<button onclick="deleteResponse('${key}', 'hardcodedResponses')">🗑 Delete</button>`}
-  `;
-  container.appendChild(div);
-}
+  loadApprovedResponses();
+};
 
-window.saveResponse = function (key) {
-  const question = document.getElementById(`q-${key}`).innerText;
-  const response = document.getElementById(`r-${key}`).innerText;
-  const scoreCategory = document.getElementById(`cat-${key}`).innerText;
-  const points = parseInt(document.getElementById(`pts-${key}`).innerText) || 0;
-  const criticalFail = document.getElementById(`cf-${key}`).innerText === "true";
-  const role = document.getElementById(`role-${key}`).innerText;
-  const tags = document.getElementById(`tags-${key}`).innerText.split(",").map(tag => tag.trim());
-  const trigger = document.getElementById(`trig-${key}`).innerText;
-
-  const approvedRef = ref(db, `hardcodedResponses/${key}`);
-  const reviewRef = ref(db, `hardcodedReview/${key}`);
-
-  update(approvedRef, {
-    question, response, scoreCategory, points, criticalFail,
-    role, tags, trigger
-  }).then(() => remove(reviewRef));
-}
-
-window.deleteResponse = function (key, path) {
-  const delRef = ref(db, `${path}/${key}`);
-  remove(delRef).then(() => {
-    document.getElementById("responsesContainer").innerHTML = "";
-    loadResponses();
-  });
-}
-
-window.onload = loadResponses;
+window.onload = () => switchTab(currentTab);
