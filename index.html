@@ -139,6 +139,21 @@
     max-width: 60%;
   }
 }
+
+
+body.learning-mode #user-input {
+  max-width: 60%;
+}
+body.learning-mode #mainLayout {
+  height: calc(100vh - 200px);
+}
+body.learning-mode #skillSheetPane {
+  display: block !important;
+  height: 100%;
+  background: #f9f9f9;
+  border-left: 2px solid #ccc;
+  padding-left: 16px;
+}
 </style>
 <style>
 .flex-container {
@@ -266,7 +281,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   </script>
 <!-- Learning Mode Toggle -->
-
 <!-- Main Split Layout -->
 <div class="flex-container" id="mainLayout" style="display: flex; flex-direction: row; height: 100%; align-items: flex-start; gap: 20px;">
 <div id="simulatorPane">
@@ -276,7 +290,7 @@ document.addEventListener("DOMContentLoaded", function () {
 </div>
 <!-- Existing simulator content should go here -->
 </div>
-<div id="skillSheetPane" style="flex: 1; height: 100%; overflow-y: auto; background: #f4f4f4; border-radius: 8px; padding: 12px;">
+<div id="skillSheetPane">
 <h3>Skill Sheet (Live)</h3>
 <ul id="skillChecklist">
 <li id="EMT-B-MED-13">General Impression <span class="status"></span></li>
