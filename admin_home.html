@@ -63,5 +63,55 @@
   <div id="response-list">Loading...</div>
 
   <script type="module" src="/admin_home.js"></script>
+
+<div id="responseList"></div>
+
+<script>
+function renderResponseCard(key, data) {
+  const container = document.getElementById("responseList");
+  const card = document.createElement("div");
+  card.className = "response-card";
+  card.innerHTML = `
+    <div><strong>Question:</strong> <div contenteditable="true" id="q-${key}">${data.question || ''}</div></div>
+    <div><strong>Response:</strong> <div contenteditable="true" id="r-${key}">${data.response || ''}</div></div>
+    <div><strong>Score Category:</strong> <div contenteditable="true" id="cat-${key}">${data.scoreCategory || ''}</div></div>
+    <div><strong>Points:</strong> <div contenteditable="true" id="pts-${key}">${data.points || '1'}</div></div>
+    <div><strong>Critical Fail:</strong> <div contenteditable="true" id="cf-${key}">${data.criticalFail || 'false'}</div></div>
+    <button onclick="saveResponse('${key}')">✅ Save</button>
+    <button onclick="deleteResponse('${key}')">🗑 Delete</button>
+  `;
+  container.appendChild(card);
+}
+
+async function loadReviewResponses() {
+  const snap = await db.ref("hardcodedReview").once("value");
+  snap.forEach(child => {
+    renderResponseCard(child.key, child.val());
+  });
+}
+
+async function saveResponse(key) {
+  const update = {
+    question: document.getElementById(`q-${key}`).innerText,
+    response: document.getElementById(`r-${key}`).innerText,
+    scoreCategory: document.getElementById(`cat-${key}`).innerText,
+    points: parseInt(document.getElementById(`pts-${key}`).innerText),
+    criticalFail: document.getElementById(`cf-${key}`).innerText === "true"
+  };
+  await db.ref(`hardcodedResponses/${key}`).set(update);
+  await db.ref(`hardcodedReview/${key}`).remove();
+  alert("Response saved and moved to hardcodedResponses.");
+  location.reload();
+}
+
+async function deleteResponse(key) {
+  await db.ref(`hardcodedReview/${key}`).remove();
+  alert("Deleted from review list.");
+  location.reload();
+}
+
+window.onload = loadReviewResponses;
+</script>
+
 </body>
 </html>
