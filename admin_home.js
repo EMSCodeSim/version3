@@ -1,167 +1,142 @@
-// admin_home.js
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getDatabase, ref, get, set, push, remove, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
-import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
+// ✅ Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
   authDomain: "ems-code-sim.firebaseapp.com",
   databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
   projectId: "ems-code-sim",
-  storageBucket: "ems-code-sim.appspot.com",
+  storageBucket: "ems-code-sim.firebasestorage.app",
   messagingSenderId: "190498607578",
-  appId: "1:190498607578:web:4cf6c8e999b027956070e3"
+  appId: "1:190498607578:web:4cf6c8e999b027956070e3",
+  measurementId: "G-2Q3ZT01YT1"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const storage = getStorage(app);
-
 let currentTab = "approved";
 
-window.switchTab = function(tab) {
-  currentTab = tab;
-  if (tab === "approved") loadApprovedResponses();
-  else loadReviewResponses();
-};
+// 🔢 Example NREMT skills
+const validSkillSheet = [
+  { id: "1", name: "BSI Scene Safe" },
+  { id: "2", name: "Scene Safety" },
+  { id: "3", name: "Determines MOI/NOI" },
+  { id: "4", name: "Determines Number of Patients" },
+  { id: "5", name: "Requests Additional EMS Assistance" },
+  { id: "6", name: "Considers C-Spine Stabilization" },
+  { id: "7", name: "General Impression" },
+  { id: "8", name: "Determines Chief Complaint" },
+  { id: "9", name: "Assesses Airway" }
+];
 
-async function loadApprovedResponses() {
-  const dbRef = ref(db, "hardcodedResponses");
-  const list = document.getElementById("response-list");
-  list.innerHTML = "<b>Loading...</b>";
-  try {
-    const snap = await get(dbRef);
-    let html = "";
-    if (snap.exists()) {
-      snap.forEach(child => {
-        const val = child.val();
-        const id = child.key;
-        html += `
-          <div class="response-block">
-            <div><b>Question:</b> ${val.question || "<i>Missing</i>"}</div>
-            <div><b>Answer:</b> ${val.answer || val.response || "<i>Missing</i>"}</div>
-            <div><b>Role:</b> ${val.role || "<i>patient</i>"}</div>
-            <div><b>Tags:</b> ${val.tags ? val.tags.join(", ") : "<span style='color:red'>❌ Missing</span>"}</div>
-            <div><b>SkillSheetID:</b> ${val.skillSheetID || "<span style='color:red'>❌ Missing</span>"}</div>
-            <div><b>Score Category:</b> ${val.scoreCategory || "<span style='color:red'>❌ Missing</span>"}</div>
-            <div><b>Points:</b> ${val.points !== undefined ? val.points : "<span style='color:red'>❌ Missing</span>"}</div>
-            <div><b>Critical Fail:</b> ${val.criticalFail ? "✅ Yes" : "❌ No"}</div>
-            <div><b>Trigger:</b> ${val.trigger || "<span style='color:red'>❌ Missing</span>"}</div>
-            <div><b>Audio:</b><br>
-              ${val.ttsAudio ? `<audio controls src="data:audio/mp3;base64,${val.ttsAudio}"></audio>` : "<span style='color:red'>❌ Missing</span>"}
-            </div>
-            <button onclick="updateSingleResponse('${id}')">🛠 Update This Response</button>
-          </div>
-        `;
-      });
-    }
-    list.innerHTML = html || "<i>No approved responses found.</i>";
-  } catch (e) {
-    console.error("Error loading approved responses:", e);
-    list.innerHTML = "<span style='color:red;'>Failed to load approved responses.</span>";
+// 🧠 Auto-suggest from known score categories
+function suggestCategory(data) {
+  const combined = `${data.question} ${data.response}`.toLowerCase();
+  for (let item of validSkillSheet) {
+    if (combined.includes(item.name.toLowerCase())) return item.name;
   }
+  return "";
 }
 
-window.updateAllResponses = async function() {
+// 🔁 Render each card
+function renderResponseCard(key, data, isReview = false) {
+  const container = document.getElementById("responsesContainer");
+
+  const isInvalid = !data.scoreCategory || data.scoreCategory.trim() === "" || data.scoreCategory.toLowerCase() === "assessment" || !data.response;
+
+  const div = document.createElement("div");
+  div.className = "response" + (isInvalid ? " missing" : "");
+
+  div.innerHTML = `
+    <div class="field"><strong>Question:</strong> <div contenteditable="true" id="q-${key}">${data.question || "Missing"}</div></div>
+    <div class="field"><strong>Response:</strong> <div contenteditable="true" id="r-${key}">${data.response || "Missing"}</div></div>
+    <div class="field"><strong>Score Category:</strong> <div contenteditable="true" id="cat-${key}">${data.scoreCategory || suggestCategory(data)}</div></div>
+    <div class="field"><strong>Points:</strong> <div contenteditable="true" id="pts-${key}">${data.points !== undefined ? data.points : 0}</div></div>
+    <div class="field"><strong>Critical Fail (true/false):</strong> <div contenteditable="true" id="cf-${key}">${data.criticalFail !== undefined ? data.criticalFail : "false"}</div></div>
+
+    <div class="field"><strong>Role:</strong> <div contenteditable="true" id="role-${key}">${data.role || "Patient"}</div></div>
+    <div class="field"><strong>Tags:</strong> <div contenteditable="true" id="tags-${key}">${Array.isArray(data.tags) ? data.tags.join(", ") : (data.tags || "")}</div></div>
+    <div class="field"><strong>Trigger:</strong> <div contenteditable="true" id="trigger-${key}">${data.trigger || ""}</div></div>
+
+    ${data.ttsAudio ? `
+      <div class="field"><strong>TTS Audio:</strong>
+        <audio controls src="${data.ttsAudio.startsWith("data:") ? data.ttsAudio : `data:audio/mp3;base64,${data.ttsAudio}`}"></audio>
+      </div>` : ''}
+
+    ${isReview
+      ? `<button onclick="saveResponse('${key}')">✅ Approve</button><button onclick="deleteResponse('${key}', 'hardcodedReview')">🗑 Delete</button>`
+      : `<button onclick="deleteResponse('${key}', 'hardcodedResponses')">🗑 Delete</button>`}
+  `;
+
+  container.appendChild(div);
+}
+
+// 🔁 Load from database
+window.loadApproved = async function () {
+  currentTab = "approved";
+  switchTabs();
   const snap = await get(ref(db, "hardcodedResponses"));
-  if (!snap.exists()) return alert("No responses found.");
+  document.getElementById("responsesContainer").innerHTML = "";
+  snap.forEach(child => renderResponseCard(child.key, child.val(), false));
+};
 
-  const updates = [];
+window.loadReview = async function () {
+  currentTab = "review";
+  switchTabs();
+  const snap = await get(ref(db, "hardcodedReview"));
+  document.getElementById("responsesContainer").innerHTML = "";
+  snap.forEach(child => renderResponseCard(child.key, child.val(), true));
+};
+
+// 💾 Save to hardcodedResponses
+window.saveResponse = async function (key) {
+  const build = id => document.getElementById(`${id}-${key}`)?.innerText.trim();
+
+  const updated = {
+    question: build("q"),
+    response: build("r"),
+    scoreCategory: build("cat"),
+    points: parseInt(build("pts")) || 0,
+    criticalFail: build("cf") === "true",
+    role: build("role"),
+    tags: build("tags")?.split(",").map(t => t.trim()).filter(t => t),
+    trigger: build("trigger")
+  };
+
+  await set(ref(db, `hardcodedResponses/${key}`), updated);
+  await remove(ref(db, `hardcodedReview/${key}`));
+  alert("✅ Saved and moved to Approved.");
+  location.reload();
+};
+
+// 🗑 Delete any entry
+window.deleteResponse = async function (key, path) {
+  await remove(ref(db, `${path}/${key}`));
+  alert("🗑 Deleted.");
+  location.reload();
+};
+
+// 🔍 Validate for missing or vague fields
+window.updateAllResponses = async function () {
+  const snap = await get(ref(db, "hardcodedReview"));
+  const issues = [];
   snap.forEach(child => {
-    const data = child.val();
-    const key = child.key;
-    if (!data.tags || !data.skillSheetID || data.points === undefined || !data.ttsAudio) {
-      updates.push({ key, data });
-    }
+    const val = child.val();
+    if (!val.response || val.response.trim() === "") issues.push(`${child.key} — Missing response`);
+    if (!val.scoreCategory || val.scoreCategory.toLowerCase() === "assessment") issues.push(`${child.key} — Invalid scoreCategory`);
+    if (val.points === undefined) issues.push(`${child.key} — Missing points`);
+    if (val.criticalFail === undefined) issues.push(`${child.key} — Missing criticalFail`);
   });
-
-  for (const { key, data } of updates) {
-    await updateSingleResponse(key, data);
+  if (issues.length === 0) {
+    alert("✅ All reviewed entries are properly tagged.");
+  } else {
+    alert("⚠️ Issues found:\n" + issues.join("\n"));
   }
-
-  alert("✅ All missing info has been updated.");
 };
 
-window.updateSingleResponse = async function(id, existingData = null) {
-  const refPath = ref(db, `hardcodedResponses/${id}`);
-  let val = existingData || (await get(refPath)).val();
-  if (!val) return;
-
-  try {
-    const res = await fetch("/.netlify/functions/gpt_tags_score", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userInput: val.question || val.userQuestion || "",
-        answer: val.answer || val.response || ""
-      })
-    });
-
-    const raw = await res.text();
-    console.log("🔎 GPT raw output:", raw);
-    const data = JSON.parse(raw);
-
-    val.tags = val.tags || data.tags;
-    val.scoreCategory = val.scoreCategory || data.scoreCategory;
-    val.points = val.points !== undefined ? val.points : data.points;
-    val.criticalFail = val.criticalFail !== undefined ? data.criticalFail : false;
-
-    function getSkillSheetIDFromTags(tags) {
-      const map = {
-        pulse: "EMT-B-MED-19",
-        bp: "EMT-B-MED-20",
-        respirations: "EMT-B-MED-21",
-        oxygen: "EMT-B-MED-36",
-        aspirin: "EMT-B-MED-37",
-        glucose: "EMT-B-MED-37",
-        avpu: "EMT-B-MED-15",
-        general_impression: "EMT-B-MED-13",
-        transport_decision: "EMT-B-MED-33",
-        onset: "EMT-B-MED-25",
-        quality: "EMT-B-MED-26",
-        radiation: "EMT-B-MED-27",
-        severity: "EMT-B-MED-28",
-        time: "EMT-B-MED-29",
-        allergies: "EMT-B-MED-30",
-        medications: "EMT-B-MED-31",
-        history: "EMT-B-MED-32",
-        chief_complaint: "EMT-B-MED-24",
-        interventions: "EMT-B-MED-35"
-      };
-      if (!tags || !Array.isArray(tags)) return null;
-      for (const tag of tags) {
-        if (map[tag.toLowerCase()]) return map[tag.toLowerCase()];
-      }
-      return null;
-    }
-
-    val.skillSheetID = val.skillSheetID || getSkillSheetIDFromTags(val.tags);
-    console.log("📌 skillSheetID set to:", val.skillSheetID);
-  } catch (err) {
-    console.warn("❌ GPT failed:", err.message);
-  }
-
-  try {
-    const updatePayload = {
-      question: val.question || val.userQuestion || "",
-      answer: val.answer || val.response || "",
-      tags: val.tags || [],
-      scoreCategory: val.scoreCategory || null,
-      points: val.points ?? null,
-      criticalFail: val.criticalFail ?? false,
-      role: val.role || "patient",
-      ttsAudio: val.ttsAudio || null,
-      trigger: val.trigger || val.triggerFileURL || null,
-      skillSheetID: val.skillSheetID || null
-    };
-
-    await set(refPath, updatePayload);
-    console.log(`✅ Updated: ${id}`);
-  } catch (err) {
-    console.error("❌ Firebase write failed:", err.message);
-  }
-
-  loadApprovedResponses();
-};
-
-window.onload = () => switchTab(currentTab);
+// 🧭 Highlight current tab
+function switchTabs() {
+  document.getElementById("approvedTab").classList.toggle("active", currentTab === "approved");
+  document.getElementById("reviewTab").classList.toggle("active", currentTab === "review");
+}
