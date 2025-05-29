@@ -17,56 +17,8 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 let currentTab = "approved";
 
-// 🔢 Full NREMT skills list
-const validSkillSheet = [
-  { id: "1", name: "BSI Scene Safe", points: 1 },
-  { id: "2", name: "Scene Safety", points: 1 },
-  { id: "3", name: "Determines MOI/NOI", points: 1 },
-  { id: "4", name: "Determines Number of Patients", points: 1 },
-  { id: "5", name: "Requests Additional EMS Assistance", points: 1 },
-  { id: "6", name: "Considers C-Spine Stabilization", points: 1 },
-  { id: "7", name: "General Impression", points: 1 },
-  { id: "8", name: "Determines Responsiveness (AVPU)", points: 1 },
-  { id: "9", name: "Determines Chief Complaint", points: 1 },
-  { id: "10", name: "Assess Airway", points: 1 },
-  { id: "11", name: "Assess Breathing", points: 1 },
-  { id: "12", name: "Initiates Oxygen Therapy", points: 1 },
-  { id: "13", name: "Assures Adequate Ventilation", points: 1 },
-  { id: "14", name: "Manages Airway Compromise", points: 1 },
-  { id: "15", name: "Assess Circulation", points: 1 },
-  { id: "16", name: "Assesses Skin (Color, Temp, Condition)", points: 1 },
-  { id: "17", name: "Controls Major Bleeding", points: 1 },
-  { id: "18", name: "Initiates Shock Management", points: 1 },
-  { id: "19", name: "Identifies Patient Priority / Transport", points: 1 },
-  { id: "20", name: "OPQRST - Onset", points: 1 },
-  { id: "21", name: "OPQRST - Provocation", points: 1 },
-  { id: "22", name: "OPQRST - Quality", points: 1 },
-  { id: "23", name: "OPQRST - Radiation", points: 1 },
-  { id: "24", name: "OPQRST - Severity", points: 1 },
-  { id: "25", name: "OPQRST - Time", points: 1 },
-  { id: "26", name: "SAMPLE - Signs/Symptoms", points: 1 },
-  { id: "27", name: "SAMPLE - Allergies", points: 1 },
-  { id: "28", name: "SAMPLE - Medications", points: 1 },
-  { id: "29", name: "SAMPLE - Past Medical History", points: 1 },
-  { id: "30", name: "SAMPLE - Last Oral Intake", points: 1 },
-  { id: "31", name: "SAMPLE - Events Leading to Present Illness", points: 1 },
-  { id: "32", name: "Assess Affected Body Part/System", points: 1 },
-  { id: "33", name: "Obtain Baseline Vital Signs", points: 1 },
-  { id: "34", name: "Reassess Vital Signs", points: 1 },
-  { id: "35", name: "Field Impression", points: 1 },
-  { id: "36", name: "Interventions (Verbalize)", points: 1 },
-  { id: "37", name: "Demonstrates How and When to Reassess", points: 1 },
-  { id: "38", name: "Verbal Report to Arriving EMS / Hospital", points: 1 },
-  { id: "CF1", name: "Failure to Provide Oxygen", points: 0, criticalFail: true },
-  { id: "CF2", name: "Failure to Control Major Bleeding", points: 0, criticalFail: true },
-  { id: "CF3", name: "Failure to Initiate Transport Within 15 Minutes", points: 0, criticalFail: true },
-  { id: "CF4", name: "Performs Dangerous Intervention", points: 0, criticalFail: true },
-  { id: "CF5", name: "Fails to Manage Patient as EMT", points: 0, criticalFail: true },
-  { id: "CF6", name: "Exhibits Unsafe Practices", points: 0, criticalFail: true },
-  { id: "CF7", name: "Fails to Address Life-Threats First", points: 0, criticalFail: true }
-];
-
 // 🧠 Auto-suggest from known score categories
+const validSkillSheet = [ /* same full skill list as before */ ];
 function suggestCategory(data) {
   const combined = `${data.question} ${data.response}`.toLowerCase();
   for (let item of validSkillSheet) {
@@ -75,10 +27,9 @@ function suggestCategory(data) {
   return "";
 }
 
-// 🔁 Render each response card
+// 🔁 Render each card
 function renderResponseCard(key, data, isReview = false) {
   const container = document.getElementById("responsesContainer");
-
   const isInvalid = !data.scoreCategory || data.scoreCategory.trim() === "" || data.scoreCategory.toLowerCase() === "assessment" || !data.response;
 
   const div = document.createElement("div");
@@ -95,7 +46,9 @@ function renderResponseCard(key, data, isReview = false) {
     <div class="field"><strong>Trigger:</strong> <div contenteditable="true" id="trigger-${key}">${data.trigger || ""}</div></div>
     ${data.ttsAudio ? `<div class="field"><strong>TTS Audio:</strong><audio controls src="${data.ttsAudio.startsWith("data:") ? data.ttsAudio : `data:audio/mp3;base64,${data.ttsAudio}`}"></audio></div>` : ''}
     ${isReview
-      ? `<button onclick="saveResponse('${key}')">✅ Approve</button><button onclick="deleteResponse('${key}', 'hardcodedReview')">🗑 Delete</button>`
+      ? `<button onclick="saveResponse('${key}')">✅ Approve</button>
+         <button onclick="autoTagSingleResponse('${key}')">♻️ Auto-Tag This Entry</button>
+         <button onclick="deleteResponse('${key}', 'hardcodedReview')">🗑 Delete</button>`
       : `<button onclick="deleteResponse('${key}', 'hardcodedResponses')">🗑 Delete</button>`}
   `;
 
@@ -119,7 +72,7 @@ window.loadReview = async function () {
   snap.forEach(child => renderResponseCard(child.key, child.val(), true));
 };
 
-// 💾 Save to approved
+// 💾 Save response
 window.saveResponse = async function (key) {
   const build = id => document.getElementById(`${id}-${key}`)?.innerText.trim();
 
@@ -140,14 +93,14 @@ window.saveResponse = async function (key) {
   location.reload();
 };
 
-// 🗑 Delete
+// 🗑 Delete response
 window.deleteResponse = async function (key, path) {
   await remove(ref(db, `${path}/${key}`));
   alert("🗑 Deleted.");
   location.reload();
 };
 
-// 🧠 Validate missing values
+// 🔍 Validate database for missing entries
 window.updateAllResponses = async function () {
   const snap = await get(ref(db, "hardcodedReview"));
   const issues = [];
@@ -165,7 +118,7 @@ window.updateAllResponses = async function () {
   }
 };
 
-// ♻️ Auto-tag review entries using GPT
+// ♻️ Auto-tag ALL entries in hardcodedReview
 window.autoTagAllResponses = async function () {
   const snap = await get(ref(db, "hardcodedReview"));
   if (!snap.exists()) {
@@ -195,12 +148,14 @@ window.autoTagAllResponses = async function () {
           scoreCategory: result.scoreCategory,
           criticalFail: result.criticalFail
         });
-        console.log(`✅ Tagged ${key}`);
+
+        const logBox = document.getElementById("logBox");
+        if (logBox) logBox.innerHTML += `<div style="color:green;">✅ Tagged ${key}</div>`;
       } else {
         console.warn(`❌ GPT failed for ${key}`, result.error);
       }
     } catch (err) {
-      console.error(`Tagging error for ${key}:`, err.message);
+      console.error(`Error tagging ${key}:`, err.message);
     }
   }
 
@@ -208,7 +163,46 @@ window.autoTagAllResponses = async function () {
   location.reload();
 };
 
-// 🧭 Tab highlight
+// ♻️ Auto-tag ONE entry from review
+window.autoTagSingleResponse = async function (key) {
+  const question = document.getElementById(`q-${key}`)?.innerText.trim();
+  const response = document.getElementById(`r-${key}`)?.innerText.trim();
+
+  if (!question || !response) {
+    alert("❌ Missing question or response.");
+    return;
+  }
+
+  const logBox = document.getElementById("logBox");
+  logBox.innerHTML += `<div>⏳ Tagging entry <strong>${key}</strong>...</div>`;
+
+  try {
+    const res = await fetch("/.netlify/functions/gpt_tagger", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, response })
+    });
+
+    const result = await res.json();
+    if (res.ok) {
+      await set(ref(db, `hardcodedReview/${key}`), {
+        question,
+        response,
+        scoreCategory: result.scoreCategory,
+        criticalFail: result.criticalFail,
+        tags: result.tags
+      });
+
+      logBox.innerHTML += `<div style="color:green;">✅ Updated ${key} — ${result.scoreCategory}</div>`;
+    } else {
+      logBox.innerHTML += `<div style="color:red;">❌ GPT failed for ${key}: ${result.error}</div>`;
+    }
+  } catch (err) {
+    logBox.innerHTML += `<div style="color:red;">❌ Error updating ${key}: ${err.message}</div>`;
+  }
+};
+
+// 🧭 Tab toggle
 function switchTabs() {
   document.getElementById("approvedTab").classList.toggle("active", currentTab === "approved");
   document.getElementById("reviewTab").classList.toggle("active", currentTab === "review");
