@@ -16,6 +16,15 @@
     .field { margin-bottom: 6px; }
     .field[contenteditable="true"] { background: #eef; padding: 4px; border-radius: 4px; }
     button { margin-right: 8px; margin-top: 4px; }
+    #logBox {
+      background: #f7f7f7;
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+    }
   </style>
 </head>
 <body>
@@ -26,6 +35,11 @@
     <button onclick="updateAllResponses()">🧠 Update Database</button>
     <button onclick="autoTagAllResponses()">♻️ Recheck & Auto-Tag All</button>
   </div>
+
   <div id="responsesContainer"></div>
+
+  <h3>📝 Update Log</h3>
+  <div id="logBox"></div>
 </body>
 </html>
+
