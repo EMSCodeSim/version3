@@ -19,15 +19,12 @@ let currentTab = "approved";
 
 // 🔢 Example NREMT skills
 const validSkillSheet = [
-  // Scene Size-Up
   { id: "1", name: "BSI Scene Safe", points: 1 },
   { id: "2", name: "Scene Safety", points: 1 },
   { id: "3", name: "Determines MOI/NOI", points: 1 },
   { id: "4", name: "Determines Number of Patients", points: 1 },
   { id: "5", name: "Requests Additional EMS Assistance", points: 1 },
   { id: "6", name: "Considers C-Spine Stabilization", points: 1 },
-
-  // Primary Assessment
   { id: "7", name: "General Impression", points: 1 },
   { id: "8", name: "Determines Responsiveness (AVPU)", points: 1 },
   { id: "9", name: "Determines Chief Complaint", points: 1 },
@@ -41,8 +38,6 @@ const validSkillSheet = [
   { id: "17", name: "Controls Major Bleeding", points: 1 },
   { id: "18", name: "Initiates Shock Management", points: 1 },
   { id: "19", name: "Identifies Patient Priority / Transport", points: 1 },
-
-  // History Taking
   { id: "20", name: "OPQRST - Onset", points: 1 },
   { id: "21", name: "OPQRST - Provocation", points: 1 },
   { id: "22", name: "OPQRST - Quality", points: 1 },
@@ -55,21 +50,13 @@ const validSkillSheet = [
   { id: "29", name: "SAMPLE - Past Medical History", points: 1 },
   { id: "30", name: "SAMPLE - Last Oral Intake", points: 1 },
   { id: "31", name: "SAMPLE - Events Leading to Present Illness", points: 1 },
-
-  // Secondary Assessment
   { id: "32", name: "Assess Affected Body Part/System", points: 1 },
   { id: "33", name: "Obtain Baseline Vital Signs", points: 1 },
   { id: "34", name: "Reassess Vital Signs", points: 1 },
   { id: "35", name: "Field Impression", points: 1 },
   { id: "36", name: "Interventions (Verbalize)", points: 1 },
-
-  // Reassessment
   { id: "37", name: "Demonstrates How and When to Reassess", points: 1 },
-
-  // Communication
   { id: "38", name: "Verbal Report to Arriving EMS / Hospital", points: 1 },
-
-  // Critical Failures (manually triggered if necessary)
   { id: "CF1", name: "Failure to Provide Oxygen", points: 0, criticalFail: true },
   { id: "CF2", name: "Failure to Control Major Bleeding", points: 0, criticalFail: true },
   { id: "CF3", name: "Failure to Initiate Transport Within 15 Minutes", points: 0, criticalFail: true },
@@ -79,8 +66,6 @@ const validSkillSheet = [
   { id: "CF7", name: "Fails to Address Life-Threats First", points: 0, criticalFail: true }
 ];
 
-
-// 🧠 Auto-suggest from known score categories
 function suggestCategory(data) {
   const combined = `${data.question} ${data.response}`.toLowerCase();
   for (let item of validSkillSheet) {
@@ -89,7 +74,6 @@ function suggestCategory(data) {
   return "";
 }
 
-// 🔁 Render each card
 function renderResponseCard(key, data, isReview = false) {
   const container = document.getElementById("responsesContainer");
 
@@ -104,16 +88,13 @@ function renderResponseCard(key, data, isReview = false) {
     <div class="field"><strong>Score Category:</strong> <div contenteditable="true" id="cat-${key}">${data.scoreCategory || suggestCategory(data)}</div></div>
     <div class="field"><strong>Points:</strong> <div contenteditable="true" id="pts-${key}">${data.points !== undefined ? data.points : 0}</div></div>
     <div class="field"><strong>Critical Fail (true/false):</strong> <div contenteditable="true" id="cf-${key}">${data.criticalFail !== undefined ? data.criticalFail : "false"}</div></div>
-
     <div class="field"><strong>Role:</strong> <div contenteditable="true" id="role-${key}">${data.role || "Patient"}</div></div>
     <div class="field"><strong>Tags:</strong> <div contenteditable="true" id="tags-${key}">${Array.isArray(data.tags) ? data.tags.join(", ") : (data.tags || "")}</div></div>
     <div class="field"><strong>Trigger:</strong> <div contenteditable="true" id="trigger-${key}">${data.trigger || ""}</div></div>
-
     ${data.ttsAudio ? `
       <div class="field"><strong>TTS Audio:</strong>
         <audio controls src="${data.ttsAudio.startsWith("data:") ? data.ttsAudio : `data:audio/mp3;base64,${data.ttsAudio}`}"></audio>
       </div>` : ''}
-
     ${isReview
       ? `<button onclick="saveResponse('${key}')">✅ Approve</button><button onclick="deleteResponse('${key}', 'hardcodedReview')">🗑 Delete</button>`
       : `<button onclick="deleteResponse('${key}', 'hardcodedResponses')">🗑 Delete</button>`}
@@ -122,7 +103,6 @@ function renderResponseCard(key, data, isReview = false) {
   container.appendChild(div);
 }
 
-// 🔁 Load from database
 window.loadApproved = async function () {
   currentTab = "approved";
   switchTabs();
@@ -139,7 +119,6 @@ window.loadReview = async function () {
   snap.forEach(child => renderResponseCard(child.key, child.val(), true));
 };
 
-// 💾 Save to hardcodedResponses
 window.saveResponse = async function (key) {
   const build = id => document.getElementById(`${id}-${key}`)?.innerText.trim();
 
@@ -160,14 +139,12 @@ window.saveResponse = async function (key) {
   location.reload();
 };
 
-// 🗑 Delete any entry
 window.deleteResponse = async function (key, path) {
   await remove(ref(db, `${path}/${key}`));
   alert("🗑 Deleted.");
   location.reload();
 };
 
-// 🔍 Validate for missing or vague fields
 window.updateAllResponses = async function () {
   const snap = await get(ref(db, "hardcodedReview"));
   const issues = [];
@@ -185,7 +162,45 @@ window.updateAllResponses = async function () {
   }
 };
 
-// 🧭 Highlight current tab
+// 🧠 Auto-tag everything in review
+window.autoTagAllResponses = async function () {
+  const snap = await get(ref(db, "hardcodedReview"));
+  const updates = [];
+
+  for (const child of snap._node.children.values()) {
+    const key = child.key;
+    const val = child.value.value_;
+
+    if (!val.response || !val.question) continue;
+
+    try {
+      const res = await fetch("/.netlify/functions/gpt_tagger", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: val.question, response: val.response })
+      });
+
+      const result = await res.json();
+      if (res.ok) {
+        await set(ref(db, `hardcodedReview/${key}`), {
+          ...val,
+          tags: result.tags,
+          scoreCategory: result.scoreCategory,
+          criticalFail: result.criticalFail
+        });
+        console.log(`✅ Updated ${key}`);
+      } else {
+        console.warn(`⚠️ GPT failed for ${key}`, result.error);
+      }
+    } catch (err) {
+      console.error("Tagging error for", key, err.message);
+    }
+  }
+
+  alert("✅ Auto-tagging complete!");
+  location.reload();
+};
+
 function switchTabs() {
   document.getElementById("approvedTab").classList.toggle("active", currentTab === "approved");
   document.getElementById("reviewTab").classList.toggle("active", currentTab === "review");
