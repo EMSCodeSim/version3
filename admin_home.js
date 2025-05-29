@@ -17,7 +17,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 let currentTab = "approved";
 
-// 🔢 Example NREMT skills
+// 🔢 Full NREMT skills list
 const validSkillSheet = [
   { id: "1", name: "BSI Scene Safe", points: 1 },
   { id: "2", name: "Scene Safety", points: 1 },
@@ -66,6 +66,7 @@ const validSkillSheet = [
   { id: "CF7", name: "Fails to Address Life-Threats First", points: 0, criticalFail: true }
 ];
 
+// 🧠 Auto-suggest from known score categories
 function suggestCategory(data) {
   const combined = `${data.question} ${data.response}`.toLowerCase();
   for (let item of validSkillSheet) {
@@ -74,6 +75,7 @@ function suggestCategory(data) {
   return "";
 }
 
+// 🔁 Render each response card
 function renderResponseCard(key, data, isReview = false) {
   const container = document.getElementById("responsesContainer");
 
@@ -91,10 +93,7 @@ function renderResponseCard(key, data, isReview = false) {
     <div class="field"><strong>Role:</strong> <div contenteditable="true" id="role-${key}">${data.role || "Patient"}</div></div>
     <div class="field"><strong>Tags:</strong> <div contenteditable="true" id="tags-${key}">${Array.isArray(data.tags) ? data.tags.join(", ") : (data.tags || "")}</div></div>
     <div class="field"><strong>Trigger:</strong> <div contenteditable="true" id="trigger-${key}">${data.trigger || ""}</div></div>
-    ${data.ttsAudio ? `
-      <div class="field"><strong>TTS Audio:</strong>
-        <audio controls src="${data.ttsAudio.startsWith("data:") ? data.ttsAudio : `data:audio/mp3;base64,${data.ttsAudio}`}"></audio>
-      </div>` : ''}
+    ${data.ttsAudio ? `<div class="field"><strong>TTS Audio:</strong><audio controls src="${data.ttsAudio.startsWith("data:") ? data.ttsAudio : `data:audio/mp3;base64,${data.ttsAudio}`}"></audio></div>` : ''}
     ${isReview
       ? `<button onclick="saveResponse('${key}')">✅ Approve</button><button onclick="deleteResponse('${key}', 'hardcodedReview')">🗑 Delete</button>`
       : `<button onclick="deleteResponse('${key}', 'hardcodedResponses')">🗑 Delete</button>`}
@@ -103,6 +102,7 @@ function renderResponseCard(key, data, isReview = false) {
   container.appendChild(div);
 }
 
+// 🔁 Load entries
 window.loadApproved = async function () {
   currentTab = "approved";
   switchTabs();
@@ -119,6 +119,7 @@ window.loadReview = async function () {
   snap.forEach(child => renderResponseCard(child.key, child.val(), true));
 };
 
+// 💾 Save to approved
 window.saveResponse = async function (key) {
   const build = id => document.getElementById(`${id}-${key}`)?.innerText.trim();
 
@@ -139,12 +140,14 @@ window.saveResponse = async function (key) {
   location.reload();
 };
 
+// 🗑 Delete
 window.deleteResponse = async function (key, path) {
   await remove(ref(db, `${path}/${key}`));
   alert("🗑 Deleted.");
   location.reload();
 };
 
+// 🧠 Validate missing values
 window.updateAllResponses = async function () {
   const snap = await get(ref(db, "hardcodedReview"));
   const issues = [];
@@ -162,15 +165,19 @@ window.updateAllResponses = async function () {
   }
 };
 
-// 🧠 Auto-tag everything in review
+// ♻️ Auto-tag review entries using GPT
 window.autoTagAllResponses = async function () {
   const snap = await get(ref(db, "hardcodedReview"));
-  const updates = [];
+  if (!snap.exists()) {
+    alert("⚠️ No review entries found.");
+    return;
+  }
 
-  for (const child of snap._node.children.values()) {
-    const key = child.key;
-    const val = child.value.value_;
+  const data = snap.val();
+  const keys = Object.keys(data);
 
+  for (const key of keys) {
+    const val = data[key];
     if (!val.response || !val.question) continue;
 
     try {
@@ -188,12 +195,12 @@ window.autoTagAllResponses = async function () {
           scoreCategory: result.scoreCategory,
           criticalFail: result.criticalFail
         });
-        console.log(`✅ Updated ${key}`);
+        console.log(`✅ Tagged ${key}`);
       } else {
-        console.warn(`⚠️ GPT failed for ${key}`, result.error);
+        console.warn(`❌ GPT failed for ${key}`, result.error);
       }
     } catch (err) {
-      console.error("Tagging error for", key, err.message);
+      console.error(`Tagging error for ${key}:`, err.message);
     }
   }
 
@@ -201,6 +208,7 @@ window.autoTagAllResponses = async function () {
   location.reload();
 };
 
+// 🧭 Tab highlight
 function switchTabs() {
   document.getElementById("approvedTab").classList.toggle("active", currentTab === "approved");
   document.getElementById("reviewTab").classList.toggle("active", currentTab === "review");
