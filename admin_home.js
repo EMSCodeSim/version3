@@ -19,15 +19,64 @@ let currentTab = "approved";
 
 // 🔢 Example NREMT skills
 const validSkillSheet = [
-  { id: "1", name: "BSI Scene Safe" },
-  { id: "2", name: "Scene Safety" },
-  { id: "3", name: "Determines MOI/NOI" },
-  { id: "4", name: "Determines Number of Patients" },
-  { id: "5", name: "Requests Additional EMS Assistance" },
-  { id: "6", name: "Considers C-Spine Stabilization" },
-  { id: "7", name: "General Impression" },
-  { id: "8", name: "Determines Chief Complaint" },
-  { id: "9", name: "Assesses Airway" }
+  // Scene Size-Up
+  { id: "1", name: "BSI Scene Safe", points: 1 },
+  { id: "2", name: "Scene Safety", points: 1 },
+  { id: "3", name: "Determines MOI/NOI", points: 1 },
+  { id: "4", name: "Determines Number of Patients", points: 1 },
+  { id: "5", name: "Requests Additional EMS Assistance", points: 1 },
+  { id: "6", name: "Considers C-Spine Stabilization", points: 1 },
+
+  // Primary Assessment
+  { id: "7", name: "General Impression", points: 1 },
+  { id: "8", name: "Determines Responsiveness (AVPU)", points: 1 },
+  { id: "9", name: "Determines Chief Complaint", points: 1 },
+  { id: "10", name: "Assess Airway", points: 1 },
+  { id: "11", name: "Assess Breathing", points: 1 },
+  { id: "12", name: "Initiates Oxygen Therapy", points: 1 },
+  { id: "13", name: "Assures Adequate Ventilation", points: 1 },
+  { id: "14", name: "Manages Airway Compromise", points: 1 },
+  { id: "15", name: "Assess Circulation", points: 1 },
+  { id: "16", name: "Assesses Skin (Color, Temp, Condition)", points: 1 },
+  { id: "17", name: "Controls Major Bleeding", points: 1 },
+  { id: "18", name: "Initiates Shock Management", points: 1 },
+  { id: "19", name: "Identifies Patient Priority / Transport", points: 1 },
+
+  // History Taking
+  { id: "20", name: "OPQRST - Onset", points: 1 },
+  { id: "21", name: "OPQRST - Provocation", points: 1 },
+  { id: "22", name: "OPQRST - Quality", points: 1 },
+  { id: "23", name: "OPQRST - Radiation", points: 1 },
+  { id: "24", name: "OPQRST - Severity", points: 1 },
+  { id: "25", name: "OPQRST - Time", points: 1 },
+  { id: "26", name: "SAMPLE - Signs/Symptoms", points: 1 },
+  { id: "27", name: "SAMPLE - Allergies", points: 1 },
+  { id: "28", name: "SAMPLE - Medications", points: 1 },
+  { id: "29", name: "SAMPLE - Past Medical History", points: 1 },
+  { id: "30", name: "SAMPLE - Last Oral Intake", points: 1 },
+  { id: "31", name: "SAMPLE - Events Leading to Present Illness", points: 1 },
+
+  // Secondary Assessment
+  { id: "32", name: "Assess Affected Body Part/System", points: 1 },
+  { id: "33", name: "Obtain Baseline Vital Signs", points: 1 },
+  { id: "34", name: "Reassess Vital Signs", points: 1 },
+  { id: "35", name: "Field Impression", points: 1 },
+  { id: "36", name: "Interventions (Verbalize)", points: 1 },
+
+  // Reassessment
+  { id: "37", name: "Demonstrates How and When to Reassess", points: 1 },
+
+  // Communication
+  { id: "38", name: "Verbal Report to Arriving EMS / Hospital", points: 1 },
+
+  // Critical Failures (manually triggered if necessary)
+  { id: "CF1", name: "Failure to Provide Oxygen", points: 0, criticalFail: true },
+  { id: "CF2", name: "Failure to Control Major Bleeding", points: 0, criticalFail: true },
+  { id: "CF3", name: "Failure to Initiate Transport Within 15 Minutes", points: 0, criticalFail: true },
+  { id: "CF4", name: "Performs Dangerous Intervention", points: 0, criticalFail: true },
+  { id: "CF5", name: "Fails to Manage Patient as EMT", points: 0, criticalFail: true },
+  { id: "CF6", name: "Exhibits Unsafe Practices", points: 0, criticalFail: true },
+  { id: "CF7", name: "Fails to Address Life-Threats First", points: 0, criticalFail: true }
 ];
 
 // 🧠 Auto-suggest from known score categories
