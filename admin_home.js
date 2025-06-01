@@ -1,4 +1,3 @@
-// /admin_home.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
 import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
@@ -18,38 +17,30 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 let currentTab = "approved";
 
-// 🧠 Auto-suggest from known score categories (Optional: adjust as needed)
-const validSkillSheet = [ /* Add your skill keys/labels here if desired for suggestCategory() */ ];
-function suggestCategory(data) {
-  const combined = `${data.question} ${data.response || data.answer}`.toLowerCase();
-  for (let item of validSkillSheet) {
-    if (combined.includes(item.name.toLowerCase())) return item.name;
-  }
-  return "";
-}
-
-// 🔁 Render each card
+// Render a card with all fields editable
 function renderResponseCard(key, data, isReview = false) {
   const container = document.getElementById("responsesContainer");
   const isInvalid = !(data.response || data.answer) || (data.scoreCategory && data.scoreCategory.trim() === "") || (data.scoreCategory && data.scoreCategory.toLowerCase() === "assessment");
 
-  div = document.createElement("div");
+  const div = document.createElement("div");
   div.className = "response" + (isInvalid ? " missing" : "");
 
   div.innerHTML = `
-    <div class="field"><strong>Question:</strong> <div contenteditable="true" id="q-${key}">${data.question || "Missing"}</div></div>
-    <div class="field"><strong>Response:</strong> <div contenteditable="true" id="r-${key}">${data.response || data.answer || "Missing"}</div></div>
+    <div class="field"><strong>Question:</strong> <div contenteditable="true" id="q-${key}">${data.question || ""}</div></div>
+    <div class="field"><strong>Response:</strong> <div contenteditable="true" id="r-${key}">${data.response || data.answer || ""}</div></div>
     <div class="field"><strong>Skill Sheet ID:</strong> <div contenteditable="true" id="skillSheetID-${key}">${data.skillSheetID || ""}</div></div>
-    <div class="field"><strong>Score Category:</strong> <div contenteditable="true" id="cat-${key}">${data.scoreCategory || suggestCategory(data)}</div></div>
-    <div class="field"><strong>Points:</strong> <div contenteditable="true" id="pts-${key}">${data.points !== undefined ? data.points : 0}</div></div>
-    <div class="field"><strong>Critical Fail (true/false):</strong> <div contenteditable="true" id="cf-${key}">${data.criticalFail !== undefined ? data.criticalFail : "false"}</div></div>
-    <div class="field"><strong>Role:</strong> <div contenteditable="true" id="role-${key}">${data.role || "Patient"}</div></div>
+    <div class="field"><strong>Score Category:</strong> <div contenteditable="true" id="cat-${key}">${data.scoreCategory || ""}</div></div>
+    <div class="field"><strong>Points:</strong> <div contenteditable="true" id="pts-${key}">${data.points !== undefined ? data.points : ""}</div></div>
+    <div class="field"><strong>Critical Fail (true/false):</strong> <div contenteditable="true" id="cf-${key}">${data.criticalFail !== undefined ? data.criticalFail : ""}</div></div>
+    <div class="field"><strong>Role:</strong> <div contenteditable="true" id="role-${key}">${data.role || ""}</div></div>
     <div class="field"><strong>Tags:</strong> <div contenteditable="true" id="tags-${key}">${Array.isArray(data.tags) ? data.tags.join(", ") : (data.tags || "")}</div></div>
     <div class="field"><strong>Trigger:</strong> <div contenteditable="true" id="trigger-${key}">${data.trigger || ""}</div></div>
-    ${data.ttsAudio ? `<div class="field"><strong>TTS Audio:</strong><audio controls src="${data.ttsAudio.startsWith("data:") ? data.ttsAudio : `data:audio/mp3;base64,${data.ttsAudio}`}"></audio></div>` : ''}
+    <div class="field"><strong>TTS Audio (readonly):</strong><br>
+      ${data.ttsAudio ? `<audio controls src="${data.ttsAudio.startsWith("data:") ? data.ttsAudio : `data:audio/mp3;base64,${data.ttsAudio}`}"></audio>` : '<em>No audio</em>'}
+    </div>
+    <button onclick="saveResponse('${key}', ${isReview})">💾 Save</button>
     ${isReview
-      ? `<button onclick="saveResponse('${key}')">✅ Approve</button>
-         <button onclick="autoTagSingleResponse('${key}')">♻️ Auto-Tag This Entry</button>
+      ? `<button onclick="autoTagSingleResponse('${key}')">♻️ Auto-Tag This Entry</button>
          <button onclick="deleteResponse('${key}', 'hardcodedReview')">🗑 Delete</button>`
       : `<button onclick="deleteResponse('${key}', 'hardcodedResponses')">🗑 Delete</button>
          <button onclick="autoTagSingleApprovedResponse('${key}')">♻️ Auto-Tag This Approved Entry</button>`}
@@ -58,7 +49,7 @@ function renderResponseCard(key, data, isReview = false) {
   container.appendChild(div);
 }
 
-// 🔁 Load entries
+// Load entries
 window.loadApproved = async function () {
   currentTab = "approved";
   switchTabs();
@@ -75,9 +66,10 @@ window.loadReview = async function () {
   snap.forEach(child => renderResponseCard(child.key, child.val(), true));
 };
 
-// 💾 Save response
-window.saveResponse = async function (key) {
+// Save response with TTS update
+window.saveResponse = async function (key, isReview = false) {
   const build = id => document.getElementById(`${id}-${key}`)?.innerText.trim();
+  const path = isReview ? "hardcodedReview" : "hardcodedResponses";
 
   const updated = {
     question: build("q"),
@@ -89,15 +81,36 @@ window.saveResponse = async function (key) {
     role: build("role"),
     tags: build("tags")?.split(",").map(t => t.trim()).filter(t => t),
     trigger: build("trigger")
+    // ttsAudio will be added below
   };
 
-  await set(ref(db, `hardcodedResponses/${key}`), updated);
-  await remove(ref(db, `hardcodedReview/${key}`));
-  alert("✅ Saved and moved to Approved.");
+  // Call TTS endpoint to generate new audio (update this endpoint as needed)
+  let ttsAudio = "";
+  try {
+    const res = await fetch("/.netlify/functions/tts_generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: updated.response,
+        voice: updated.role && updated.role.toLowerCase().includes("proctor") ? "shimmer" : "onyx"
+      })
+    });
+    const result = await res.json();
+    if (res.ok && result.audio) {
+      ttsAudio = result.audio.startsWith("data:") ? result.audio : `data:audio/mp3;base64,${result.audio}`;
+    }
+  } catch (err) {
+    alert("Warning: TTS generation failed, entry saved without new audio.");
+    console.error("TTS failed:", err.message);
+  }
+  updated.ttsAudio = ttsAudio;
+
+  await set(ref(db, `${path}/${key}`), updated);
+  alert("💾 Saved! Entry and TTS updated.");
   location.reload();
 };
 
-// 🗑 Delete response
+// Delete response
 window.deleteResponse = async function (key, path) {
   await remove(ref(db, `${path}/${key}`));
   alert("🗑 Deleted.");
