@@ -17,8 +17,8 @@ const SKILL_IDS = [
   "administerGlucose",
   "immobilization",
   "controlBleeding",
-  "airwayManagement",
-  // ...add all official skill sheet IDs here!
+  "airwayManagement"
+  // ...add all your official skill sheet IDs here!
 ];
 
 exports.handler = async (event) => {
@@ -28,31 +28,41 @@ exports.handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ error: "Missing question/response" }) };
     }
 
-    // Compose a robust prompt
+    // Strict, clear prompt:
     const prompt = `
 You are an expert EMS educator. Assign the single most appropriate NREMT Medical Assessment Skill Sheet line item (Skill Sheet ID) for the following record.
-Only return one Skill Sheet ID from this list:
+ONLY respond with ONE Skill Sheet ID exactly as written from this list:
 ${SKILL_IDS.join(", ")}
+
+If none apply, reply ONLY with: none
 
 Question: ${question || "(none)"}
 Response: ${response || "(none)"}
 Tags: ${Array.isArray(tags) ? tags.join(", ") : "(none)"}
 
-Which is the best-matching Skill Sheet ID from the list above? Respond with only the ID.
+Respond ONLY with a single Skill Sheet ID from the list above. Do not repeat the question. Do not explain your answer. No extra text. 
 `;
 
     const gptRes = await openai.chat.completions.create({
-      model: "gpt-4o", // Use "gpt-3.5-turbo" for cheaper/fast tagging, or "gpt-4o" for accuracy
+      model: "gpt-4o", // or "gpt-3.5-turbo" for cheaper tagging
       messages: [{ role: "user", content: prompt }],
-      max_tokens: 30,
+      max_tokens: 16,
       temperature: 0,
     });
 
     const raw = gptRes.choices[0].message.content.trim();
-    // Extract the Skill Sheet ID only (should match one of the official list)
-    const skillSheetID = SKILL_IDS.find(
-      (id) => raw.toLowerCase().includes(id.toLowerCase())
-    ) || raw; // fallback: just send whatever model gave
+
+    // Strict post-processing: exact match only (case-insensitive)
+    let skillSheetID = "none";
+    for (const id of SKILL_IDS) {
+      const regex = new RegExp(`^${id}$`, "i"); // must match whole string
+      if (regex.test(raw)) {
+        skillSheetID = id;
+        break;
+      }
+    }
+    // Also allow "none" as a response
+    if (raw.toLowerCase() === "none") skillSheetID = "none";
 
     return {
       statusCode: 200,
