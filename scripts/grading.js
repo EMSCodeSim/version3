@@ -3,27 +3,40 @@
 let gradingTemplate = {};
 let scoreTracker = {};
 
-// Initializes tracker and template for this scenario
+// Loads grading template (JSON object) and initializes blank scoreTracker
 export function initializeScoreTracker(template) {
   gradingTemplate = template;
   scoreTracker = {};
-  Object.keys(gradingTemplate).forEach(key => {
-    scoreTracker[key] = false;
+  Object.keys(gradingTemplate).forEach(skillSheetID => {
+    scoreTracker[skillSheetID] = false;
   });
   scoreTracker.criticalFails = [];
 }
 
-// Call this on each user action/input
-export function updateScoreTracker(input) {
+// Mark a skillSheetID as completed (called on user action)
+// Optionally flag critical fails here
+export function updateScoreTrackerBySkillID(skillSheetID) {
+  if (gradingTemplate[skillSheetID]) {
+    scoreTracker[skillSheetID] = true;
+    // If this ID is a critical fail, handle here (expand as needed)
+    if (gradingTemplate[skillSheetID].criticalFail) {
+      if (!scoreTracker.criticalFails.includes(gradingTemplate[skillSheetID].label)) {
+        scoreTracker.criticalFails.push(gradingTemplate[skillSheetID].label);
+      }
+    }
+  }
+}
+
+// Optionally allow keyword grading (backwards-compatible)
+export function updateScoreTrackerByInput(input) {
   const lower = input.toLowerCase();
   for (let key in gradingTemplate) {
     const keywords = gradingTemplate[key].keywords || [];
     if (keywords.some(word => lower.includes(word))) {
-      scoreTracker[key] = true;
+      updateScoreTrackerBySkillID(key);
     }
   }
-
-  // Example: critical fail logic (expand as needed)
+  // Example critical fail logic (expand as needed)
   if (lower.includes("no gloves") || lower.includes("no ppe")) {
     if (!scoreTracker.criticalFails.includes("Did not apply PPE")) {
       scoreTracker.criticalFails.push("Did not apply PPE");
@@ -31,40 +44,23 @@ export function updateScoreTracker(input) {
   }
 }
 
-// Allow direct grading from any raw mic or text input
-export function gradeInput(input) {
-  updateScoreTracker(input);
-
-  // Display live feedback (optional)
-  const feedback = [];
-  const lower = input.toLowerCase();
-
-  if (lower.includes("oxygen") && lower.includes("nrb")) {
-    feedback.push("✅ Recognized: Oxygen via NRB");
-  }
-  if (lower.includes("scene safe") || lower.includes("bsi")) {
-    feedback.push("✅ Recognized: Scene Safety");
-  }
-  if (lower.includes("check pulse") || lower.includes("carotid")) {
-    feedback.push("✅ Recognized: Pulse Check");
-  }
-
-  const chatBox = document.getElementById("chat-box");
-  if (chatBox && feedback.length > 0) {
-    const response = document.createElement("div");
-    response.className = "grading-msg";
-    response.innerHTML = feedback.join("<br>");
-    chatBox.appendChild(response);
-  }
+// Preferred: grade by Skill Sheet ID, called on each user-scored event
+export function gradeActionBySkillID(skillSheetID) {
+  updateScoreTrackerBySkillID(skillSheetID);
 }
 
-// Generate improvement tips (could be local or AI-backed)
+// Optionally: grade by raw user input (legacy)
+export function gradeInput(input) {
+  updateScoreTrackerByInput(input);
+}
+
+// Generate improvement tips based on missed steps (expand as desired)
 export async function getImprovementTips(missedLabels) {
   if (!missedLabels.length) return "";
   return "Review the missed steps and focus on assessment order. Remember to verbalize PPE and scene safety!";
 }
 
-// The main grading/report function!
+// Returns an HTML grading summary (for end-of-scenario or skill sheet view)
 export async function gradeScenario() {
   let completed = [];
   let missed = [];
