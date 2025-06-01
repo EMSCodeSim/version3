@@ -1,3 +1,4 @@
+// /admin_home.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
 import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
@@ -17,8 +18,8 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 let currentTab = "approved";
 
-// 🧠 Auto-suggest from known score categories
-const validSkillSheet = [ /* same full skill list as before */ ];
+// 🧠 Auto-suggest from known score categories (Optional: adjust as needed)
+const validSkillSheet = [ /* Add your skill keys/labels here if desired for suggestCategory() */ ];
 function suggestCategory(data) {
   const combined = `${data.question} ${data.response}`.toLowerCase();
   for (let item of validSkillSheet) {
@@ -49,7 +50,8 @@ function renderResponseCard(key, data, isReview = false) {
       ? `<button onclick="saveResponse('${key}')">✅ Approve</button>
          <button onclick="autoTagSingleResponse('${key}')">♻️ Auto-Tag This Entry</button>
          <button onclick="deleteResponse('${key}', 'hardcodedReview')">🗑 Delete</button>`
-      : `<button onclick="deleteResponse('${key}', 'hardcodedResponses')">🗑 Delete</button>`}
+      : `<button onclick="deleteResponse('${key}', 'hardcodedResponses')">🗑 Delete</button>
+         <button onclick="autoTagSingleApprovedResponse('${key}')">♻️ Auto-Tag This Approved Entry</button>`}
   `;
 
   container.appendChild(div);
@@ -100,7 +102,7 @@ window.deleteResponse = async function (key, path) {
   location.reload();
 };
 
-// 🔍 Validate database for missing entries
+// 🔍 Validate database for missing entries (review tab only)
 window.updateAllResponses = async function () {
   const snap = await get(ref(db, "hardcodedReview"));
   const issues = [];
@@ -118,11 +120,11 @@ window.updateAllResponses = async function () {
   }
 };
 
-// ♻️ Auto-tag ALL entries in hardcodedReview
-window.autoTagAllResponses = async function () {
-  const snap = await get(ref(db, "hardcodedReview"));
+// ♻️ Auto-tag ALL APPROVED entries (hardcodedResponses)
+window.autoTagAllApprovedResponses = async function () {
+  const snap = await get(ref(db, "hardcodedResponses"));
   if (!snap.exists()) {
-    alert("⚠️ No review entries found.");
+    alert("⚠️ No approved entries found.");
     return;
   }
 
@@ -142,7 +144,7 @@ window.autoTagAllResponses = async function () {
 
       const result = await res.json();
       if (res.ok) {
-        await set(ref(db, `hardcodedReview/${key}`), {
+        await set(ref(db, `hardcodedResponses/${key}`), {
           ...val,
           tags: result.tags,
           scoreCategory: result.scoreCategory,
@@ -163,7 +165,49 @@ window.autoTagAllResponses = async function () {
   location.reload();
 };
 
-// ♻️ Auto-tag ONE entry from review
+// ♻️ Auto-tag ONE entry from approved (hardcodedResponses)
+window.autoTagSingleApprovedResponse = async function (key) {
+  const question = document.getElementById(`q-${key}`)?.innerText.trim();
+  const response = document.getElementById(`r-${key}`)?.innerText.trim();
+
+  if (!question || !response) {
+    alert("❌ Missing question or response.");
+    return;
+  }
+
+  const logBox = document.getElementById("logBox");
+  logBox.innerHTML += `<div>⏳ Tagging approved entry <strong>${key}</strong>...</div>`;
+
+  try {
+    const res = await fetch("/.netlify/functions/gpt_tagger", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, response })
+    });
+
+    const result = await res.json();
+    if (res.ok) {
+      // Update only hardcodedResponses node
+      const existing = await get(ref(db, `hardcodedResponses/${key}`));
+      await set(ref(db, `hardcodedResponses/${key}`), {
+        ...(existing.exists() ? existing.val() : {}),
+        question,
+        response,
+        scoreCategory: result.scoreCategory,
+        criticalFail: result.criticalFail,
+        tags: result.tags
+      });
+
+      logBox.innerHTML += `<div style="color:green;">✅ Updated approved ${key} — ${result.scoreCategory}</div>`;
+    } else {
+      logBox.innerHTML += `<div style="color:red;">❌ GPT failed for approved ${key}: ${result.error}</div>`;
+    }
+  } catch (err) {
+    logBox.innerHTML += `<div style="color:red;">❌ Error updating approved ${key}: ${err.message}</div>`;
+  }
+};
+
+// ♻️ Auto-tag ONE entry from review (hardcodedReview)
 window.autoTagSingleResponse = async function (key) {
   const question = document.getElementById(`q-${key}`)?.innerText.trim();
   const response = document.getElementById(`r-${key}`)?.innerText.trim();
@@ -174,7 +218,7 @@ window.autoTagSingleResponse = async function (key) {
   }
 
   const logBox = document.getElementById("logBox");
-  logBox.innerHTML += `<div>⏳ Tagging entry <strong>${key}</strong>...</div>`;
+  logBox.innerHTML += `<div>⏳ Tagging review entry <strong>${key}</strong>...</div>`;
 
   try {
     const res = await fetch("/.netlify/functions/gpt_tagger", {
@@ -193,12 +237,12 @@ window.autoTagSingleResponse = async function (key) {
         tags: result.tags
       });
 
-      logBox.innerHTML += `<div style="color:green;">✅ Updated ${key} — ${result.scoreCategory}</div>`;
+      logBox.innerHTML += `<div style="color:green;">✅ Updated review ${key} — ${result.scoreCategory}</div>`;
     } else {
-      logBox.innerHTML += `<div style="color:red;">❌ GPT failed for ${key}: ${result.error}</div>`;
+      logBox.innerHTML += `<div style="color:red;">❌ GPT failed for review ${key}: ${result.error}</div>`;
     }
   } catch (err) {
-    logBox.innerHTML += `<div style="color:red;">❌ Error updating ${key}: ${err.message}</div>`;
+    logBox.innerHTML += `<div style="color:red;">❌ Error updating review ${key}: ${err.message}</div>`;
   }
 };
 
