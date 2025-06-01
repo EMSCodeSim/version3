@@ -21,7 +21,7 @@ let currentTab = "approved";
 // 🧠 Auto-suggest from known score categories (Optional: adjust as needed)
 const validSkillSheet = [ /* Add your skill keys/labels here if desired for suggestCategory() */ ];
 function suggestCategory(data) {
-  const combined = `${data.question} ${data.response}`.toLowerCase();
+  const combined = `${data.question} ${data.response || data.answer}`.toLowerCase();
   for (let item of validSkillSheet) {
     if (combined.includes(item.name.toLowerCase())) return item.name;
   }
@@ -31,14 +31,14 @@ function suggestCategory(data) {
 // 🔁 Render each card
 function renderResponseCard(key, data, isReview = false) {
   const container = document.getElementById("responsesContainer");
-  const isInvalid = !data.scoreCategory || data.scoreCategory.trim() === "" || data.scoreCategory.toLowerCase() === "assessment" || !data.response;
+  const isInvalid = !(data.response || data.answer) || (data.scoreCategory && data.scoreCategory.trim() === "") || (data.scoreCategory && data.scoreCategory.toLowerCase() === "assessment");
 
   const div = document.createElement("div");
   div.className = "response" + (isInvalid ? " missing" : "");
 
   div.innerHTML = `
     <div class="field"><strong>Question:</strong> <div contenteditable="true" id="q-${key}">${data.question || "Missing"}</div></div>
-    <div class="field"><strong>Response:</strong> <div contenteditable="true" id="r-${key}">${data.response || "Missing"}</div></div>
+    <div class="field"><strong>Response:</strong> <div contenteditable="true" id="r-${key}">${data.response || data.answer || "Missing"}</div></div>
     <div class="field"><strong>Score Category:</strong> <div contenteditable="true" id="cat-${key}">${data.scoreCategory || suggestCategory(data)}</div></div>
     <div class="field"><strong>Points:</strong> <div contenteditable="true" id="pts-${key}">${data.points !== undefined ? data.points : 0}</div></div>
     <div class="field"><strong>Critical Fail (true/false):</strong> <div contenteditable="true" id="cf-${key}">${data.criticalFail !== undefined ? data.criticalFail : "false"}</div></div>
@@ -80,7 +80,7 @@ window.saveResponse = async function (key) {
 
   const updated = {
     question: build("q"),
-    response: build("r"),
+    response: build("r"), // Always save as 'response' now!
     scoreCategory: build("cat"),
     points: parseInt(build("pts")) || 0,
     criticalFail: build("cf") === "true",
@@ -108,7 +108,7 @@ window.updateAllResponses = async function () {
   const issues = [];
   snap.forEach(child => {
     const val = child.val();
-    if (!val.response || val.response.trim() === "") issues.push(`${child.key} — Missing response`);
+    if (!(val.response || val.answer)) issues.push(`${child.key} — Missing response`);
     if (!val.scoreCategory || val.scoreCategory.toLowerCase() === "assessment") issues.push(`${child.key} — Invalid scoreCategory`);
     if (val.points === undefined) issues.push(`${child.key} — Missing points`);
     if (val.criticalFail === undefined) issues.push(`${child.key} — Missing criticalFail`);
@@ -133,19 +133,20 @@ window.autoTagAllApprovedResponses = async function () {
 
   for (const key of keys) {
     const val = data[key];
-    if (!val.response || !val.question) continue;
+    if (!(val.response || val.answer) || !val.question) continue;
 
     try {
       const res = await fetch("/.netlify/functions/gpt_tagger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: val.question, response: val.response })
+        body: JSON.stringify({ question: val.question, response: val.response || val.answer })
       });
 
       const result = await res.json();
       if (res.ok) {
         await set(ref(db, `hardcodedResponses/${key}`), {
           ...val,
+          response: val.response || val.answer, // Ensure response always exists!
           tags: result.tags,
           scoreCategory: result.scoreCategory,
           criticalFail: result.criticalFail
@@ -187,12 +188,11 @@ window.autoTagSingleApprovedResponse = async function (key) {
 
     const result = await res.json();
     if (res.ok) {
-      // Update only hardcodedResponses node
       const existing = await get(ref(db, `hardcodedResponses/${key}`));
       await set(ref(db, `hardcodedResponses/${key}`), {
         ...(existing.exists() ? existing.val() : {}),
         question,
-        response,
+        response, // Always save as 'response'!
         scoreCategory: result.scoreCategory,
         criticalFail: result.criticalFail,
         tags: result.tags
@@ -231,7 +231,7 @@ window.autoTagSingleResponse = async function (key) {
     if (res.ok) {
       await set(ref(db, `hardcodedReview/${key}`), {
         question,
-        response,
+        response, // Always save as 'response'!
         scoreCategory: result.scoreCategory,
         criticalFail: result.criticalFail,
         tags: result.tags
