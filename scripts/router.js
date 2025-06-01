@@ -1,37 +1,33 @@
+// router.js
+
 let hardcodedResponses = [];
 
+// Load responses from Firebase
 export async function loadHardcodedResponses() {
   const snapshot = await firebase.database().ref("hardcodedResponses").once("value");
   const data = snapshot.val() || {};
   hardcodedResponses = Object.values(data);
 }
 
-async function rephraseWithGPT3(message) {
-  console.log("[router] Calling GPT-3.5 rephrase for:", message);
-  try {
-    const res = await fetch("/.netlify/functions/gpt3_rephrase", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message })
-    });
-    const data = await res.json();
-    if (res.ok && data.rephrased) {
-      console.log("[router] GPT-3.5 rephrased result:", data.rephrased);
-      return data.rephrased.trim();
-    }
-    throw new Error(data.error || "No rephrased output");
-  } catch (err) {
-    console.warn("GPT-3.5 rephrase failed:", err.message);
-    return message;
-  }
-}
-
+// Tag-based match
 function matchByTags(userInput) {
   const normalized = userInput.trim().toLowerCase();
   for (const entry of hardcodedResponses) {
     if (!entry.tags || !Array.isArray(entry.tags)) continue;
     if (entry.tags.some(tag => normalized.includes(tag.toLowerCase()))) {
       console.log("[router] ✅ Matched by tag:", entry.tags);
+      return entry;
+    }
+  }
+  return null;
+}
+
+// Alias match
+function matchByAlias(userInput) {
+  const normalized = userInput.trim().toLowerCase();
+  for (const entry of hardcodedResponses) {
+    if (Array.isArray(entry.aliases) && entry.aliases.some(a => a.trim().toLowerCase() === normalized)) {
+      console.log("[router] ✅ Matched by alias:", entry.aliases);
       return entry;
     }
   }
@@ -50,17 +46,10 @@ export async function routeUserInput(message, { scenarioId, role }) {
     return { response: match.response, source: "hardcoded" };
   }
 
-  // 2. Rephrase match
-  const rephrased = await rephraseWithGPT3(message);
-  if (rephrased && rephrased !== message) {
-    const rephrasedNorm = rephrased.trim().toLowerCase();
-    const match2 = hardcodedResponses.find(entry =>
-      entry.question?.trim().toLowerCase() === rephrasedNorm ||
-      entry.userQuestion?.trim().toLowerCase() === rephrasedNorm
-    );
-    if (match2 && match2.response) {
-      return { response: match2.response, source: "hardcoded" };
-    }
+  // 2. Alias match
+  const aliasMatch = matchByAlias(message);
+  if (aliasMatch && aliasMatch.response) {
+    return { response: aliasMatch.response, source: "alias" };
   }
 
   // 3. Tag-based match
@@ -82,7 +71,6 @@ export async function routeUserInput(message, { scenarioId, role }) {
 
     firebase.database().ref('hardcodeReview').push({
       userQuestion: message,
-      rephrasedQuestion: rephrased,
       aiResponse: data.reply,
       role: role || "patient",
       timestamp: Date.now()
