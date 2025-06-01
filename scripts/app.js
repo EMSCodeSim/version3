@@ -1,216 +1,117 @@
-import { initializeScoreTracker, gradeActionBySkillID, gradeScenario } from './grading.js';
-import { startVoiceRecognition, stopVoiceRecognition } from './mic.js';
-import { routeUserInput, loadHardcodedResponses } from './router.js';
-
-const scenarioPath = 'scenarios/chest_pain_002/';
-let patientContext = "";
-let gradingTemplate = {};
-let scenarioStarted = false;
-let hardcodedResponses = {};
-let chatLog = [];
-
-// ---- Multi-action Handler ----
-async function handleMultiActionInput(userInput) {
-  const response = await fetch('/.netlify/functions/parseAndTagMultiAction', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userInput })
-  });
-  const parsedActions = await response.json();
-
-  parsedActions.forEach(action => {
-    const entry = {
-      question: userInput,
-      answer: action.actionText,
-      tags: action.tags,
-      skillSheetID: action.skillSheetID,
-      scoreCategory: action.scoreCategory,
-      points: action.points,
-      criticalFail: action.criticalFail,
-      parentInput: userInput,
-      source: "gpt3.5_auto"
-    };
-    // Save to Firebase for review/expansion
-    firebase.database().ref("/hardcodedResponses/").push(entry);
-    // --- SKILL SHEET GRADING HERE ---
-    if (entry.skillSheetID) gradeActionBySkillID(entry.skillSheetID);
-    onResponseScored(entry);
-  });
-
-  return parsedActions.map(a => a.actionText).join(" | ");
-}
-
-function containsMultipleActions(text) {
-  return text.includes(" and ") || text.includes(",") || text.includes(" then ");
-}
-
-// ---- Scenario Grading Summary ----
-async function displayScenarioGrading() {
-  const gradingHtml = await gradeScenario();
-  document.getElementById('chat-box').insertAdjacentHTML('beforeend', gradingHtml);
-}
-
-// ---- Audio, TTS, Mic, etc. (no changes needed) ----
-function playAudio(src, callback) { /* ...unchanged... */ }
-function speakOnce(text, voiceName = "", rate = 1.0, callback) { /* ...unchanged... */ }
-async function displayChatResponse(response, question = "", role = "", audioUrl = null, source = "", userInput = "", doSpeak = true) { /* ...unchanged... */ }
-async function getTTSAudioFromFirebase(question) { /* ...unchanged... */ }
-function disableMic() { /* ...unchanged... */ }
-function enableMic() { /* ...unchanged... */ }
-
-// ---- Grading Template Loader ----
-async function loadGradingTemplate(type = "medical") {
-  const file = `grading_templates/${type}_assessment.json`;
-  const res = await fetch(file);
-  gradingTemplate = await res.json();
-  initializeScoreTracker(gradingTemplate);
-}
-
-// ---- Proctor Logic ----
-function isProctorQuestion(message) { /* ...unchanged... */ }
-
-// ---- Core User Input Processor ----
-async function processUserMessage(message) {
-  if (!message) return;
-  chatLog.push("You: " + message);
-
-  const role = isProctorQuestion(message) ? "Proctor" : "Patient";
-
-  try {
-    // --- MULTI-ACTION HANDLER ---
-    if (containsMultipleActions(message)) {
-      const multiResponse = await handleMultiActionInput(message);
-      displayChatResponse(multiResponse, message, `${role} (multi-action)`, null, "gpt3.5_auto");
-      return;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>EMS Code Sim – Admin Panel</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f2f2f2; padding: 20px; }
+    .tabs { display: flex; gap: 20px; margin-bottom: 20px; }
+    .tabs button { padding: 10px 20px; cursor: pointer; }
+    .response-block {
+      background: white;
+      padding: 15px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-
-    // --- ROUTING LOGIC: Hardcoded/Vector/GPT ---
-    const { response, source, matchedEntry } = await routeUserInput(message, {
-      scenarioId: scenarioPath,
-      role: role.toLowerCase(),
-    });
-    chatLog.push(role + ": " + response);
-
-    let ttsAudio = null;
-    if (source === "hardcoded") {
-      ttsAudio = await getTTSAudioFromFirebase(message);
-      if (ttsAudio && !ttsAudio.startsWith("http") && !ttsAudio.startsWith("data:audio"))
-        ttsAudio = `data:audio/mp3;base64,${ttsAudio}`;
+    textarea { width: 100%; height: 60px; }
+    select, input[type="text"], input[type="file"] { margin: 5px 0; width: 100%; }
+    img { max-height: 100px; margin-top: 5px; }
+    audio { width: 100%; margin-top: 5px; }
+    .response-block strong { display: inline-block; width: 160px; }
+    .response-block button {
+      margin-top: 8px;
+      margin-right: 10px;
+      padding: 6px 10px;
+      border: none;
+      border-radius: 4px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
     }
-
-    displayChatResponse(response, message, `${role} (${source})`, ttsAudio, source, message, !!ttsAudio);
-
-    // --- SKILL SHEET GRADING (for both hardcoded and GPT-matched) ---
-    let skillSheetID = null;
-    if (matchedEntry && matchedEntry.skillSheetID) {
-      skillSheetID = matchedEntry.skillSheetID;
-    } else if (source && response && response.skillSheetID) {
-      skillSheetID = response.skillSheetID;
+    .response-block button:hover {
+      background: #0056b3;
     }
-    if (skillSheetID) gradeActionBySkillID(skillSheetID);
+    #update-btn {
+      background-color: green;
+      color: white;
+      font-weight: bold;
+      padding: 10px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+    }
+    #update-btn:hover {
+      background-color: darkgreen;
+    }
+  </style>
+</head>
+<body>
+  <h1>EMS Code Sim – Admin Panel</h1>
 
-    // --- Live skill sheet update ---
-    if (matchedEntry) onResponseScored(matchedEntry);
+  <div class="tabs">
+    <button onclick="switchTab('approved')">✅ Approved</button>
+    <button onclick="switchTab('review')">📝 Review</button>
+  </div>
 
-  } catch (err) {
-    logErrorToDatabase("processUserMessage error: " + err.message);
-    displayChatResponse("❌ AI response failed. Try again.", "", "", null, "", "", false);
-  }
+  <div>
+    <button id="update-btn" onclick="updateAllResponses()">🛠 Update Database (Fill Missing Info)</button>
+  </div>
+
+  <div id="response-list">Loading...</div>
+
+  <script type="module" src="/admin_home.js"></script>
+
+<div id="responseList"></div>
+
+<script>
+function renderResponseCard(key, data) {
+  const container = document.getElementById("responseList");
+  const card = document.createElement("div");
+  card.className = "response-card";
+  card.innerHTML = `
+    <div><strong>Question:</strong> <div contenteditable="true" id="q-${key}">${data.question || ''}</div></div>
+    <div><strong>Response:</strong> <div contenteditable="true" id="r-${key}">${data.response || ''}</div></div>
+    <div><strong>Score Category:</strong> <div contenteditable="true" id="cat-${key}">${data.scoreCategory || ''}</div></div>
+    <div><strong>Points:</strong> <div contenteditable="true" id="pts-${key}">${data.points || '1'}</div></div>
+    <div><strong>Critical Fail:</strong> <div contenteditable="true" id="cf-${key}">${data.criticalFail || 'false'}</div></div>
+    <button onclick="saveResponse('${key}')">✅ Save</button>
+    <button onclick="deleteResponse('${key}')">🗑 Delete</button>
+  `;
+  container.appendChild(card);
 }
 
-// ---- Scenario Files Loader ----
-async function loadDispatchInfo() { /* ...unchanged... */ }
-async function loadPatientInfo() { /* ...unchanged... */ }
-function logErrorToDatabase(errorInfo) { /* ...unchanged... */ }
-
-// ---- Scenario Start ----
-window.startScenario = async function () {
-  if (scenarioStarted) return;
-  try {
-    console.log("🚀 Start button tapped. Starting scenario...");
-    await loadHardcodedResponses();
-
-    const snapshot = await firebase.database().ref('hardcodedResponses').once('value');
-    hardcodedResponses = snapshot.val() || {};
-    console.log("✅ Hardcoded responses loaded.");
-
-    const configRes = await fetch(`${scenarioPath}config.json`);
-    if (!configRes.ok) throw new Error("Missing config.json");
-    const config = await configRes.json();
-    console.log("✅ Config file loaded:", config);
-
-    await loadGradingTemplate(config.grading || "medical");
-
-    const dispatch = await loadDispatchInfo();
-    patientContext = await loadPatientInfo();
-
-    displayChatResponse(`🚑 Dispatch: ${dispatch}`, "", "", null, "", "", false);
-    speakOnce(dispatch, "", 1.0);
-
-    scenarioStarted = true;
-  } catch (err) {
-    console.error("❌ startScenario error:", err.message);
-    displayChatResponse("❌ Failed to load scenario. Check config.json, dispatch.txt, and patient.txt.", "", "", null, "", "", false);
-    scenarioStarted = false;
-  }
-};
-
-// ---- Scenario End/Grading ----
-window.endScenario = async function () {
-  await displayScenarioGrading();
-  scenarioStarted = false;
-};
-
-// ---- UI/DOM event setup ----
-document.addEventListener('DOMContentLoaded', () => {
-  const sendBtn = document.getElementById('send-button');
-  const input = document.getElementById('user-input');
-  const startBtn = document.getElementById('start-button');
-  const endBtn = document.getElementById('end-button');
-  const micBtn = document.getElementById('mic-button');
-
-  if (sendBtn) {
-    sendBtn.addEventListener('click', () => {
-      const message = input.value.trim();
-      if (message) {
-        processUserMessage(message);
-        input.value = '';
-      }
-    });
-  }
-
-  if (input) {
-    input.addEventListener('keypress', e => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        if (sendBtn) sendBtn.click();
-      }
-    });
-  }
-
-  if (startBtn) startBtn.addEventListener('click', () => {
-    if (typeof window.startScenario === 'function') window.startScenario();
+async function loadReviewResponses() {
+  const snap = await db.ref("hardcodedReview").once("value");
+  snap.forEach(child => {
+    renderResponseCard(child.key, child.val());
   });
-
-  if (endBtn) endBtn.addEventListener('click', () => {
-    if (typeof window.endScenario === 'function') window.endScenario();
-  });
-
-  if (micBtn) micBtn.addEventListener('click', () => {
-    if (typeof startVoiceRecognition === 'function') startVoiceRecognition();
-  });
-});
-
-// --- Skill Sheet (Live) Marking (for learning mode) ---
-function markSkillSheetStep(skillSheetID) {
-  const el = document.getElementById(skillSheetID);
-  if (el && el.querySelector(".status").textContent !== "✅") {
-    el.querySelector(".status").textContent = "✅";
-  }
 }
 
-function onResponseScored(entry) {
-  if (document.getElementById("learningModeToggle")?.checked && entry.skillSheetID) {
-    markSkillSheetStep(entry.skillSheetID);
-  }
+async function saveResponse(key) {
+  const update = {
+    question: document.getElementById(`q-${key}`).innerText,
+    response: document.getElementById(`r-${key}`).innerText,
+    scoreCategory: document.getElementById(`cat-${key}`).innerText,
+    points: parseInt(document.getElementById(`pts-${key}`).innerText),
+    criticalFail: document.getElementById(`cf-${key}`).innerText === "true"
+  };
+  await db.ref(`hardcodedResponses/${key}`).set(update);
+  await db.ref(`hardcodedReview/${key}`).remove();
+  alert("Response saved and moved to hardcodedResponses.");
+  location.reload();
 }
+
+async function deleteResponse(key) {
+  await db.ref(`hardcodedReview/${key}`).remove();
+  alert("Deleted from review list.");
+  location.reload();
+}
+
+window.onload = loadReviewResponses;
+</script>
+
+</body>
+</html>
