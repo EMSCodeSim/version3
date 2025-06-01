@@ -7,8 +7,9 @@ export async function loadHardcodedResponses() {
   hardcodedResponses = Object.values(data);
 }
 
+// Helper to normalize
 function normalize(str) {
-  return (str || "").trim().toLowerCase();
+  return (str || "").trim().toLowerCase().replace(/[^\w\s]/g, "");
 }
 
 // Alias match
@@ -22,7 +23,7 @@ function matchByAlias(userInput) {
   return null;
 }
 
-// Tag match (never runs if exact/alias found)
+// Tag match
 function matchByTags(userInput) {
   const norm = normalize(userInput);
   for (const entry of hardcodedResponses) {
@@ -37,25 +38,25 @@ function matchByTags(userInput) {
 export async function routeUserInput(message, { scenarioId, role }) {
   const norm = normalize(message);
 
-  // 1. Exact match
+  // 1. Exact match on question or userQuestion
   const match = hardcodedResponses.find(entry =>
     normalize(entry.question) === norm ||
     normalize(entry.userQuestion) === norm
   );
-  if (match && match.response) {
-    return { response: match.response, source: "hardcoded" };
+  if (match && (match.response || match.answer)) {
+    return { response: match.response || match.answer, source: "hardcoded" };
   }
 
   // 2. Alias match
   const aliasMatch = matchByAlias(message);
-  if (aliasMatch && aliasMatch.response) {
-    return { response: aliasMatch.response, source: "alias" };
+  if (aliasMatch && (aliasMatch.response || aliasMatch.answer)) {
+    return { response: aliasMatch.response || aliasMatch.answer, source: "alias" };
   }
 
   // 3. Tag match
   const tagMatch = matchByTags(message);
-  if (tagMatch && tagMatch.response) {
-    return { response: tagMatch.response, source: "tag-match" };
+  if (tagMatch && (tagMatch.response || tagMatch.answer)) {
+    return { response: tagMatch.response || tagMatch.answer, source: "tag-match" };
   }
 
   // 4. GPT fallback
