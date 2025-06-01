@@ -1,44 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Admin Panel</title>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-  <script type="module" src="/admin_home.js"></script>
+  <meta charset="UTF-8">
+  <title>EMS Admin Panel</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f0f4f7; }
-    .tab { display: inline-block; padding: 10px 20px; margin: 0 10px; background: #ccc; cursor: pointer; border-radius: 5px; }
-    .tab.active { background: #0077cc; color: #fff; }
-    .response { background: #fff; margin-top: 10px; padding: 10px; border-radius: 8px; box-shadow: 0 0 4px rgba(0,0,0,0.1); }
-    .response.missing { background: #fffbe6; }
-    .label { font-weight: bold; }
-    .field { margin-bottom: 6px; }
-    .field[contenteditable="true"] { background: #eef; padding: 4px; border-radius: 4px; }
-    button { margin-right: 8px; margin-top: 4px; }
-    #logBox {
-      background: #f7f7f7;
-      padding: 10px;
-      border-radius: 6px;
-      margin-top: 10px;
-      max-height: 200px;
-      overflow-y: auto;
-      border: 1px solid #ccc;
-    }
+    body { font-family: Arial, sans-serif; background: #f9fcff; margin: 0; padding: 0; }
+    .tab { display: inline-block; margin-right: 10px; padding: 10px 20px; background: #e6ecf1; border-radius: 4px 4px 0 0; cursor: pointer; }
+    .tab.active { background: #008cba; color: #fff; }
+    button { margin: 5px 4px 10px 0; padding: 6px 16px; border: none; border-radius: 4px; background: #008cba; color: #fff; cursor: pointer; font-size: 1em; }
+    button:hover { background: #005f7a; }
+    .response { background: #fff; border: 1px solid #dde4ea; border-radius: 6px; margin: 18px 0; padding: 12px 20px; box-shadow: 0 2px 6px #c3d6e5; }
+    .response.missing { border-left: 5px solid #d14545; }
+    .field { margin-bottom: 7px; }
+    .field > div[contenteditable] { background: #f5f8fa; padding: 2px 5px; border-radius: 3px; min-height: 20px; border: 1px solid #dde4ea; }
+    audio { width: 95%; margin: 4px 0; }
+    #logBox { font-size: 0.95em; margin: 10px 0 18px 0; padding: 10px; background: #eaf6fa; border-radius: 6px; color: #095577; }
+    #responsesContainer { max-width: 880px; margin: 0 auto; }
+    @media (max-width: 900px) { #responsesContainer { padding: 8px; } }
   </style>
 </head>
 <body>
-  <h2>🛠 Admin Panel</h2>
-  <div>
+  <div style="background:#eaf6fa;padding:16px 0 10px 0;border-bottom:1px solid #c3d6e5;">
     <span class="tab active" id="approvedTab" onclick="loadApproved()">Approved</span>
     <span class="tab" id="reviewTab" onclick="loadReview()">Review</span>
     <button onclick="updateAllResponses()">🧠 Update Database</button>
     <button onclick="autoTagAllApprovedResponses()">♻️ Auto-Tag All Approved</button>
+    <button onclick="massUpdateSkillSheetIDs()">🔄 Mass Update SkillSheet IDs</button>
   </div>
-
+  <div id="logBox">Admin panel loaded.</div>
   <div id="responsesContainer"></div>
 
-  <h3>📝 Update Log</h3>
-  <div id="logBox"></div>
+  <!-- Link your admin_home.js here -->
+  <script type="module" src="admin_home.js"></script>
 </body>
 </html>
