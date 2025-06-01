@@ -1,7 +1,71 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+import { getDatabase, ref, get, set, remove, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
-// ✅ Firebase Config
+// ======= Advanced Mapping Tables =======
+const skillSheetMap = {
+  sceneSafety: "sceneSafety",
+  primaryAssessment: "primaryAssessment",
+  vitalsBP: "vitalsBP",
+  vitalsPulse: "vitalsPulse",
+  vitalsRespirations: "vitalsRespirations",
+  historySAMPLE: "historySAMPLE",
+  secondaryAssessment: "secondaryAssessment",
+  reassessment: "reassessment",
+  oxygenAdmin: "administerOxygen",
+  glucoseAdmin: "administerGlucose",
+  // ...add more as needed!
+};
+const tagSkillSheetMap = {
+  oxygen: "administerOxygen",
+  glucose: "administerGlucose",
+  splint: "immobilization",
+  bleeding: "controlBleeding",
+  airway: "airwayManagement",
+  // ...add more as needed!
+};
+
+// ======= Mass Update Button Logic =======
+window.massUpdateSkillSheetIDs = async function () {
+  const snap = await get(ref(db, "hardcodedResponses"));
+  if (!snap.exists()) {
+    alert("No approved entries found.");
+    return;
+  }
+  const data = snap.val();
+  const updates = {};
+
+  Object.entries(data).forEach(([key, entry]) => {
+    if (!entry.skillSheetID) {
+      let newID = null;
+      // 1. Map from scoreCategory
+      if (entry.scoreCategory && skillSheetMap[entry.scoreCategory]) {
+        newID = skillSheetMap[entry.scoreCategory];
+      }
+      // 2. Map from tags
+      if (!newID && Array.isArray(entry.tags)) {
+        for (const tag of entry.tags) {
+          if (tagSkillSheetMap[tag]) {
+            newID = tagSkillSheetMap[tag];
+            break;
+          }
+        }
+      }
+      if (newID) {
+        updates[`hardcodedResponses/${key}/skillSheetID`] = newID;
+      }
+    }
+  });
+
+  if (Object.keys(updates).length > 0) {
+    await update(ref(db), updates);
+    alert(`✅ Updated skillSheetID for ${Object.keys(updates).length} responses.`);
+    location.reload();
+  } else {
+    alert("No missing skillSheetID fields found.");
+  }
+};
+
+// ========== FIREBASE SETUP ==========
 const firebaseConfig = {
   apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
   authDomain: "ems-code-sim.firebaseapp.com",
@@ -12,12 +76,11 @@ const firebaseConfig = {
   appId: "1:190498607578:web:4cf6c8e999b027956070e3",
   measurementId: "G-2Q3ZT01YT1"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 let currentTab = "approved";
 
-// Render a card with all fields editable
+// ========== CARD RENDER ==========
 function renderResponseCard(key, data, isReview = false) {
   const container = document.getElementById("responsesContainer");
   const isInvalid = !(data.response || data.answer) || (data.scoreCategory && data.scoreCategory.trim() === "") || (data.scoreCategory && data.scoreCategory.toLowerCase() === "assessment");
@@ -45,11 +108,10 @@ function renderResponseCard(key, data, isReview = false) {
       : `<button onclick="deleteResponse('${key}', 'hardcodedResponses')">🗑 Delete</button>
          <button onclick="autoTagSingleApprovedResponse('${key}')">♻️ Auto-Tag This Approved Entry</button>`}
   `;
-
   container.appendChild(div);
 }
 
-// Load entries
+// ========== LOAD ENTRIES ==========
 window.loadApproved = async function () {
   currentTab = "approved";
   switchTabs();
@@ -66,7 +128,7 @@ window.loadReview = async function () {
   snap.forEach(child => renderResponseCard(child.key, child.val(), true));
 };
 
-// Save response with TTS update
+// ========== SAVE ==========
 window.saveResponse = async function (key, isReview = false) {
   const build = id => document.getElementById(`${id}-${key}`)?.innerText.trim();
   const path = isReview ? "hardcodedReview" : "hardcodedResponses";
@@ -110,14 +172,14 @@ window.saveResponse = async function (key, isReview = false) {
   location.reload();
 };
 
-// Delete response
+// ========== DELETE ==========
 window.deleteResponse = async function (key, path) {
   await remove(ref(db, `${path}/${key}`));
   alert("🗑 Deleted.");
   location.reload();
 };
 
-// 🔍 Validate database for missing entries (review tab only)
+// ========== VALIDATE ==========
 window.updateAllResponses = async function () {
   const snap = await get(ref(db, "hardcodedReview"));
   const issues = [];
@@ -135,7 +197,7 @@ window.updateAllResponses = async function () {
   }
 };
 
-// ♻️ Auto-tag ALL APPROVED entries (hardcodedResponses)
+// ========== AUTO TAG ALL APPROVED ==========
 window.autoTagAllApprovedResponses = async function () {
   const snap = await get(ref(db, "hardcodedResponses"));
   if (!snap.exists()) {
@@ -182,7 +244,7 @@ window.autoTagAllApprovedResponses = async function () {
   location.reload();
 };
 
-// ♻️ Auto-tag ONE entry from approved (hardcodedResponses)
+// ========== AUTO TAG SINGLE APPROVED ==========
 window.autoTagSingleApprovedResponse = async function (key) {
   const question = document.getElementById(`q-${key}`)?.innerText.trim();
   const response = document.getElementById(`r-${key}`)?.innerText.trim();
@@ -225,7 +287,7 @@ window.autoTagSingleApprovedResponse = async function (key) {
   }
 };
 
-// ♻️ Auto-tag ONE entry from review (hardcodedReview)
+// ========== AUTO TAG SINGLE REVIEW ==========
 window.autoTagSingleResponse = async function (key) {
   const question = document.getElementById(`q-${key}`)?.innerText.trim();
   const response = document.getElementById(`r-${key}`)?.innerText.trim();
@@ -266,7 +328,7 @@ window.autoTagSingleResponse = async function (key) {
   }
 };
 
-// 🧭 Tab toggle
+// ========== TAB TOGGLE ==========
 function switchTabs() {
   document.getElementById("approvedTab").classList.toggle("active", currentTab === "approved");
   document.getElementById("reviewTab").classList.toggle("active", currentTab === "review");
