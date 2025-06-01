@@ -81,7 +81,7 @@ window.massUpdateSkillSheetIDs = async function () {
   }
 };
 
-// ======= GPT-powered SkillSheetID Assignment =======
+// ======= GPT-powered SkillSheetID Assignment (All Entries) =======
 window.autoAssignSkillSheetIDWithGPT = async function () {
   const snap = await get(ref(db, "hardcodedResponses"));
   if (!snap.exists()) {
@@ -90,31 +90,39 @@ window.autoAssignSkillSheetIDWithGPT = async function () {
   }
   const data = snap.val();
   let updatedCount = 0;
+  let failCount = 0;
+
+  // Clear logBox if present
+  if (window.logBox) window.logBox.innerHTML = "";
+
   for (const [key, entry] of Object.entries(data)) {
-    if (!entry.skillSheetID) {
-      try {
-        const res = await fetch("/.netlify/functions/gpt_skill_id", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            question: entry.question,
-            response: entry.response,
-            tags: entry.tags
-          })
-        });
-        const result = await res.json();
-        if (res.ok && result.skillSheetID) {
-          await set(ref(db, `hardcodedResponses/${key}/skillSheetID`), result.skillSheetID);
-          updatedCount++;
-        } else {
-          console.warn(`GPT did not return a skillSheetID for key: ${key}`);
-        }
-      } catch (err) {
-        console.warn(`Error assigning skillSheetID for ${key}`, err);
+    try {
+      const res = await fetch("/.netlify/functions/gpt_skill_id", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: entry.question,
+          response: entry.response,
+          tags: entry.tags
+        })
+      });
+      const result = await res.json();
+      if (res.ok && result.skillSheetID && result.skillSheetID !== "none") {
+        await set(ref(db, `hardcodedResponses/${key}/skillSheetID`), result.skillSheetID);
+        updatedCount++;
+        if (window.logBox) logBox.innerHTML += `<div style="color:green;">${key}: ${result.skillSheetID}</div>`;
+      } else {
+        failCount++;
+        if (window.logBox) logBox.innerHTML += `<div style="color:red;">${key}: No valid skillSheetID [${result.raw || ''}]</div>`;
+        console.warn(`GPT did not return a valid skillSheetID for key: ${key}`, result);
       }
+    } catch (err) {
+      failCount++;
+      if (window.logBox) logBox.innerHTML += `<div style="color:red;">${key}: Error calling GPT</div>`;
+      console.warn(`Error assigning skillSheetID for ${key}`, err);
     }
   }
-  alert(`Auto-assigned skillSheetID for ${updatedCount} responses.`);
+  alert(`Auto-assigned skillSheetID for ${updatedCount} responses. Failed for ${failCount}.`);
   location.reload();
 };
 
