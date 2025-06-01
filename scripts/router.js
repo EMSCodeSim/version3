@@ -1,5 +1,3 @@
-// router.js
-
 let hardcodedResponses = [];
 
 // Load responses from Firebase
@@ -9,25 +7,27 @@ export async function loadHardcodedResponses() {
   hardcodedResponses = Object.values(data);
 }
 
-// Tag-based match
-function matchByTags(userInput) {
-  const normalized = userInput.trim().toLowerCase();
+function normalize(str) {
+  return (str || "").trim().toLowerCase();
+}
+
+// Alias match
+function matchByAlias(userInput) {
+  const norm = normalize(userInput);
   for (const entry of hardcodedResponses) {
-    if (!entry.tags || !Array.isArray(entry.tags)) continue;
-    if (entry.tags.some(tag => normalized.includes(tag.toLowerCase()))) {
-      console.log("[router] ✅ Matched by tag:", entry.tags);
+    if (Array.isArray(entry.aliases) && entry.aliases.some(a => normalize(a) === norm)) {
       return entry;
     }
   }
   return null;
 }
 
-// Alias match
-function matchByAlias(userInput) {
-  const normalized = userInput.trim().toLowerCase();
+// Tag match (never runs if exact/alias found)
+function matchByTags(userInput) {
+  const norm = normalize(userInput);
   for (const entry of hardcodedResponses) {
-    if (Array.isArray(entry.aliases) && entry.aliases.some(a => a.trim().toLowerCase() === normalized)) {
-      console.log("[router] ✅ Matched by alias:", entry.aliases);
+    if (!entry.tags || !Array.isArray(entry.tags)) continue;
+    if (entry.tags.some(tag => norm.includes(tag.toLowerCase()))) {
       return entry;
     }
   }
@@ -35,12 +35,12 @@ function matchByAlias(userInput) {
 }
 
 export async function routeUserInput(message, { scenarioId, role }) {
-  const normalized = message.trim().toLowerCase();
+  const norm = normalize(message);
 
   // 1. Exact match
   const match = hardcodedResponses.find(entry =>
-    entry.question?.trim().toLowerCase() === normalized ||
-    entry.userQuestion?.trim().toLowerCase() === normalized
+    normalize(entry.question) === norm ||
+    normalize(entry.userQuestion) === norm
   );
   if (match && match.response) {
     return { response: match.response, source: "hardcoded" };
@@ -52,13 +52,13 @@ export async function routeUserInput(message, { scenarioId, role }) {
     return { response: aliasMatch.response, source: "alias" };
   }
 
-  // 3. Tag-based match
+  // 3. Tag match
   const tagMatch = matchByTags(message);
-  if (tagMatch) {
-    return { response: tagMatch.response || tagMatch.answer, source: "tag-match" };
+  if (tagMatch && tagMatch.response) {
+    return { response: tagMatch.response, source: "tag-match" };
   }
 
-  // 4. Fallback to GPT-4
+  // 4. GPT fallback
   try {
     const res = await fetch("/.netlify/functions/gpt4-turbo", {
       method: "POST",
