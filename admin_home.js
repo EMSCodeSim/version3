@@ -3,17 +3,20 @@ import { getDatabase, ref, get, set, remove, update } from "https://www.gstatic.
 
 // ======= Advanced Mapping Tables =======
 const skillSheetMap = {
-  sceneSafety: "sceneSafety",
-  primaryAssessment: "primaryAssessment",
-  vitalsBP: "vitalsBP",
-  vitalsPulse: "vitalsPulse",
-  vitalsRespirations: "vitalsRespirations",
-  historySAMPLE: "historySAMPLE",
-  secondaryAssessment: "secondaryAssessment",
-  reassessment: "reassessment",
-  oxygenAdmin: "administerOxygen",
-  glucoseAdmin: "administerGlucose",
-  // ...expand as needed!
+  "Scene Safety": "sceneSafety",
+  "Primary Assessment": "primaryAssessment",
+  "Vitals BP": "vitalsBP",
+  "Vitals Pulse": "vitalsPulse",
+  "Vitals Respirations": "vitalsRespirations",
+  "History SAMPLE": "historySAMPLE",
+  "Secondary Assessment": "secondaryAssessment",
+  "Reassessment": "reassessment",
+  "Administer Oxygen": "administerOxygen",
+  "Administer Glucose": "administerGlucose",
+  "Immobilization": "immobilization",
+  "Control Bleeding": "controlBleeding",
+  "Airway Management": "airwayManagement",
+  // ...add more as needed!
 };
 const tagSkillSheetMap = {
   oxygen: "administerOxygen",
@@ -21,7 +24,7 @@ const tagSkillSheetMap = {
   splint: "immobilization",
   bleeding: "controlBleeding",
   airway: "airwayManagement",
-  // ...expand as needed!
+  // ...add more as needed!
 };
 
 // ======= Mass Update Button Logic =======
@@ -74,8 +77,45 @@ window.massUpdateSkillSheetIDs = async function () {
     alert(`✅ Updated skillSheetID for ${Object.keys(updates).length} responses. No match for ${noMatchCount} responses (see console log).`);
     location.reload();
   } else {
-    alert("No missing skillSheetID fields found.");
+    alert("No missing skillSheetID fields found, or no mapping matched.");
   }
+};
+
+// ======= GPT-powered SkillSheetID Assignment =======
+window.autoAssignSkillSheetIDWithGPT = async function () {
+  const snap = await get(ref(db, "hardcodedResponses"));
+  if (!snap.exists()) {
+    alert("No approved entries found.");
+    return;
+  }
+  const data = snap.val();
+  let updatedCount = 0;
+  for (const [key, entry] of Object.entries(data)) {
+    if (!entry.skillSheetID) {
+      try {
+        const res = await fetch("/.netlify/functions/gpt_skill_id", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question: entry.question,
+            response: entry.response,
+            tags: entry.tags
+          })
+        });
+        const result = await res.json();
+        if (res.ok && result.skillSheetID) {
+          await set(ref(db, `hardcodedResponses/${key}/skillSheetID`), result.skillSheetID);
+          updatedCount++;
+        } else {
+          console.warn(`GPT did not return a skillSheetID for key: ${key}`);
+        }
+      } catch (err) {
+        console.warn(`Error assigning skillSheetID for ${key}`, err);
+      }
+    }
+  }
+  alert(`Auto-assigned skillSheetID for ${updatedCount} responses.`);
+  location.reload();
 };
 
 // ========== FIREBASE SETUP ==========
