@@ -13,7 +13,7 @@ const skillSheetMap = {
   reassessment: "reassessment",
   oxygenAdmin: "administerOxygen",
   glucoseAdmin: "administerGlucose",
-  // ...add more as needed!
+  // ...expand as needed!
 };
 const tagSkillSheetMap = {
   oxygen: "administerOxygen",
@@ -21,7 +21,7 @@ const tagSkillSheetMap = {
   splint: "immobilization",
   bleeding: "controlBleeding",
   airway: "airwayManagement",
-  // ...add more as needed!
+  // ...expand as needed!
 };
 
 // ======= Mass Update Button Logic =======
@@ -33,32 +33,45 @@ window.massUpdateSkillSheetIDs = async function () {
   }
   const data = snap.val();
   const updates = {};
+  let noMatchCount = 0;
 
   Object.entries(data).forEach(([key, entry]) => {
     if (!entry.skillSheetID) {
       let newID = null;
-      // 1. Map from scoreCategory
-      if (entry.scoreCategory && skillSheetMap[entry.scoreCategory]) {
-        newID = skillSheetMap[entry.scoreCategory];
-      }
-      // 2. Map from tags
-      if (!newID && Array.isArray(entry.tags)) {
-        for (const tag of entry.tags) {
-          if (tagSkillSheetMap[tag]) {
-            newID = tagSkillSheetMap[tag];
+      // 1. Try mapping from scoreCategory (case-insensitive)
+      if (entry.scoreCategory) {
+        const catKey = entry.scoreCategory.trim().toLowerCase();
+        for (const mapKey in skillSheetMap) {
+          if (catKey === mapKey.trim().toLowerCase()) {
+            newID = skillSheetMap[mapKey];
             break;
           }
         }
       }
+      // 2. Else, check tags (case-insensitive, first match wins)
+      if (!newID && Array.isArray(entry.tags)) {
+        for (const tag of entry.tags) {
+          for (const tagMapKey in tagSkillSheetMap) {
+            if (tag.trim().toLowerCase() === tagMapKey.trim().toLowerCase()) {
+              newID = tagSkillSheetMap[tagMapKey];
+              break;
+            }
+          }
+          if (newID) break;
+        }
+      }
       if (newID) {
         updates[`hardcodedResponses/${key}/skillSheetID`] = newID;
+      } else {
+        noMatchCount++;
+        console.log("No skillSheetID match for:", entry.scoreCategory, entry.tags);
       }
     }
   });
 
   if (Object.keys(updates).length > 0) {
     await update(ref(db), updates);
-    alert(`✅ Updated skillSheetID for ${Object.keys(updates).length} responses.`);
+    alert(`✅ Updated skillSheetID for ${Object.keys(updates).length} responses. No match for ${noMatchCount} responses (see console log).`);
     location.reload();
   } else {
     alert("No missing skillSheetID fields found.");
