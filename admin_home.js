@@ -33,12 +33,13 @@ function renderResponseCard(key, data, isReview = false) {
   const container = document.getElementById("responsesContainer");
   const isInvalid = !(data.response || data.answer) || (data.scoreCategory && data.scoreCategory.trim() === "") || (data.scoreCategory && data.scoreCategory.toLowerCase() === "assessment");
 
-  const div = document.createElement("div");
+  div = document.createElement("div");
   div.className = "response" + (isInvalid ? " missing" : "");
 
   div.innerHTML = `
     <div class="field"><strong>Question:</strong> <div contenteditable="true" id="q-${key}">${data.question || "Missing"}</div></div>
     <div class="field"><strong>Response:</strong> <div contenteditable="true" id="r-${key}">${data.response || data.answer || "Missing"}</div></div>
+    <div class="field"><strong>Skill Sheet ID:</strong> <div contenteditable="true" id="skillSheetID-${key}">${data.skillSheetID || ""}</div></div>
     <div class="field"><strong>Score Category:</strong> <div contenteditable="true" id="cat-${key}">${data.scoreCategory || suggestCategory(data)}</div></div>
     <div class="field"><strong>Points:</strong> <div contenteditable="true" id="pts-${key}">${data.points !== undefined ? data.points : 0}</div></div>
     <div class="field"><strong>Critical Fail (true/false):</strong> <div contenteditable="true" id="cf-${key}">${data.criticalFail !== undefined ? data.criticalFail : "false"}</div></div>
@@ -80,7 +81,8 @@ window.saveResponse = async function (key) {
 
   const updated = {
     question: build("q"),
-    response: build("r"), // Always save as 'response' now!
+    response: build("r"),
+    skillSheetID: build("skillSheetID"),
     scoreCategory: build("cat"),
     points: parseInt(build("pts")) || 0,
     criticalFail: build("cf") === "true",
@@ -146,7 +148,8 @@ window.autoTagAllApprovedResponses = async function () {
       if (res.ok) {
         await set(ref(db, `hardcodedResponses/${key}`), {
           ...val,
-          response: val.response || val.answer, // Ensure response always exists!
+          response: val.response || val.answer,
+          skillSheetID: val.skillSheetID || "",
           tags: result.tags,
           scoreCategory: result.scoreCategory,
           criticalFail: result.criticalFail
@@ -170,6 +173,7 @@ window.autoTagAllApprovedResponses = async function () {
 window.autoTagSingleApprovedResponse = async function (key) {
   const question = document.getElementById(`q-${key}`)?.innerText.trim();
   const response = document.getElementById(`r-${key}`)?.innerText.trim();
+  const skillSheetID = document.getElementById(`skillSheetID-${key}`)?.innerText.trim();
 
   if (!question || !response) {
     alert("❌ Missing question or response.");
@@ -192,7 +196,8 @@ window.autoTagSingleApprovedResponse = async function (key) {
       await set(ref(db, `hardcodedResponses/${key}`), {
         ...(existing.exists() ? existing.val() : {}),
         question,
-        response, // Always save as 'response'!
+        response,
+        skillSheetID,
         scoreCategory: result.scoreCategory,
         criticalFail: result.criticalFail,
         tags: result.tags
@@ -211,6 +216,7 @@ window.autoTagSingleApprovedResponse = async function (key) {
 window.autoTagSingleResponse = async function (key) {
   const question = document.getElementById(`q-${key}`)?.innerText.trim();
   const response = document.getElementById(`r-${key}`)?.innerText.trim();
+  const skillSheetID = document.getElementById(`skillSheetID-${key}`)?.innerText.trim();
 
   if (!question || !response) {
     alert("❌ Missing question or response.");
@@ -231,7 +237,8 @@ window.autoTagSingleResponse = async function (key) {
     if (res.ok) {
       await set(ref(db, `hardcodedReview/${key}`), {
         question,
-        response, // Always save as 'response'!
+        response,
+        skillSheetID,
         scoreCategory: result.scoreCategory,
         criticalFail: result.criticalFail,
         tags: result.tags
