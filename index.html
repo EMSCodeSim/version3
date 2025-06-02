@@ -1,164 +1,324 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>EMS Code Sim</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EMS Simulator</title>
+  <link rel="stylesheet" href="styles/style.css" />
+
   <style>
-    body { font-family: Arial, sans-serif; margin:0; background:#f3f8fb;}
-    .main { display:flex; flex-direction:row; min-height:100vh;}
-    #simPane { flex:1; padding:24px; display:flex; flex-direction:column; }
-    #chat-box { height:340px; overflow-y:auto; background:#fff; border:1px solid #ddd; padding:12px; margin-bottom:16px; border-radius:8px;}
-    #input-form { display:flex; gap:8px; }
-    #user-input { flex:1; font-size:16px; border-radius:6px; border:1px solid #bbb; padding:7px;}
-    .message { margin-bottom:9px; }
-    .message.user { color:#1b6ac9;}
-    .message.ai { color:#17964a;}
-    .message.system { color:#c15e13;}
-    .question { margin-top:10px; font-weight:bold;}
-    .response { margin-left:16px; }
-    .proctor-bubble { color:#874ad7; }
-    .patient-bubble { color:#187944; }
-    .btns { margin-bottom:14px; }
-    button { font-size:15px; border-radius:6px; border:1px solid #187944; padding:7px 14px; margin-right:6px; background:#e9f7ef;}
-    button#start-button { background:#1b6ac9; color:#fff; border:none; }
-    button#end-button { background:#d63434; color:#fff; border:none; }
-    button#mic-button { background:#f3d74c; color:#111; border:none;}
-    #learningModeToggle { margin-right:4px; vertical-align:middle;}
-    .learning-pane { width:330px; background:#fff; padding:20px 20px 0 20px; border-left:2px solid #e2e2e2; }
-    #skillSheetPane { display:none;}
-    .skill-table { width:100%; font-size:14px; border-collapse:collapse; }
-    .skill-table th, .skill-table td { border-bottom:1px solid #eee; padding:5px 4px;}
-    .skill-table th { background:#e7e7fa;}
-    .skill-table td { background:#fcfcff;}
-    .status-cell { text-align:center; font-size:17px;}
-    .checked { color:green; }
-    @media (max-width:900px) {
-      .main { flex-direction:column; }
-      .learning-pane { width:100%; border-left:none; border-top:2px solid #e2e2e2;}
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: #f2f9ff;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ems-logo-row {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 12px;
+      padding-bottom: 4px;
+      background: #fff;
+    }
+
+    #main-header {
+      padding: 8px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    #mainLayout {
+      display: flex;
+      flex-direction: row;
+      flex: 1;
+      padding: 10px;
+    }
+
+    #simulatorPane {
+      width: 70%;
+      padding: 10px;
+    }
+
+    #skillSheetPane {
+      width: 30%;
+      padding: 10px;
+      border-left: 2px solid #ccc;
+      display: none;
+    }
+
+    .status {
+      color: green;
+      font-weight: bold;
+    }
+
+    @media (max-width: 900px) {
+      #skillSheetPane {
+        display: none !important;
+      }
+    }
+
+    body.learning-mode #main-header {
+      justify-content: flex-start;
+      padding-left: 5%;
+    }
+
+    #chat-box {
+      height: 380px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      background: #fff;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .input-row {
+      display: flex;
+      flex-direction: row;
+      gap: 8px;
+      align-items: center;
+    }
+
+    #user-input {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    #send-button {
+      padding: 10px 14px;
+      font-size: 14px;
+    }
+
+    #mic-button {
+      padding: 10px 24px;
+      font-size: 16px;
+    }
+
+    #learningModeToggle {
+      margin-left: 10px;
+    }
+
+    .full-width-chat {
+      width: 100%;
+    }
+
+    @media (min-width: 901px) {
+      body:not(.learning-mode) #chat-box,
+      body:not(.learning-mode) .input-row {
+        width: 100vw;
+        max-width: none;
+      }
     }
   </style>
 </head>
+
 <body>
-<div class="main">
-  <!-- Simulator/chat pane -->
-  <div id="simPane">
-    <div class="btns">
-      <button id="start-button">Start Scenario</button>
-      <button id="end-button">End Scenario</button>
-      <button id="mic-button">🎤 Mic</button>
-      <label style="float:right;">
-        <input type="checkbox" id="learningModeToggle"/>
-        Learning Mode
-      </label>
-    </div>
-    <div id="chat-box"></div>
-    <form id="input-form" autocomplete="off">
-      <input id="user-input" placeholder="Type your assessment or treatment..." autocomplete="off" />
-      <button id="send-button" type="submit">Send</button>
-    </form>
+  <div class="ems-logo-row">
+    <svg width="90%" height="100" viewBox="0 0 900 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="grad1" x1="0" y1="0" x2="900" y2="0" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#1976d2"/>
+          <stop offset="1" stop-color="#20e3c2"/>
+        </linearGradient>
+      </defs>
+      <rect x="60" y="18" width="780" height="64" rx="32" fill="url(#grad1)"/>
+      <text x="450" y="65" text-anchor="middle" font-family="Arial Black, Arial, sans-serif"
+        font-size="46" fill="#fff" font-weight="bold" letter-spacing="10">
+        EMS CODE SIM
+      </text>
+    </svg>
   </div>
-  <!-- Live Skill Sheet pane -->
-  <div class="learning-pane" id="skillSheetPane">
-    <h3>NREMT Medical Assessment Skill Sheet</h3>
-    <table class="skill-table">
-      <tr><th>#</th><th>Skill/Assessment Step</th><th>Status</th></tr>
-      <tr><td>1</td><td>Takes/verbalizes appropriate PPE precautions</td><td class="status-cell" id="status-1"></td></tr>
-      <tr><td>2</td><td>Determines the scene/situation is safe</td><td class="status-cell" id="status-2"></td></tr>
-      <tr><td>3</td><td>Determines the mechanism of injury/nature of illness</td><td class="status-cell" id="status-3"></td></tr>
-      <tr><td>4</td><td>Determines the number of patients</td><td class="status-cell" id="status-4"></td></tr>
-      <tr><td>5</td><td>Requests additional EMS assistance if necessary</td><td class="status-cell" id="status-5"></td></tr>
-      <tr><td>6</td><td>Considers stabilization of spine as indicated</td><td class="status-cell" id="status-6"></td></tr>
-      <tr><td>7</td><td>Verbalizes general impression of the patient</td><td class="status-cell" id="status-7"></td></tr>
-      <tr><td>8</td><td>Determines responsiveness/level of consciousness</td><td class="status-cell" id="status-8"></td></tr>
-      <tr><td>9</td><td>Determines chief complaint/apparent life-threats</td><td class="status-cell" id="status-9"></td></tr>
-      <tr><td>10</td><td>Airway: Opens, assesses, adjunct, breathing, ventilation, injury management</td><td class="status-cell" id="status-10"></td></tr>
-      <tr><td>11</td><td>Initiates appropriate oxygen therapy</td><td class="status-cell" id="status-11"></td></tr>
-      <tr><td>12</td><td>Circulation: Checks pulse, skin, controls bleeding, shock management</td><td class="status-cell" id="status-12"></td></tr>
-      <tr><td>13</td><td>Identifies patient priority and makes transport/scene decision</td><td class="status-cell" id="status-13"></td></tr>
-      <tr><td>14</td><td>Obtains history of present illness (OPQRST)</td><td class="status-cell" id="status-14"></td></tr>
-      <tr><td>20</td><td>Obtains past medical history (SAMPLE)</td><td class="status-cell" id="status-20"></td></tr>
-      <tr><td>26</td><td>Secondary assessment (head, neck, chest, abdomen, extremities, posterior)</td><td class="status-cell" id="status-26"></td></tr>
-      <tr><td>27</td><td>Obtains baseline vital signs (BP, pulse, respirations)</td><td class="status-cell" id="status-27"></td></tr>
-      <tr><td>30</td><td>Verbalizes field impression of patient</td><td class="status-cell" id="status-30"></td></tr>
-      <tr><td>31</td><td>Verbalizes interventions/treatment & manages secondary injuries</td><td class="status-cell" id="status-31"></td></tr>
-      <tr><td>32</td><td>Reassesses patient & gives accurate handoff report</td><td class="status-cell" id="status-32"></td></tr>
-    </table>
-    <div style="color:#aaa; font-size:12px; margin-top:12px;">
-      Each box checks off when you complete that skill sheet item.
+
+  <header id="main-header">
+    <button id="start-button">Start Scenario</button>
+    <button id="end-button">End Scenario</button>
+    <label><input type="checkbox" id="learningModeToggle"> Learning Mode</label>
+  </header>
+
+  <div id="mainLayout">
+    <div id="simulatorPane">
+      <div id="chat-box" class="full-width-chat"></div>
+      <div class="input-row full-width-chat">
+        <input type="text" id="user-input" placeholder="Type your response here..." />
+        <button id="send-button">Send</button>
+        <button id="mic-button">🎤</button>
+      </div>
     </div>
-  </div>
+
+    <div id="skillSheetPane">
+
+<h3>NREMT Medical Assessment Skill Sheet</h3>
+<ul id="skillChecklist">
+  <!-- Scene Size-Up -->
+  <li id="EMT-B-MED-1">BSI/PPE <span class="status" id="status-1"></span></li>
+  <li id="EMT-B-MED-2">Scene Safety <span class="status" id="status-2"></span></li>
+  <li id="EMT-B-MED-3">Determine MOI/NOI <span class="status" id="status-3"></span></li>
+  <li id="EMT-B-MED-4">Determine Number of Patients <span class="status" id="status-4"></span></li>
+  <li id="EMT-B-MED-5">Request Additional EMS Assistance <span class="status" id="status-5"></span></li>
+  <li id="EMT-B-MED-6">Consider C-Spine Stabilization <span class="status" id="status-6"></span></li>
+
+  <!-- Primary Assessment -->
+  <li id="EMT-B-MED-7">General Impression <span class="status" id="status-7"></span></li>
+  <li id="EMT-B-MED-8">Determine Responsiveness/LOC <span class="status" id="status-8"></span></li>
+  <li id="EMT-B-MED-9">Determine Chief Complaint <span class="status" id="status-9"></span></li>
+  <li id="EMT-B-MED-10">Assess Airway/Breathing <span class="status" id="status-10"></span></li>
+  <li id="EMT-B-MED-11">Initiate Oxygen Therapy <span class="status" id="status-11"></span></li>
+  <li id="EMT-B-MED-12">Assess Circulation (Pulse, Skin, Bleeding) <span class="status" id="status-12"></span></li>
+  <li id="EMT-B-MED-13">Identify Patient Priority & Transport Decision <span class="status" id="status-13"></span></li>
+
+  <!-- History Taking -->
+  <li id="EMT-B-MED-14">OPQRST - Onset <span class="status" id="status-14"></span></li>
+  <li id="EMT-B-MED-15">Provocation <span class="status" id="status-15"></span></li>
+  <li id="EMT-B-MED-16">Quality <span class="status" id="status-16"></span></li>
+  <li id="EMT-B-MED-17">Radiation <span class="status" id="status-17"></span></li>
+  <li id="EMT-B-MED-18">Severity <span class="status" id="status-18"></span></li>
+  <li id="EMT-B-MED-19">Time <span class="status" id="status-19"></span></li>
+  <li id="EMT-B-MED-20">SAMPLE - Signs/Symptoms <span class="status" id="status-20"></span></li>
+  <li id="EMT-B-MED-21">Allergies <span class="status" id="status-21"></span></li>
+  <li id="EMT-B-MED-22">Medications <span class="status" id="status-22"></span></li>
+  <li id="EMT-B-MED-23">Past Medical History <span class="status" id="status-23"></span></li>
+  <li id="EMT-B-MED-24">Last Oral Intake <span class="status" id="status-24"></span></li>
+  <li id="EMT-B-MED-25">Events Leading to Present Illness <span class="status" id="status-25"></span></li>
+
+  <!-- Secondary Assessment -->
+  <li id="EMT-B-MED-26">Assess Affected Body/System <span class="status" id="status-26"></span></li>
+  <li id="EMT-B-MED-27">Vital Signs - BP <span class="status" id="status-27"></span></li>
+  <li id="EMT-B-MED-28">Heart Rate <span class="status" id="status-28"></span></li>
+  <li id="EMT-B-MED-29">Respiratory Rate <span class="status" id="status-29"></span></li>
+  <li id="EMT-B-MED-30">Field Impression of Patient <span class="status" id="status-30"></span></li>
+  <li id="EMT-B-MED-31">Interventions <span class="status" id="status-31"></span></li>
+
+  <!-- Reassessment -->
+  <li id="EMT-B-MED-32">Demonstrate How & When to Reassess <span class="status" id="status-32"></span></li>
+</ul>
+
+<!-- Critical Failures -->
+<h4>Critical Failures</h4>
+<ul>
+  <li>Failure to initiate or call for transport within 15 minutes</li>
+  <li>Failure to provide adequate oxygen therapy</li>
+  <li>Failure to verbalize or demonstrate BSI/PPE before patient contact</li>
+  <li>Failure to assess and treat life-threatening conditions first</li>
+  <li>Failure to manage the patient as a competent EMT</li>
+  <li>Exhibits unsafe behavior</li>
+  <li>Failure to perform all critical steps</li>
+</ul>
 </div>
+  </div>
 
-<!-- Live skill sheet tracking by skillSheetID -->
-<script type="module">
-  // Map skillSheetID to checklist status element IDs
-  const skillSheetIDToStatusID = {
-    verbalizesPPEPrecautions: "status-1",
-    verbalizesSceneSafety: "status-2",
-    determinesMOIorNOI: "status-3",
-    determinesNumberOfPatients: "status-4",
-    requestsAdditionalEMS: "status-5",
-    considersCSpineStabilization: "status-6",
-    verbalizesGeneralImpression: "status-7",
-    determinesResponsiveness: "status-8",
-    determinesChiefComplaint: "status-9",
-    assessesAirway: "status-10",
-    assessesBreathing: "status-10",
-    insertsAirwayAdjunct: "status-10",
-    assuresAdequateVentilation: "status-10",
-    initiatesOxygenTherapy: "status-11",
-    managesInjuryBreathing: "status-10",
-    assessesPulse: "status-12",
-    assessesSkin: "status-12",
-    assessesAndControlsBleeding: "status-12",
-    initiatesShockManagement: "status-12",
-    identifiesPriorityTransportDecision: "status-13",
-    obtainsOPQRSTHistory: "status-14",
-    obtainsSAMPLEHistory: "status-20",
-    assessesHead: "status-26",
-    assessesNeck: "status-26",
-    assessesChest: "status-26",
-    assessesAbdomenPelvis: "status-26",
-    assessesLowerExtremities: "status-26",
-    assessesUpperExtremities: "status-26",
-    assessesPosterior: "status-26",
-    obtainsBaselineVitals: "status-27",
-    managesSecondaryInjuries: "status-31",
-    verbalizesFieldImpression: "status-30",
-    verbalizesInterventions: "status-31",
-    reassessesPatient: "status-32",
-    providesAccurateHandoffReport: "status-32"
-  };
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
+      authDomain: "ems-code-sim.firebaseapp.com",
+      databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+      projectId: "ems-code-sim",
+      storageBucket: "ems-code-sim.firebasestorage.app",
+      messagingSenderId: "190498607578",
+      appId: "1:190498607578:web:4cf6c8e999b027956070e3",
+      measurementId: "G-2Q3ZT01YT1"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
 
-  window.markSkillSheetStep = function (skillSheetID) {
-    const statusId = skillSheetIDToStatusID[skillSheetID];
-    if (!statusId) return;
-    const el = document.getElementById(statusId);
-    if (el && !el.textContent.includes("✔")) {
-      el.textContent = "✔";
-      el.classList.add("checked");
-    }
-  };
+  <!-- Scripts -->
+  <script src="scripts/app.js" type="module"></script>
+  <script src="scripts/grading.js" type="module"></script>
 
-  window.onResponseScored = function(entry) {
-    if (entry.skillSheetID) {
-      window.markSkillSheetStep(entry.skillSheetID);
-    }
-  };
+  <!-- Button Logic -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const toggle = document.getElementById("learningModeToggle");
+      const skillPane = document.getElementById("skillSheetPane");
+      if (toggle && skillPane) {
+        toggle.addEventListener("change", () => {
+          document.body.classList.toggle("learning-mode", toggle.checked);
+          skillPane.style.display = toggle.checked ? "block" : "none";
+        });
+      }
 
-  // Learning Mode toggle logic (show/hide skill sheet pane)
-  document.addEventListener("DOMContentLoaded", function () {
-    const toggle = document.getElementById("learningModeToggle");
-    const skillPane = document.getElementById("skillSheetPane");
-    if (toggle && skillPane) {
-      toggle.addEventListener("change", () => {
-        document.body.classList.toggle("learning-mode", toggle.checked);
-        skillPane.style.display = toggle.checked ? "block" : "none";
-      });
-      if (toggle.checked) skillPane.style.display = "block";
-    }
-  });
-</script>
+      const startBtn = document.getElementById("start-button");
+      const endBtn = document.getElementById("end-button");
+      const sendBtn = document.getElementById("send-button");
+
+      if (startBtn) startBtn.addEventListener("click", () => window.startScenario?.());
+      if (endBtn) endBtn.addEventListener("click", () => window.endScenario?.());
+      if (sendBtn) sendBtn.addEventListener("click", () => window.sendMessage?.());
+    });
+  </script>
+
+  <!-- Updated Skill Sheet ID-based Checklist Logic -->
+  <script>
+    // Map Skill Sheet IDs to status IDs
+    const skillSheetIDToStatusID = {
+      verbalizesPPEPrecautions: "status-1",
+      verbalizesSceneSafety: "status-2",
+      determinesMOIorNOI: "status-3",
+      determinesNumberOfPatients: "status-4",
+      requestsAdditionalEMS: "status-5",
+      considersCSpineStabilization: "status-6",
+      verbalizesGeneralImpression: "status-7",
+      determinesResponsiveness: "status-8",
+      determinesChiefComplaint: "status-9",
+      assessesAirway: "status-10",
+      assessesBreathing: "status-10",
+      insertsAirwayAdjunct: "status-10",
+      assuresAdequateVentilation: "status-10",
+      initiatesOxygenTherapy: "status-11",
+      managesInjuryBreathing: "status-10",
+      assessesPulse: "status-12",
+      assessesSkin: "status-12",
+      assessesAndControlsBleeding: "status-12",
+      initiatesShockManagement: "status-12",
+      identifiesPriorityTransportDecision: "status-13",
+      obtainsOPQRSTHistory: "status-14",
+      obtainsProvocation: "status-15",
+      obtainsQuality: "status-16",
+      obtainsRadiation: "status-17",
+      obtainsSeverity: "status-18",
+      obtainsTime: "status-19",
+      obtainsSAMPLEHistory: "status-20",
+      obtainsAllergies: "status-21",
+      obtainsMedications: "status-22",
+      obtainsPastMedicalHistory: "status-23",
+      obtainsLastOralIntake: "status-24",
+      obtainsEventsLeading: "status-25",
+      assessesAffectedBodySystem: "status-26",
+      obtainsBaselineBP: "status-27",
+      obtainsBaselineHR: "status-28",
+      obtainsBaselineRR: "status-29",
+      verbalizesFieldImpression: "status-30",
+      verbalizesInterventions: "status-31",
+      reassessesPatient: "status-32"
+    };
+
+    // When grading system/completion occurs, call this:
+    window.markSkillSheetStep = function(skillSheetID) {
+      const statusId = skillSheetIDToStatusID[skillSheetID];
+      if (!statusId) return;
+      const el = document.getElementById(statusId);
+      if (el && !el.textContent.includes("✔")) {
+        el.textContent = "✔";
+      }
+    };
+
+    // The grading system (app.js) should call onResponseScored after each response with {skillSheetID}
+    window.onResponseScored = function(entry) {
+      if (entry.skillSheetID) {
+        window.markSkillSheetStep(entry.skillSheetID);
+      }
+    };
+  </script>
 </body>
 </html>
