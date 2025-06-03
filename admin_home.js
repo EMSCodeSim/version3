@@ -394,3 +394,80 @@ function switchTabs() {
   document.getElementById("approvedTab").classList.toggle("active", currentTab === "approved");
   document.getElementById("reviewTab").classList.toggle("active", currentTab === "review");
 }
+
+// ====== EXPORT FIREBASE AS DEDUPED JSON FILES ======
+window.exportFirebaseToJSON = async function () {
+  // Helper: Normalize question for deduplication
+  function normalizeQuestion(q) {
+    return (q || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[^\w\s]/gi, '') // Remove punctuation
+      .replace(/\s+/g, ' '); // Collapse whitespace
+  }
+
+  // Download both approved & review branches
+  const [snapApproved, snapReview] = await Promise.all([
+    get(ref(db, "hardcodedResponses")),
+    get(ref(db, "hardcodedReview"))
+  ]);
+  const approved = snapApproved.exists() ? snapApproved.val() : {};
+  const review = snapReview.exists() ? snapReview.val() : {};
+
+  // Deduplicate: Prefer approved > review, only one per normalized question
+  const seen = new Set();
+  const dedupedApproved = {};
+  const dedupedReview = {};
+
+  // First: add all approved, record normalized question
+  for (const [key, val] of Object.entries(approved)) {
+    const norm = normalizeQuestion(val.question);
+    if (!seen.has(norm)) {
+      dedupedApproved[key] = val;
+      seen.add(norm);
+    }
+  }
+
+  // Next: add review ONLY if not already seen
+  for (const [key, val] of Object.entries(review)) {
+    const norm = normalizeQuestion(val.question);
+    if (!seen.has(norm)) {
+      dedupedReview[key] = val;
+      seen.add(norm);
+    }
+  }
+
+  // Combine for splitting
+  const all = { ...dedupedApproved, ...dedupedReview };
+  const keys = Object.keys(all);
+  const total = keys.length;
+  const chunkSize = Math.ceil(total / 3);
+
+  // Split into 3 chunks
+  const chunk1 = {};
+  const chunk2 = {};
+  const chunk3 = {};
+  keys.forEach((k, i) => {
+    if (i < chunkSize) chunk1[k] = all[k];
+    else if (i < 2 * chunkSize) chunk2[k] = all[k];
+    else chunk3[k] = all[k];
+  });
+
+  // Download helper
+  function download(obj, filename) {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(obj, null, 2));
+    const a = document.createElement('a');
+    a.setAttribute("href", dataStr);
+    a.setAttribute("download", filename);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  // Start download
+  download(chunk1, "ems_database_part1.json");
+  download(chunk2, "ems_database_part2.json");
+  download(chunk3, "ems_database_part3.json");
+
+  alert(`Exported ${total} unique entries across 3 JSON files!`);
+};
