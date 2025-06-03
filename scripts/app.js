@@ -6,7 +6,6 @@ const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
 let gradingTemplate = {};
 let scenarioStarted = false;
-let hardcodedResponses = {};
 let chatLog = [];
 
 // ---- Multi-action Handler ----
@@ -29,8 +28,8 @@ async function handleMultiActionInput(userInput) {
       parentInput: userInput,
       source: "gpt3.5_auto"
     };
-    firebase.database().ref("/hardcodedResponses/").push(entry);
-    // ---- SKILL SHEET GRADING ----
+    // No more Firebase writes for static use!
+    // if (window.firebase) window.firebase.database().ref("/hardcodedResponses/").push(entry);
     if (entry.skillSheetID) gradeActionBySkillID(entry.skillSheetID);
     onResponseScored(entry);
   });
@@ -86,39 +85,19 @@ function speakOnce(text, voiceName = "", rate = 1.0, callback) {
   utter.onend = () => { if (callback) callback(); };
   window.speechSynthesis.speak(utter);
 }
-async function displayChatResponse(
-  response,
-  question = "",
-  role = "",
-  audioUrl = null,
-  source = "",
-  userInput = "",
-  doSpeak = true
-) {
-  const chatBox = document.getElementById("chat-box");
-  const roleClass = role.toLowerCase().includes("proctor") ? "proctor-bubble" : "patient-bubble";
-  if (question) {
-    chatBox.innerHTML += `<div class="question">🗣️ <b>You:</b> ${question}</div>`;
-  }
-  chatBox.innerHTML += `<div class="response ${roleClass}">${role ? `<b>${role}:</b> ` : ""}${response}</div>`;
-  if (audioUrl && doSpeak) {
-    let src = audioUrl.startsWith("http") || audioUrl.startsWith("data:audio") ? audioUrl : `data:audio/mp3;base64,${audioUrl}`;
-    playAudio(src);
-  }
-  chatBox.scrollTop = chatBox.scrollHeight;
+
+// ---- TTS Audio from static files ----
+async function getTTSAudioFromResponses(question) {
+  // Uses the loaded global array for fastest lookup
+  if (!window.hardcodedResponsesArray || !window.hardcodedResponsesArray.length) return null;
+  const norm = question.trim().toLowerCase();
+  const match = window.hardcodedResponsesArray.find(entry =>
+    (entry.question && entry.question.trim().toLowerCase() === norm) ||
+    (entry.userQuestion && entry.userQuestion.trim().toLowerCase() === norm)
+  );
+  return match && match.ttsAudio ? match.ttsAudio : null;
 }
-async function getTTSAudioFromFirebase(question) {
-  const snapshot = await firebase.database().ref(`hardcodedResponses`).once('value');
-  let result = null;
-  snapshot.forEach(child => {
-    const entry = child.val();
-    const key = entry.userQuestion || entry.question;
-    if (key && key.trim().toLowerCase() === question.trim().toLowerCase()) {
-      result = entry.ttsAudio;
-    }
-  });
-  return result;
-}
+
 function disableMic() {
   const micBtn = document.getElementById('mic-button');
   if (micBtn) micBtn.disabled = true;
@@ -165,8 +144,8 @@ async function processUserMessage(message) {
     });
     chatLog.push(role + ": " + response);
     let ttsAudio = null;
-    if (source === "hardcoded") {
-      ttsAudio = await getTTSAudioFromFirebase(message);
+    if (source === "hardcoded" || source === "alias" || source === "tag-match") {
+      ttsAudio = await getTTSAudioFromResponses(message);
       if (ttsAudio && !ttsAudio.startsWith("http") && !ttsAudio.startsWith("data:audio"))
         ttsAudio = `data:audio/mp3;base64,${ttsAudio}`;
     }
@@ -209,7 +188,8 @@ async function loadPatientInfo() {
 }
 function logErrorToDatabase(errorInfo) {
   console.error("🔴", errorInfo);
-  firebase.database().ref('error_logs').push({ error: errorInfo, timestamp: Date.now() });
+  // If you still want to log to Firebase for other reasons, keep this line
+  // firebase.database().ref('error_logs').push({ error: errorInfo, timestamp: Date.now() });
 }
 
 // ---- Scenario Start ----
@@ -218,9 +198,7 @@ window.startScenario = async function () {
   try {
     console.log("🚀 Start button tapped. Starting scenario...");
     await loadHardcodedResponses();
-    const snapshot = await firebase.database().ref('hardcodedResponses').once('value');
-    hardcodedResponses = snapshot.val() || {};
-    console.log("✅ Hardcoded responses loaded.");
+    console.log("✅ Hardcoded responses loaded from static files.");
     const configRes = await fetch(`${scenarioPath}config.json`);
     if (!configRes.ok) throw new Error("Missing config.json");
     const config = await configRes.json();
