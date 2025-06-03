@@ -1,10 +1,31 @@
-let hardcodedResponses = [];
+// router.js
 
-// Load responses from Firebase
+// Hardcoded responses array (loaded from JSON files)
+let hardcodedResponses = [];
+window.hardcodedResponsesArray = hardcodedResponses; // For global access if needed
+
+// Load responses from three JSON files in /scenarios/chest_pain_002/
 export async function loadHardcodedResponses() {
-  const snapshot = await firebase.database().ref("hardcodedResponses").once("value");
-  const data = snapshot.val() || {};
-  hardcodedResponses = Object.values(data);
+  const base = '/scenarios/chest_pain_002/';
+  const files = [
+    `${base}ems_database_part1.json`,
+    `${base}ems_database_part2.json`,
+    `${base}ems_database_part3.json`
+  ];
+
+  hardcodedResponses.length = 0; // Clear
+  for (const file of files) {
+    try {
+      const resp = await fetch(file);
+      if (!resp.ok) throw new Error(`Failed to load ${file}`);
+      const obj = await resp.json();
+      // Each file is an object: {id: {...}, ...}
+      hardcodedResponses.push(...Object.values(obj));
+    } catch (err) {
+      console.error(`Failed to load ${file}:`, err);
+    }
+  }
+  window.hardcodedResponsesArray = hardcodedResponses;
 }
 
 // Helper to normalize
@@ -44,19 +65,19 @@ export async function routeUserInput(message, { scenarioId, role }) {
     normalize(entry.userQuestion) === norm
   );
   if (match && (match.response || match.answer)) {
-    return { response: match.response || match.answer, source: "hardcoded" };
+    return { response: match.response || match.answer, source: "hardcoded", matchedEntry: match };
   }
 
   // 2. Alias match
   const aliasMatch = matchByAlias(message);
   if (aliasMatch && (aliasMatch.response || aliasMatch.answer)) {
-    return { response: aliasMatch.response || aliasMatch.answer, source: "alias" };
+    return { response: aliasMatch.response || aliasMatch.answer, source: "alias", matchedEntry: aliasMatch };
   }
 
   // 3. Tag match
   const tagMatch = matchByTags(message);
   if (tagMatch && (tagMatch.response || tagMatch.answer)) {
-    return { response: tagMatch.response || tagMatch.answer, source: "tag-match" };
+    return { response: tagMatch.response || tagMatch.answer, source: "tag-match", matchedEntry: tagMatch };
   }
 
   // 4. GPT fallback
@@ -69,17 +90,9 @@ export async function routeUserInput(message, { scenarioId, role }) {
 
     const data = await res.json();
     if (!res.ok || !data.reply) throw new Error(data.error || "GPT failed");
-
-    firebase.database().ref('hardcodeReview').push({
-      userQuestion: message,
-      aiResponse: data.reply,
-      role: role || "patient",
-      timestamp: Date.now()
-    });
-
-    return { response: data.reply, source: "gpt" };
+    return { response: data.reply, source: "gpt", matchedEntry: null };
   } catch (err) {
     console.error("GPT fallback failed:", err.message);
-    return { response: "❌ No response from AI.", source: "gpt" };
+    return { response: "❌ No response from AI.", source: "gpt", matchedEntry: null };
   }
 }
