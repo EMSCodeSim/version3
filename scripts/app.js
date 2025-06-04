@@ -120,5 +120,58 @@ async function loadGradingTemplate(type = "medical") {
   initializeScoreTracker(gradingTemplate);
 }
 
-// --- Message processing, end scenario, and other logic can remain as before ---
+// --- Send message logic ---
+async function processUserMessage(message) {
+  if (!message) return;
+  const chatBox = document.getElementById('chat-box');
+  // Display the user's message
+  const userDiv = document.createElement('div');
+  userDiv.innerHTML = `<b>You:</b> ${message}`;
+  chatBox.appendChild(userDiv);
+  chatBox.scrollTop = chatBox.scrollHeight;
 
+  // Route to AI/hardcoded/patient/proctor
+  try {
+    const { response, source, matchedEntry } = await routeUserInput(message, {
+      scenarioId: scenarioPath,
+      role: "user"
+    });
+    // Display AI/patient/proctor reply
+    const replyDiv = document.createElement('div');
+    replyDiv.innerHTML = `<b>Patient:</b> ${response}`;
+    chatBox.appendChild(replyDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    // Optionally: play audio, grade, etc.
+  } catch (err) {
+    const errDiv = document.createElement('div');
+    errDiv.innerHTML = `<b>System:</b> ❌ AI processing error: ${err.message}`;
+    chatBox.appendChild(errDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+}
+
+// Attach event listeners for Send button and Enter key
+document.addEventListener('DOMContentLoaded', () => {
+  const sendBtn = document.getElementById('send-button');
+  const input = document.getElementById('user-input');
+  if (sendBtn) {
+    sendBtn.addEventListener('click', () => {
+      const message = input.value.trim();
+      if (message) {
+        processUserMessage(message);
+        input.value = '';
+      }
+    });
+  }
+  if (input) {
+    input.addEventListener('keypress', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (sendBtn) sendBtn.click();
+      }
+    });
+  }
+});
+
+// Optional: expose for testing
+window.processUserMessage = processUserMessage;
