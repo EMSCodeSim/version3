@@ -8,6 +8,7 @@ let gradingTemplate = {};
 window.scenarioStarted = false;
 let chatLog = [];
 
+// Display a message in the chat window
 function displayChatResponse(message, userMessage, role, ttsAudio, source, original, hasAudio) {
   const chatBox = document.getElementById('chat-box');
   if (!chatBox) return;
@@ -19,6 +20,7 @@ function displayChatResponse(message, userMessage, role, ttsAudio, source, origi
   if (ttsAudio) playAudio(ttsAudio);
 }
 
+// Play TTS audio from base64 or URL
 function playAudio(src) {
   document.querySelectorAll("audio#scenarioTTS").forEach(audio => {
     try { audio.pause(); } catch (e) {}
@@ -36,6 +38,7 @@ function playAudio(src) {
   audioElement.play().catch(() => {});
 }
 
+// Speak text using browser speech synthesis
 function speakOnce(text, voiceName = "", rate = 1.0, callback) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
@@ -49,6 +52,7 @@ function speakOnce(text, voiceName = "", rate = 1.0, callback) {
   window.speechSynthesis.speak(utter);
 }
 
+// Only for error logging (not used for scenario data)
 function logErrorToDatabase(errorInfo) {
   console.error("🔴", errorInfo);
 }
@@ -57,10 +61,10 @@ window.startScenario = async function () {
   if (window.scenarioStarted) return;
   const spinner = document.getElementById('loading-spinner');
   try {
-    console.log("startScenario: called.");
     if (spinner) spinner.style.display = "block";
-    // 1. Load hardcoded responses from static files
-    console.log("startScenario: calling loadHardcodedResponses...");
+    console.log("startScenario: called.");
+
+    // 1. Load hardcoded responses from static JSON files
     await loadHardcodedResponses();
     console.log("startScenario: responses loaded:", window.hardcodedResponsesArray?.length);
 
@@ -79,12 +83,14 @@ window.startScenario = async function () {
     // 4. Load dispatch info
     const dispatchRes = await fetch(`${scenarioPath}dispatch.txt`);
     console.log("startScenario: dispatch fetch response:", dispatchRes.status);
+    if (!dispatchRes.ok) throw new Error("Missing dispatch.txt");
     const dispatch = await dispatchRes.text();
     console.log("startScenario: dispatch loaded", dispatch);
 
     // 5. Load patient info
     const patientRes = await fetch(`${scenarioPath}patient.txt`);
     console.log("startScenario: patient fetch response:", patientRes.status);
+    if (!patientRes.ok) throw new Error("Missing patient.txt");
     patientContext = await patientRes.text();
     console.log("startScenario: patient context loaded", patientContext);
 
@@ -96,7 +102,7 @@ window.startScenario = async function () {
   } catch (err) {
     console.error("startScenario ERROR:", err);
     displayChatResponse(
-      "❌ Failed to load scenario. Check config.json, dispatch.txt, and patient.txt.",
+      "❌ Failed to load scenario: " + err.message,
       "", "System", null, "", "", false
     );
     window.scenarioStarted = false;
@@ -106,6 +112,13 @@ window.startScenario = async function () {
   }
 };
 
-// Other app logic for sending/receiving messages, grading, etc, can remain unchanged.
+// Load the grading template file (JSON) and initialize the tracker
+async function loadGradingTemplate(type = "medical") {
+  const file = `grading_templates/${type}_assessment.json`;
+  const res = await fetch(file);
+  gradingTemplate = await res.json();
+  initializeScoreTracker(gradingTemplate);
+}
 
-// If you want a similar spinner for End Scenario, add logic there as well!
+// --- Message processing, end scenario, and other logic can remain as before ---
+
