@@ -10,6 +10,7 @@ let chatLog = [];
 
 // ---- Multi-action Handler ----
 async function handleMultiActionInput(userInput) {
+  console.log("[handleMultiActionInput] UserInput:", userInput);
   const response = await fetch('/.netlify/functions/parseAndTagMultiAction', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -125,6 +126,7 @@ function isProctorQuestion(message) {
 // ---- CORE: User Input Processing ----
 async function processUserMessage(message) {
   if (!message) return;
+  console.log("[processUserMessage] Called with:", message);
   chatLog.push("You: " + message);
   const role = isProctorQuestion(message) ? "Proctor" : "Patient";
   try {
@@ -135,10 +137,12 @@ async function processUserMessage(message) {
       return;
     }
     // --- Main Routing (hardcoded/vector/GPT) ---
+    console.log("[processUserMessage] Calling routeUserInput...");
     const { response, source, matchedEntry } = await routeUserInput(message, {
       scenarioId: scenarioPath,
       role: role.toLowerCase(),
     });
+    console.log("[processUserMessage] routeUserInput result:", { response, source, matchedEntry });
     chatLog.push(role + ": " + response);
     let ttsAudio = null;
     if (source === "hardcoded" || source === "alias" || source === "tag-match") {
@@ -194,18 +198,29 @@ window.startScenario = async function () {
   try {
     if (spinner) spinner.style.display = "block";
     console.log("🚀 Start button tapped. Starting scenario...");
+
     await loadHardcodedResponses();
-    console.log("✅ Hardcoded responses loaded from static files.");
+    console.log("✅ Hardcoded responses loaded:", window.hardcodedResponsesArray.length);
+
     const configRes = await fetch(`${scenarioPath}config.json`);
+    console.log("Config loaded:", configRes.ok);
     if (!configRes.ok) throw new Error("Missing config.json");
     const config = await configRes.json();
-    console.log("✅ Config file loaded:", config);
+    console.log("Config object:", config);
+
     await loadGradingTemplate(config.grading || "medical");
+    console.log("Grading template loaded");
+
     const dispatch = await loadDispatchInfo();
+    console.log("Dispatch loaded:", dispatch);
+
     patientContext = await loadPatientInfo();
+    console.log("Patient info loaded:", patientContext);
+
     displayChatResponse(`🚑 Dispatch: ${dispatch}`, "", "", null, "", "", false);
     speakOnce(dispatch, "", 1.0);
     scenarioStarted = true;
+    console.log("Scenario started!");
   } catch (err) {
     console.error("❌ startScenario error:", err.message);
     displayChatResponse("❌ Failed to load scenario. Check config.json, dispatch.txt, and patient.txt.", "", "", null, "", "", false);
@@ -230,6 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (sendBtn) {
     sendBtn.addEventListener('click', () => {
       const message = input.value.trim();
+      console.log("[Send Button] Clicked. Message:", message);
       if (message) {
         processUserMessage(message);
         input.value = '';
