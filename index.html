@@ -17,7 +17,6 @@
       display: flex;
       flex-direction: column;
     }
-
     .ems-logo-row {
       display: flex;
       justify-content: center;
@@ -26,7 +25,6 @@
       padding-bottom: 4px;
       background: #fff;
     }
-
     #main-header {
       padding: 8px 0;
       display: flex;
@@ -34,42 +32,35 @@
       justify-content: center;
       gap: 8px;
     }
-
     #mainLayout {
       display: flex;
       flex-direction: row;
       flex: 1;
       padding: 10px;
     }
-
     #simulatorPane {
       width: 70%;
       padding: 10px;
     }
-
     #skillSheetPane {
       width: 30%;
       padding: 10px;
       border-left: 2px solid #ccc;
       display: none;
     }
-
     .status {
       color: green;
       font-weight: bold;
     }
-
     @media (max-width: 900px) {
       #skillSheetPane {
         display: none !important;
       }
     }
-
     body.learning-mode #main-header {
       justify-content: flex-start;
       padding-left: 5%;
     }
-
     #chat-box {
       height: 380px;
       overflow-y: auto;
@@ -79,44 +70,41 @@
       border-radius: 8px;
       margin-bottom: 10px;
     }
-
     .input-row {
       display: flex;
       flex-direction: row;
       gap: 8px;
       align-items: center;
     }
-
     #user-input {
       flex: 1;
       padding: 10px;
       font-size: 16px;
     }
-
     #send-button {
       padding: 10px 14px;
       font-size: 14px;
     }
-
     #mic-button {
       padding: 10px 24px;
       font-size: 16px;
     }
-
     #learningModeToggle {
       margin-left: 10px;
     }
-
     .full-width-chat {
       width: 100%;
     }
-
     @media (min-width: 901px) {
       body:not(.learning-mode) #chat-box,
       body:not(.learning-mode) .input-row {
         width: 100vw;
         max-width: none;
       }
+    }
+    /* Spinner animation */
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
@@ -147,75 +135,71 @@
   <div id="mainLayout">
     <div id="simulatorPane">
       <div id="chat-box" class="full-width-chat"></div>
+      <!-- Loading Spinner -->
+      <div id="loading-spinner" style="display:none;text-align:center;padding:18px;">
+        <svg width="48" height="48" viewBox="0 0 48 48" style="animation: spin 1s linear infinite;">
+          <circle cx="24" cy="24" r="20" stroke="#1976d2" stroke-width="5" fill="none" opacity="0.2"/>
+          <path d="M44 24a20 20 0 0 1-20 20" stroke="#20e3c2" stroke-width="5" fill="none" stroke-linecap="round"/>
+        </svg>
+        <div style="color:#1976d2;font-weight:bold;">Loading Scenario...</div>
+      </div>
       <div class="input-row full-width-chat">
         <input type="text" id="user-input" placeholder="Type your response here..." />
         <button id="send-button">Send</button>
         <button id="mic-button">🎤</button>
       </div>
     </div>
-
     <div id="skillSheetPane">
-
-<h3>NREMT Medical Assessment Skill Sheet</h3>
-<ul id="skillChecklist">
-  <!-- Scene Size-Up -->
-  <li id="EMT-B-MED-1">BSI/PPE <span class="status" id="status-1"></span></li>
-  <li id="EMT-B-MED-2">Scene Safety <span class="status" id="status-2"></span></li>
-  <li id="EMT-B-MED-3">Determine MOI/NOI <span class="status" id="status-3"></span></li>
-  <li id="EMT-B-MED-4">Determine Number of Patients <span class="status" id="status-4"></span></li>
-  <li id="EMT-B-MED-5">Request Additional EMS Assistance <span class="status" id="status-5"></span></li>
-  <li id="EMT-B-MED-6">Consider C-Spine Stabilization <span class="status" id="status-6"></span></li>
-
-  <!-- Primary Assessment -->
-  <li id="EMT-B-MED-7">General Impression <span class="status" id="status-7"></span></li>
-  <li id="EMT-B-MED-8">Determine Responsiveness/LOC <span class="status" id="status-8"></span></li>
-  <li id="EMT-B-MED-9">Determine Chief Complaint <span class="status" id="status-9"></span></li>
-  <li id="EMT-B-MED-10">Assess Airway/Breathing <span class="status" id="status-10"></span></li>
-  <li id="EMT-B-MED-11">Initiate Oxygen Therapy <span class="status" id="status-11"></span></li>
-  <li id="EMT-B-MED-12">Assess Circulation (Pulse, Skin, Bleeding) <span class="status" id="status-12"></span></li>
-  <li id="EMT-B-MED-13">Identify Patient Priority & Transport Decision <span class="status" id="status-13"></span></li>
-
-  <!-- History Taking -->
-  <li id="EMT-B-MED-14">OPQRST - Onset <span class="status" id="status-14"></span></li>
-  <li id="EMT-B-MED-15">Provocation <span class="status" id="status-15"></span></li>
-  <li id="EMT-B-MED-16">Quality <span class="status" id="status-16"></span></li>
-  <li id="EMT-B-MED-17">Radiation <span class="status" id="status-17"></span></li>
-  <li id="EMT-B-MED-18">Severity <span class="status" id="status-18"></span></li>
-  <li id="EMT-B-MED-19">Time <span class="status" id="status-19"></span></li>
-  <li id="EMT-B-MED-20">SAMPLE - Signs/Symptoms <span class="status" id="status-20"></span></li>
-  <li id="EMT-B-MED-21">Allergies <span class="status" id="status-21"></span></li>
-  <li id="EMT-B-MED-22">Medications <span class="status" id="status-22"></span></li>
-  <li id="EMT-B-MED-23">Past Medical History <span class="status" id="status-23"></span></li>
-  <li id="EMT-B-MED-24">Last Oral Intake <span class="status" id="status-24"></span></li>
-  <li id="EMT-B-MED-25">Events Leading to Present Illness <span class="status" id="status-25"></span></li>
-
-  <!-- Secondary Assessment -->
-  <li id="EMT-B-MED-26">Assess Affected Body/System <span class="status" id="status-26"></span></li>
-  <li id="EMT-B-MED-27">Vital Signs - BP <span class="status" id="status-27"></span></li>
-  <li id="EMT-B-MED-28">Heart Rate <span class="status" id="status-28"></span></li>
-  <li id="EMT-B-MED-29">Respiratory Rate <span class="status" id="status-29"></span></li>
-  <li id="EMT-B-MED-30">Field Impression of Patient <span class="status" id="status-30"></span></li>
-  <li id="EMT-B-MED-31">Interventions <span class="status" id="status-31"></span></li>
-
-  <!-- Reassessment -->
-  <li id="EMT-B-MED-32">Demonstrate How & When to Reassess <span class="status" id="status-32"></span></li>
-</ul>
-
-<!-- Critical Failures -->
-<h4>Critical Failures</h4>
-<ul>
-  <li>Failure to initiate or call for transport within 15 minutes</li>
-  <li>Failure to provide adequate oxygen therapy</li>
-  <li>Failure to verbalize or demonstrate BSI/PPE before patient contact</li>
-  <li>Failure to assess and treat life-threatening conditions first</li>
-  <li>Failure to manage the patient as a competent EMT</li>
-  <li>Exhibits unsafe behavior</li>
-  <li>Failure to perform all critical steps</li>
-</ul>
-</div>
+      <h3>NREMT Medical Assessment Skill Sheet</h3>
+      <ul id="skillChecklist">
+        <!-- Skill sheet checklist items (unchanged) -->
+        <li id="EMT-B-MED-1">BSI/PPE <span class="status" id="status-1"></span></li>
+        <li id="EMT-B-MED-2">Scene Safety <span class="status" id="status-2"></span></li>
+        <li id="EMT-B-MED-3">Determine MOI/NOI <span class="status" id="status-3"></span></li>
+        <li id="EMT-B-MED-4">Determine Number of Patients <span class="status" id="status-4"></span></li>
+        <li id="EMT-B-MED-5">Request Additional EMS Assistance <span class="status" id="status-5"></span></li>
+        <li id="EMT-B-MED-6">Consider C-Spine Stabilization <span class="status" id="status-6"></span></li>
+        <li id="EMT-B-MED-7">General Impression <span class="status" id="status-7"></span></li>
+        <li id="EMT-B-MED-8">Determine Responsiveness/LOC <span class="status" id="status-8"></span></li>
+        <li id="EMT-B-MED-9">Determine Chief Complaint <span class="status" id="status-9"></span></li>
+        <li id="EMT-B-MED-10">Assess Airway/Breathing <span class="status" id="status-10"></span></li>
+        <li id="EMT-B-MED-11">Initiate Oxygen Therapy <span class="status" id="status-11"></span></li>
+        <li id="EMT-B-MED-12">Assess Circulation (Pulse, Skin, Bleeding) <span class="status" id="status-12"></span></li>
+        <li id="EMT-B-MED-13">Identify Patient Priority & Transport Decision <span class="status" id="status-13"></span></li>
+        <li id="EMT-B-MED-14">OPQRST - Onset <span class="status" id="status-14"></span></li>
+        <li id="EMT-B-MED-15">Provocation <span class="status" id="status-15"></span></li>
+        <li id="EMT-B-MED-16">Quality <span class="status" id="status-16"></span></li>
+        <li id="EMT-B-MED-17">Radiation <span class="status" id="status-17"></span></li>
+        <li id="EMT-B-MED-18">Severity <span class="status" id="status-18"></span></li>
+        <li id="EMT-B-MED-19">Time <span class="status" id="status-19"></span></li>
+        <li id="EMT-B-MED-20">SAMPLE - Signs/Symptoms <span class="status" id="status-20"></span></li>
+        <li id="EMT-B-MED-21">Allergies <span class="status" id="status-21"></span></li>
+        <li id="EMT-B-MED-22">Medications <span class="status" id="status-22"></span></li>
+        <li id="EMT-B-MED-23">Past Medical History <span class="status" id="status-23"></span></li>
+        <li id="EMT-B-MED-24">Last Oral Intake <span class="status" id="status-24"></span></li>
+        <li id="EMT-B-MED-25">Events Leading to Present Illness <span class="status" id="status-25"></span></li>
+        <li id="EMT-B-MED-26">Assess Affected Body/System <span class="status" id="status-26"></span></li>
+        <li id="EMT-B-MED-27">Vital Signs - BP <span class="status" id="status-27"></span></li>
+        <li id="EMT-B-MED-28">Heart Rate <span class="status" id="status-28"></span></li>
+        <li id="EMT-B-MED-29">Respiratory Rate <span class="status" id="status-29"></span></li>
+        <li id="EMT-B-MED-30">Field Impression of Patient <span class="status" id="status-30"></span></li>
+        <li id="EMT-B-MED-31">Interventions <span class="status" id="status-31"></span></li>
+        <li id="EMT-B-MED-32">Demonstrate How & When to Reassess <span class="status" id="status-32"></span></li>
+      </ul>
+      <h4>Critical Failures</h4>
+      <ul>
+        <li>Failure to initiate or call for transport within 15 minutes</li>
+        <li>Failure to provide adequate oxygen therapy</li>
+        <li>Failure to verbalize or demonstrate BSI/PPE before patient contact</li>
+        <li>Failure to assess and treat life-threatening conditions first</li>
+        <li>Failure to manage the patient as a competent EMT</li>
+        <li>Exhibits unsafe behavior</li>
+        <li>Failure to perform all critical steps</li>
+      </ul>
+    </div>
   </div>
 
-  <!-- Firebase SDK -->
+  <!-- Firebase SDK (still here for admin/logging, not for scenario data) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <script>
@@ -238,7 +222,7 @@
   <script type="module" src="scripts/app.js"></script>
   <script type="module" src="scripts/grading.js"></script>
 
-  <!-- Button Logic -->
+  <!-- Button Logic + Loading Spinner Show/Hide -->
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const toggle = document.getElementById("learningModeToggle");
@@ -253,11 +237,22 @@
       const startBtn = document.getElementById("start-button");
       const endBtn = document.getElementById("end-button");
       const sendBtn = document.getElementById("send-button");
+      const spinner = document.getElementById("loading-spinner");
 
-      if (startBtn) startBtn.addEventListener("click", () => window.startScenario?.());
+      if (startBtn) startBtn.addEventListener("click", () => {
+        if (spinner) spinner.style.display = "block";
+        // Let app.js hide spinner when loading is finished or errored
+        if (typeof window.startScenario === 'function') window.startScenario();
+      });
       if (endBtn) endBtn.addEventListener("click", () => window.endScenario?.());
       if (sendBtn) sendBtn.addEventListener("click", () => window.sendMessage?.());
     });
+
+    // Hide spinner when scenario is loaded or errored (called from app.js)
+    window.hideLoadingSpinner = function () {
+      const spinner = document.getElementById("loading-spinner");
+      if (spinner) spinner.style.display = "none";
+    };
   </script>
 </body>
 </html>
