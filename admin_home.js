@@ -471,3 +471,94 @@ window.exportFirebaseToJSON = async function () {
 
   alert(`Exported ${total} unique entries across 3 JSON files!`);
 };
+
+
+// ========== JSON FILE EDIT/VIEW ==========
+window.jsonEditData = null;
+const jsonFileInput = document.getElementById("jsonFileInput");
+const jsonEditContainer = document.getElementById("jsonEditContainer");
+const downloadEditedJsonBtn = document.getElementById("downloadEditedJsonBtn");
+
+if (jsonFileInput) {
+  jsonFileInput.addEventListener("change", handleJsonFileSelect, false);
+}
+
+function handleJsonFileSelect(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      window.jsonEditData = JSON.parse(e.target.result);
+      renderJsonEditUI(window.jsonEditData);
+      downloadEditedJsonBtn.style.display = "inline-block";
+    } catch (err) {
+      alert("❌ Failed to parse JSON: " + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function renderJsonEditUI(jsonData) {
+  jsonEditContainer.innerHTML = "";
+  // Detect if it's an array or object
+  let entries = Array.isArray(jsonData)
+    ? jsonData.map((val, idx) => [idx, val])
+    : Object.entries(jsonData);
+
+  // Render each entry as editable card
+  entries.forEach(([key, val], i) => {
+    const div = document.createElement("div");
+    div.className = "response";
+    div.innerHTML = `
+      <div class="field"><strong>Key:</strong> <div contenteditable="false">${key}</div></div>
+      <div class="field"><strong>Question:</strong> <div contenteditable="true" id="jq-${key}">${val.question || ""}</div></div>
+      <div class="field"><strong>Response:</strong> <div contenteditable="true" id="jr-${key}">${val.response || val.answer || ""}</div></div>
+      <div class="field"><strong>Skill Sheet ID:</strong> <div contenteditable="true" id="jsid-${key}">${val.skillSheetID || ""}</div></div>
+      <div class="field"><strong>Score Category:</strong> <div contenteditable="true" id="jcat-${key}">${val.scoreCategory || ""}</div></div>
+      <div class="field"><strong>Points:</strong> <div contenteditable="true" id="jpts-${key}">${val.points !== undefined ? val.points : ""}</div></div>
+      <div class="field"><strong>Critical Fail (true/false):</strong> <div contenteditable="true" id="jcf-${key}">${val.criticalFail !== undefined ? val.criticalFail : ""}</div></div>
+      <div class="field"><strong>Role:</strong> <div contenteditable="true" id="jrole-${key}">${val.role || ""}</div></div>
+      <div class="field"><strong>Tags:</strong> <div contenteditable="true" id="jtags-${key}">${Array.isArray(val.tags) ? val.tags.join(", ") : (val.tags || "")}</div></div>
+      <div class="field"><strong>Trigger:</strong> <div contenteditable="true" id="jtrigger-${key}">${val.trigger || ""}</div></div>
+      <button onclick="saveJsonEditEntry('${key}')">💾 Save Changes</button>
+    `;
+    jsonEditContainer.appendChild(div);
+  });
+}
+
+// Save edits for a single entry
+window.saveJsonEditEntry = function(key) {
+  if (!window.jsonEditData) return;
+  const get = id => document.getElementById(id)?.innerText.trim();
+
+  const entry = {
+    question: get(`jq-${key}`),
+    response: get(`jr-${key}`),
+    skillSheetID: get(`jsid-${key}`),
+    scoreCategory: get(`jcat-${key}`),
+    points: parseInt(get(`jpts-${key}`)) || 0,
+    criticalFail: get(`jcf-${key}`) === "true",
+    role: get(`jrole-${key}`),
+    tags: get(`jtags-${key}`)?.split(",").map(t => t.trim()).filter(t => t),
+    trigger: get(`jtrigger-${key}`)
+  };
+  // If original object had other fields, preserve them
+  let original = Array.isArray(window.jsonEditData)
+    ? window.jsonEditData[key]
+    : window.jsonEditData[key];
+  window.jsonEditData[key] = { ...original, ...entry };
+  alert(`💾 Saved changes to "${key}"!`);
+}
+
+// Download edited JSON
+window.downloadEditedJson = function() {
+  if (!window.jsonEditData) return alert("No JSON loaded.");
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.jsonEditData, null, 2));
+  const a = document.createElement('a');
+  a.setAttribute("href", dataStr);
+  a.setAttribute("download", "edited_ems_database.json");
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+};
