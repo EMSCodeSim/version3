@@ -29,9 +29,15 @@
     <button onclick="autoAssignSkillSheetIDWithGPT()">🤖 Auto-Assign SkillSheet ID (GPT)</button>
     <button onclick="exportFirebaseToJSON()">⬇️ Export JSON Files</button>
   </div>
+  <!-- New JSON file edit UI -->
+  <div style="margin:10px 0;">
+    <input type="file" id="jsonFileInput" accept=".json" style="display:none;">
+    <button onclick="document.getElementById('jsonFileInput').click();">📝 Edit JSON File</button>
+    <button id="downloadEditedJsonBtn" style="display:none;" onclick="downloadEditedJson()">💾 Download Edited JSON</button>
+  </div>
+  <div id="jsonEditContainer" style="max-width:900px;margin:0 auto 20px auto;"></div>
   <div id="logBox">Admin panel loaded.</div>
   <div id="responsesContainer"></div>
-  <!-- Link your admin_home.js here -->
   <script type="module" src="admin_home.js"></script>
 </body>
 </html>
