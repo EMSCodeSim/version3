@@ -1,6 +1,8 @@
+// scripts/app.js
+
 import { loadHardcodedResponses, routeUserInput } from './router.js';
 import { initializeScoreTracker, gradeActionBySkillID, gradeScenario } from './grading.js';
-import { startVoiceRecognition, stopVoiceRecognition } from './mic.js';
+import { updateSkillChecklistUI, resetSkillChecklistUI } from './checklist.js';
 
 const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
@@ -94,7 +96,10 @@ window.startScenario = async function () {
     patientContext = await patientRes.text();
     console.log("startScenario: patient context loaded", patientContext);
 
-    // 6. Show dispatch in chat
+    // 6. Reset grading and checklist
+    resetSkillChecklistUI();
+
+    // 7. Show dispatch in chat
     displayChatResponse(`🚑 Dispatch: ${dispatch}`, "", "Dispatch", null, "", "", false);
     speakOnce(dispatch, "", 1.0);
 
@@ -118,6 +123,7 @@ async function loadGradingTemplate(type = "medical") {
   const res = await fetch(file);
   gradingTemplate = await res.json();
   initializeScoreTracker(gradingTemplate);
+  updateSkillChecklistUI();
 }
 
 // --- Send message logic ---
@@ -141,7 +147,16 @@ async function processUserMessage(message) {
     replyDiv.innerHTML = `<b>Patient:</b> ${response}`;
     chatBox.appendChild(replyDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
-    // Optionally: play audio, grade, etc.
+
+    // ---- Grading integration: if this response has a scoreCategory, grade it and update checklist!
+    if (matchedEntry && matchedEntry.scoreCategory) {
+      gradeActionBySkillID(matchedEntry.scoreCategory);
+      updateSkillChecklistUI();
+    }
+
+    // Optionally: play audio if needed
+    // if (matchedEntry && matchedEntry.ttsAudio) playAudio(matchedEntry.ttsAudio);
+
   } catch (err) {
     const errDiv = document.createElement('div');
     errDiv.innerHTML = `<b>System:</b> ❌ AI processing error: ${err.message}`;
