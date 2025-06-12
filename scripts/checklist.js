@@ -1,8 +1,7 @@
 // scripts/checklist.js
 
-import { scoreTracker, gradeActionBySkillID, initializeScoreTracker } from './grading.js';
+import { scoreTracker } from './grading.js';
 
-// Map your skill IDs to the checklist DOM elements
 const SKILL_MAP = [
   { id: "ppeBsi", el: "EMT-B-MED-1" },
   { id: "sceneSafety", el: "EMT-B-MED-2" },
@@ -30,7 +29,6 @@ const SKILL_MAP = [
   { id: "sampleLastIntake", el: "EMT-B-MED-24" },
   { id: "sampleEvents", el: "EMT-B-MED-25" },
   { id: "assessesAffectedBodyPart", el: "EMT-B-MED-26" },
-  // The next three all use obtainsBaselineVitals for BP, HR, RR
   { id: "obtainsBaselineVitals", el: "EMT-B-MED-27" },
   { id: "obtainsBaselineVitals", el: "EMT-B-MED-28" },
   { id: "obtainsBaselineVitals", el: "EMT-B-MED-29" },
@@ -39,22 +37,16 @@ const SKILL_MAP = [
   { id: "verbalizesReassessment", el: "EMT-B-MED-32" }
 ];
 
-// Show checkmarks on completed skills
 export function updateSkillChecklistUI() {
   for (const { id, el } of SKILL_MAP) {
     const li = document.getElementById(el);
     if (li && li.querySelector('.status')) {
-      // For skills like BP, HR, RR, mark all if any of them is completed
-      if (id === "obtainsBaselineVitals") {
-        li.querySelector('.status').textContent = scoreTracker[id] ? "✅" : "";
-      } else {
-        li.querySelector('.status').textContent = scoreTracker[id] ? "✅" : "";
-      }
+      li.querySelector('.status').textContent = scoreTracker[id] ? "✅" : "";
     }
   }
 }
+window.updateSkillChecklistUI = updateSkillChecklistUI;
 
-// Call this when the scenario resets
 export function resetSkillChecklistUI() {
   for (const { el } of SKILL_MAP) {
     const li = document.getElementById(el);
@@ -63,24 +55,10 @@ export function resetSkillChecklistUI() {
     }
   }
 }
+window.resetSkillChecklistUI = resetSkillChecklistUI;
 
-// Patch the grading function so UI updates on every skill event
-if (!window.__CHECKLIST_PATCHED) {
-  window.__CHECKLIST_PATCHED = true;
-  // Save original
-  const origGrade = gradeActionBySkillID;
-  window.gradeActionBySkillID = function(skillSheetID) {
-    origGrade(skillSheetID);
-    updateSkillChecklistUI();
-  };
-}
-
-// Always reset and update checklist on scenario load
+// On page load, clear and update the checklist
 document.addEventListener("DOMContentLoaded", () => {
   resetSkillChecklistUI();
   updateSkillChecklistUI();
 });
-
-// For external triggers (other modules)
-window.updateSkillChecklistUI = updateSkillChecklistUI;
-window.resetSkillChecklistUI = resetSkillChecklistUI;
