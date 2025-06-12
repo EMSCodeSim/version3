@@ -1,8 +1,5 @@
-// scripts/app.js
-
 import { loadHardcodedResponses, routeUserInput } from './router.js';
 import { initializeScoreTracker, gradeActionBySkillID, gradeScenario } from './grading.js';
-import { updateSkillChecklistUI, resetSkillChecklistUI } from './checklist.js';
 
 const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
@@ -10,7 +7,6 @@ let gradingTemplate = {};
 window.scenarioStarted = false;
 let chatLog = [];
 
-// Display a message in the chat window
 function displayChatResponse(message, userMessage, role, ttsAudio, source, original, hasAudio) {
   const chatBox = document.getElementById('chat-box');
   if (!chatBox) return;
@@ -18,11 +14,9 @@ function displayChatResponse(message, userMessage, role, ttsAudio, source, origi
   div.innerHTML = `<b>${role ? role + ": " : ""}</b>${message}`;
   chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
-  // Play TTS if provided
   if (ttsAudio) playAudio(ttsAudio);
 }
 
-// Play TTS audio from base64 or URL
 function playAudio(src) {
   document.querySelectorAll("audio#scenarioTTS").forEach(audio => {
     try { audio.pause(); } catch (e) {}
@@ -40,7 +34,6 @@ function playAudio(src) {
   audioElement.play().catch(() => {});
 }
 
-// Speak text using browser speech synthesis
 function speakOnce(text, voiceName = "", rate = 1.0, callback) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
@@ -54,7 +47,6 @@ function speakOnce(text, voiceName = "", rate = 1.0, callback) {
   window.speechSynthesis.speak(utter);
 }
 
-// Only for error logging (not used for scenario data)
 function logErrorToDatabase(errorInfo) {
   console.error("🔴", errorInfo);
 }
@@ -66,7 +58,7 @@ window.startScenario = async function () {
     if (spinner) spinner.style.display = "block";
     console.log("startScenario: called.");
 
-    // 1. Load hardcoded responses from static JSON files
+    // 1. Load hardcoded responses
     await loadHardcodedResponses();
     console.log("startScenario: responses loaded:", window.hardcodedResponsesArray?.length);
 
@@ -80,6 +72,7 @@ window.startScenario = async function () {
     // 3. Load grading template
     if (config.grading) {
       await loadGradingTemplate(config.grading || "medical");
+      window.updateSkillChecklistUI && window.updateSkillChecklistUI();
     }
 
     // 4. Load dispatch info
@@ -97,7 +90,7 @@ window.startScenario = async function () {
     console.log("startScenario: patient context loaded", patientContext);
 
     // 6. Reset grading and checklist
-    resetSkillChecklistUI();
+    window.resetSkillChecklistUI && window.resetSkillChecklistUI();
 
     // 7. Show dispatch in chat
     displayChatResponse(`🚑 Dispatch: ${dispatch}`, "", "Dispatch", null, "", "", false);
@@ -121,41 +114,35 @@ window.startScenario = async function () {
 async function loadGradingTemplate(type = "medical") {
   const file = `grading_templates/${type}_assessment.json`;
   const res = await fetch(file);
+  if (!res.ok) throw new Error(`Grading template not found: ${file}`);
   gradingTemplate = await res.json();
   initializeScoreTracker(gradingTemplate);
-  updateSkillChecklistUI();
+  window.updateSkillChecklistUI && window.updateSkillChecklistUI();
 }
 
-// --- Send message logic ---
 async function processUserMessage(message) {
   if (!message) return;
   const chatBox = document.getElementById('chat-box');
-  // Display the user's message
   const userDiv = document.createElement('div');
   userDiv.innerHTML = `<b>You:</b> ${message}`;
   chatBox.appendChild(userDiv);
   chatBox.scrollTop = chatBox.scrollHeight;
 
-  // Route to AI/hardcoded/patient/proctor
   try {
     const { response, source, matchedEntry } = await routeUserInput(message, {
       scenarioId: scenarioPath,
       role: "user"
     });
-    // Display AI/patient/proctor reply
     const replyDiv = document.createElement('div');
     replyDiv.innerHTML = `<b>Patient:</b> ${response}`;
     chatBox.appendChild(replyDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
 
-    // ---- Grading integration: if this response has a scoreCategory, grade it and update checklist!
+    // Grading integration: if response has a scoreCategory, grade it and update checklist!
     if (matchedEntry && matchedEntry.scoreCategory) {
       gradeActionBySkillID(matchedEntry.scoreCategory);
-      updateSkillChecklistUI();
+      window.updateSkillChecklistUI && window.updateSkillChecklistUI();
     }
-
-    // Optionally: play audio if needed
-    // if (matchedEntry && matchedEntry.ttsAudio) playAudio(matchedEntry.ttsAudio);
 
   } catch (err) {
     const errDiv = document.createElement('div');
@@ -165,7 +152,6 @@ async function processUserMessage(message) {
   }
 }
 
-// Attach event listeners for Send button and Enter key
 document.addEventListener('DOMContentLoaded', () => {
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
@@ -188,5 +174,4 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// Optional: expose for testing
 window.processUserMessage = processUserMessage;
