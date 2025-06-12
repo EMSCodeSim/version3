@@ -1,51 +1,258 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>EMS Assessment Grading Tool</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EMS Simulator</title>
+  <link rel="stylesheet" href="styles/style.css" />
+
   <style>
-    body { font-family: Arial, sans-serif; background: #f5fafd; margin: 0; padding: 0; }
-    header { background: #1976d2; color: #fff; padding: 24px 0; text-align: center; box-shadow: 0 2px 4px #b8d0ea; }
-    main { max-width: 760px; margin: 24px auto; background: #fff; border-radius: 12px; box-shadow: 0 4px 24px #c3d6e5; padding: 28px 24px; }
-    h1 { font-size: 2.3rem; font-weight: 600; letter-spacing: .5px; margin-top: 0; }
-    h2 { font-size: 1.25rem; margin-bottom: 10px; }
-    label { font-weight: bold; display: block; margin-top: 24px; }
-    .skill-list { margin: 12px 0 32px 0; padding: 0; }
-    .skill-list li { padding: 8px 0; border-bottom: 1px solid #e6eaf0; }
-    .scoring { background: #f1f8fb; border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; }
-    .btn { background: #1976d2; color: #fff; padding: 10px 24px; border: none; border-radius: 6px; font-size: 1.1em; cursor: pointer; margin: 12px 0 0 0; }
-    .btn:hover { background: #0d458a; }
-    #results { background: #e3f3e9; border-radius: 7px; margin-top: 28px; padding: 16px; }
-    @media (max-width: 900px) { main { padding: 12px; } }
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: #f2f9ff;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+    .ems-logo-row {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 12px;
+      padding-bottom: 4px;
+      background: #fff;
+    }
+    #main-header {
+      padding: 8px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    #mainLayout {
+      display: flex;
+      flex-direction: row;
+      flex: 1;
+      padding: 10px;
+    }
+    #simulatorPane {
+      width: 70%;
+      padding: 10px;
+    }
+    #skillSheetPane {
+      width: 30%;
+      padding: 10px;
+      border-left: 2px solid #ccc;
+      display: none;
+    }
+    .status {
+      color: green;
+      font-weight: bold;
+    }
+    @media (max-width: 900px) {
+      #skillSheetPane {
+        display: none !important;
+      }
+    }
+    body.learning-mode #main-header {
+      justify-content: flex-start;
+      padding-left: 5%;
+    }
+    #chat-box {
+      height: 380px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      background: #fff;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    .input-row {
+      display: flex;
+      flex-direction: row;
+      gap: 8px;
+      align-items: center;
+    }
+    #user-input {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+    }
+    #send-button {
+      padding: 10px 14px;
+      font-size: 14px;
+    }
+    #mic-button {
+      padding: 10px 24px;
+      font-size: 16px;
+    }
+    #learningModeToggle {
+      margin-left: 10px;
+    }
+    .full-width-chat {
+      width: 100%;
+    }
+    @media (min-width: 901px) {
+      body:not(.learning-mode) #chat-box,
+      body:not(.learning-mode) .input-row {
+        width: 100vw;
+        max-width: none;
+      }
+    }
+    /* Spinner animation */
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
+
 <body>
-  <header>
-    <h1>EMS Assessment Grading Tool</h1>
-    <div style="font-size:1.1rem;opacity:.88;">NREMT Medical Skill Sheet & OPQRST/SAMPLE Points</div>
+  <div class="ems-logo-row">
+    <svg width="90%" height="100" viewBox="0 0 900 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="grad1" x1="0" y1="0" x2="900" y2="0" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#1976d2"/>
+          <stop offset="1" stop-color="#20e3c2"/>
+        </linearGradient>
+      </defs>
+      <rect x="60" y="18" width="780" height="64" rx="32" fill="url(#grad1)"/>
+      <text x="450" y="65" text-anchor="middle" font-family="Arial Black, Arial, sans-serif"
+        font-size="46" fill="#fff" font-weight="bold" letter-spacing="10">
+        EMS CODE SIM
+      </text>
+    </svg>
+  </div>
+
+  <header id="main-header">
+    <button id="start-button">Start Scenario</button>
+    <button id="end-button">End Scenario</button>
+    <label><input type="checkbox" id="learningModeToggle"> Learning Mode</label>
   </header>
-  <main>
-    <h2>1. Upload or Edit Your Scenario/Responses JSON</h2>
-    <input type="file" id="jsonFileInput" accept=".json">
-    <button class="btn" onclick="loadSampleJson()">Load Sample</button>
 
-    <h2>2. Review and Edit Each Entry</h2>
-    <div id="responsesContainer"></div>
+  <div id="mainLayout">
+    <div id="simulatorPane">
+      <div id="chat-box" class="full-width-chat"></div>
+      <!-- Loading Spinner -->
+      <div id="loading-spinner" style="display:none;text-align:center;padding:18px;">
+        <svg width="48" height="48" viewBox="0 0 48 48" style="animation: spin 1s linear infinite;">
+          <circle cx="24" cy="24" r="20" stroke="#1976d2" stroke-width="5" fill="none" opacity="0.2"/>
+          <path d="M44 24a20 20 0 0 1-20 20" stroke="#20e3c2" stroke-width="5" fill="none" stroke-linecap="round"/>
+        </svg>
+        <div style="color:#1976d2;font-weight:bold;">Loading Scenario...</div>
+      </div>
+      <div class="input-row full-width-chat">
+        <input type="text" id="user-input" placeholder="Type your response here..." />
+        <button id="send-button">Send</button>
+        <button id="mic-button">🎤</button>
+      </div>
+    </div>
+    <div id="skillSheetPane">
+      <h3>NREMT Medical Assessment Skill Sheet</h3>
+      <ul id="skillChecklist">
+        <!-- Skill sheet checklist items (unchanged) -->
+        <li id="EMT-B-MED-1">BSI/PPE <span class="status" id="status-1"></span></li>
+        <li id="EMT-B-MED-2">Scene Safety <span class="status" id="status-2"></span></li>
+        <li id="EMT-B-MED-3">Determine MOI/NOI <span class="status" id="status-3"></span></li>
+        <li id="EMT-B-MED-4">Determine Number of Patients <span class="status" id="status-4"></span></li>
+        <li id="EMT-B-MED-5">Request Additional EMS Assistance <span class="status" id="status-5"></span></li>
+        <li id="EMT-B-MED-6">Consider C-Spine Stabilization <span class="status" id="status-6"></span></li>
+        <li id="EMT-B-MED-7">General Impression <span class="status" id="status-7"></span></li>
+        <li id="EMT-B-MED-8">Determine Responsiveness/LOC <span class="status" id="status-8"></span></li>
+        <li id="EMT-B-MED-9">Determine Chief Complaint <span class="status" id="status-9"></span></li>
+        <li id="EMT-B-MED-10">Assess Airway/Breathing <span class="status" id="status-10"></span></li>
+        <li id="EMT-B-MED-11">Initiate Oxygen Therapy <span class="status" id="status-11"></span></li>
+        <li id="EMT-B-MED-12">Assess Circulation (Pulse, Skin, Bleeding) <span class="status" id="status-12"></span></li>
+        <li id="EMT-B-MED-13">Identify Patient Priority & Transport Decision <span class="status" id="status-13"></span></li>
+        <li id="EMT-B-MED-14">OPQRST - Onset <span class="status" id="status-14"></span></li>
+        <li id="EMT-B-MED-15">Provocation <span class="status" id="status-15"></span></li>
+        <li id="EMT-B-MED-16">Quality <span class="status" id="status-16"></span></li>
+        <li id="EMT-B-MED-17">Radiation <span class="status" id="status-17"></span></li>
+        <li id="EMT-B-MED-18">Severity <span class="status" id="status-18"></span></li>
+        <li id="EMT-B-MED-19">Time <span class="status" id="status-19"></span></li>
+        <li id="EMT-B-MED-20">SAMPLE - Signs/Symptoms <span class="status" id="status-20"></span></li>
+        <li id="EMT-B-MED-21">Allergies <span class="status" id="status-21"></span></li>
+        <li id="EMT-B-MED-22">Medications <span class="status" id="status-22"></span></li>
+        <li id="EMT-B-MED-23">Past Medical History <span class="status" id="status-23"></span></li>
+        <li id="EMT-B-MED-24">Last Oral Intake <span class="status" id="status-24"></span></li>
+        <li id="EMT-B-MED-25">Events Leading to Present Illness <span class="status" id="status-25"></span></li>
+        <li id="EMT-B-MED-26">Assess Affected Body/System <span class="status" id="status-26"></span></li>
+        <li id="EMT-B-MED-27">Vital Signs - BP <span class="status" id="status-27"></span></li>
+        <li id="EMT-B-MED-28">Heart Rate <span class="status" id="status-28"></span></li>
+        <li id="EMT-B-MED-29">Respiratory Rate <span class="status" id="status-29"></span></li>
+        <li id="EMT-B-MED-30">Field Impression of Patient <span class="status" id="status-30"></span></li>
+        <li id="EMT-B-MED-31">Interventions <span class="status" id="status-31"></span></li>
+        <li id="EMT-B-MED-32">Demonstrate How & When to Reassess <span class="status" id="status-32"></span></li>
+      </ul>
+      <h4>Critical Failures</h4>
+      <ul>
+        <li>Failure to initiate or call for transport within 15 minutes</li>
+        <li>Failure to provide adequate oxygen therapy</li>
+        <li>Failure to verbalize or demonstrate BSI/PPE before patient contact</li>
+        <li>Failure to assess and treat life-threatening conditions first</li>
+        <li>Failure to manage the patient as a competent EMT</li>
+        <li>Exhibits unsafe behavior</li>
+        <li>Failure to perform all critical steps</li>
+      </ul>
+    </div>
+  </div>
 
-    <button class="btn" id="downloadEditedJsonBtn" style="display:none;" onclick="downloadEditedJson()">Download Edited JSON</button>
-    <button class="btn" onclick="bulkAssignPointsLabels()">⭐ Auto-Assign All Points & Labels</button>
+  <!-- Firebase SDK (still here for admin/logging, not for scenario data) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAmpYL8Ywfxkw_h2aMvF2prjiI0m5LYM40",
+      authDomain: "ems-code-sim.firebaseapp.com",
+      databaseURL: "https://ems-code-sim-default-rtdb.firebaseio.com",
+      projectId: "ems-code-sim",
+      storageBucket: "ems-code-sim.firebasestorage.app",
+      messagingSenderId: "190498607578",
+      appId: "1:190498607578:web:4cf6c8e999b027956070e3",
+      measurementId: "G-2Q3ZT01YT1"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
 
-    <h2>3. Filter/Search (optional)</h2>
-    <input id="filterInput" type="text" placeholder="Search questions, responses, or skills..." style="width:80%;padding:8px;" oninput="filterJsonEntries()">
+  <!-- Import checklist.js as a module -->
+  <script type="module" src="scripts/checklist.js"></script>
+  <!-- Your main app logic -->
+  <script type="module" src="scripts/app.js"></script>
+  <script type="module" src="scripts/grading.js"></script>
 
-    <div id="logBox" style="margin-top:18px;font-size:.98em;color:#155459;">Ready.</div>
+  <!-- Button Logic + Loading Spinner Show/Hide -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const toggle = document.getElementById("learningModeToggle");
+      const skillPane = document.getElementById("skillSheetPane");
+      if (toggle && skillPane) {
+        toggle.addEventListener("change", () => {
+          document.body.classList.toggle("learning-mode", toggle.checked);
+          skillPane.style.display = toggle.checked ? "block" : "none";
+        });
+      }
 
-    <div id="jsonEditContainer"></div>
-  </main>
+      const startBtn = document.getElementById("start-button");
+      const endBtn = document.getElementById("end-button");
+      const sendBtn = document.getElementById("send-button");
+      const spinner = document.getElementById("loading-spinner");
 
-  <!-- Import grading map and admin logic -->
-  <script type="module" src="scripts/grading_skill_sheet.js"></script>
-  <script type="module" src="scripts/admin_home.js"></script>
+      if (startBtn) startBtn.addEventListener("click", () => {
+        if (spinner) spinner.style.display = "block";
+        // Let app.js hide spinner when loading is finished or errored
+        if (typeof window.startScenario === 'function') window.startScenario();
+      });
+      if (endBtn) endBtn.addEventListener("click", () => window.endScenario?.());
+      if (sendBtn) sendBtn.addEventListener("click", () => window.sendMessage?.());
+    });
+
+    // Hide spinner when scenario is loaded or errored (called from app.js)
+    window.hideLoadingSpinner = function () {
+      const spinner = document.getElementById("loading-spinner");
+      if (spinner) spinner.style.display = "none";
+    };
+  </script>
 </body>
 </html>
