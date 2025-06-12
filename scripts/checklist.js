@@ -1,57 +1,86 @@
-// checklist.js
+// scripts/checklist.js
 
-export const skillSheetIDToStatusID = {
-  verbalizesPPEPrecautions: "status-1",
-  verbalizesSceneSafety: "status-2",
-  determinesMOIorNOI: "status-3",
-  determinesNumberOfPatients: "status-4",
-  requestsAdditionalEMS: "status-5",
-  considersCSpineStabilization: "status-6",
-  verbalizesGeneralImpression: "status-7",
-  determinesResponsiveness: "status-8",
-  determinesChiefComplaint: "status-9",
-  assessesAirway: "status-10",
-  assessesBreathing: "status-10",
-  insertsAirwayAdjunct: "status-10",
-  assuresAdequateVentilation: "status-10",
-  initiatesOxygenTherapy: "status-11",
-  managesInjuryBreathing: "status-10",
-  assessesPulse: "status-12",
-  assessesSkin: "status-12",
-  assessesAndControlsBleeding: "status-12",
-  initiatesShockManagement: "status-12",
-  identifiesPriorityTransportDecision: "status-13",
-  obtainsOPQRSTHistory: "status-14",
-  obtainsProvocation: "status-15",
-  obtainsQuality: "status-16",
-  obtainsRadiation: "status-17",
-  obtainsSeverity: "status-18",
-  obtainsTime: "status-19",
-  obtainsSAMPLEHistory: "status-20",
-  obtainsAllergies: "status-21",
-  obtainsMedications: "status-22",
-  obtainsPastMedicalHistory: "status-23",
-  obtainsLastOralIntake: "status-24",
-  obtainsEventsLeading: "status-25",
-  assessesAffectedBodySystem: "status-26",
-  obtainsBaselineBP: "status-27",
-  obtainsBaselineHR: "status-28",
-  obtainsBaselineRR: "status-29",
-  verbalizesFieldImpression: "status-30",
-  verbalizesInterventions: "status-31",
-  reassessesPatient: "status-32"
-};
+import { scoreTracker, gradeActionBySkillID, initializeScoreTracker } from './grading.js';
 
-/**
- * Checks off the correct item in the checklist for the given skillSheetID.
- * @param {string} skillSheetID 
- */
-export function markSkillSheetStep(skillSheetID) {
-  const statusId = skillSheetIDToStatusID[skillSheetID];
-  if (!statusId) return;
-  const el = document.getElementById(statusId);
-  if (el && !el.textContent.includes("✔")) {
-    el.textContent = "✔";
-    el.classList.add("checked");
+// Map your skill IDs to the checklist DOM elements
+const SKILL_MAP = [
+  { id: "ppeBsi", el: "EMT-B-MED-1" },
+  { id: "sceneSafety", el: "EMT-B-MED-2" },
+  { id: "determinesMOIorNOI", el: "EMT-B-MED-3" },
+  { id: "determinesNumberOfPatients", el: "EMT-B-MED-4" },
+  { id: "requestsAdditionalResources", el: "EMT-B-MED-5" },
+  { id: "considersCSpine", el: "EMT-B-MED-6" },
+  { id: "generalImpression", el: "EMT-B-MED-7" },
+  { id: "determinesResponsiveness", el: "EMT-B-MED-8" },
+  { id: "chiefComplaint", el: "EMT-B-MED-9" },
+  { id: "airway", el: "EMT-B-MED-10" },
+  { id: "oxygenTherapy", el: "EMT-B-MED-11" },
+  { id: "circulation", el: "EMT-B-MED-12" },
+  { id: "patientPriority", el: "EMT-B-MED-13" },
+  { id: "opqrstOnset", el: "EMT-B-MED-14" },
+  { id: "opqrstProvocation", el: "EMT-B-MED-15" },
+  { id: "opqrstQuality", el: "EMT-B-MED-16" },
+  { id: "opqrstRadiation", el: "EMT-B-MED-17" },
+  { id: "opqrstSeverity", el: "EMT-B-MED-18" },
+  { id: "opqrstTime", el: "EMT-B-MED-19" },
+  { id: "sampleSigns", el: "EMT-B-MED-20" },
+  { id: "sampleAllergies", el: "EMT-B-MED-21" },
+  { id: "sampleMedications", el: "EMT-B-MED-22" },
+  { id: "samplePastHistory", el: "EMT-B-MED-23" },
+  { id: "sampleLastIntake", el: "EMT-B-MED-24" },
+  { id: "sampleEvents", el: "EMT-B-MED-25" },
+  { id: "assessesAffectedBodyPart", el: "EMT-B-MED-26" },
+  // The next three all use obtainsBaselineVitals for BP, HR, RR
+  { id: "obtainsBaselineVitals", el: "EMT-B-MED-27" },
+  { id: "obtainsBaselineVitals", el: "EMT-B-MED-28" },
+  { id: "obtainsBaselineVitals", el: "EMT-B-MED-29" },
+  { id: "generalImpression", el: "EMT-B-MED-30" },
+  { id: "managesSecondaryInjuries", el: "EMT-B-MED-31" },
+  { id: "verbalizesReassessment", el: "EMT-B-MED-32" }
+];
+
+// Show checkmarks on completed skills
+export function updateSkillChecklistUI() {
+  for (const { id, el } of SKILL_MAP) {
+    const li = document.getElementById(el);
+    if (li && li.querySelector('.status')) {
+      // For skills like BP, HR, RR, mark all if any of them is completed
+      if (id === "obtainsBaselineVitals") {
+        li.querySelector('.status').textContent = scoreTracker[id] ? "✅" : "";
+      } else {
+        li.querySelector('.status').textContent = scoreTracker[id] ? "✅" : "";
+      }
+    }
   }
 }
+
+// Call this when the scenario resets
+export function resetSkillChecklistUI() {
+  for (const { el } of SKILL_MAP) {
+    const li = document.getElementById(el);
+    if (li && li.querySelector('.status')) {
+      li.querySelector('.status').textContent = "";
+    }
+  }
+}
+
+// Patch the grading function so UI updates on every skill event
+if (!window.__CHECKLIST_PATCHED) {
+  window.__CHECKLIST_PATCHED = true;
+  // Save original
+  const origGrade = gradeActionBySkillID;
+  window.gradeActionBySkillID = function(skillSheetID) {
+    origGrade(skillSheetID);
+    updateSkillChecklistUI();
+  };
+}
+
+// Always reset and update checklist on scenario load
+document.addEventListener("DOMContentLoaded", () => {
+  resetSkillChecklistUI();
+  updateSkillChecklistUI();
+});
+
+// For external triggers (other modules)
+window.updateSkillChecklistUI = updateSkillChecklistUI;
+window.resetSkillChecklistUI = resetSkillChecklistUI;
