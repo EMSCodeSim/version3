@@ -31,16 +31,14 @@ function renderResponseCard(key, data) {
 // ========== JSON FILE EDIT/VIEW ==========
 window.jsonEditData = {};
 const jsonFileInput = document.getElementById("jsonFileInput");
-const jsonEditContainer = document.getElementById("jsonEditContainer");
 const downloadEditedJsonBtn = document.getElementById("downloadEditedJsonBtn");
 const responsesContainer = document.getElementById("responsesContainer");
 const logBox = document.getElementById("logBox");
 
-// Load JSON file from disk
+// Load JSON file from disk (manual override)
 if (jsonFileInput) {
   jsonFileInput.addEventListener("change", handleJsonFileSelect, false);
 }
-
 function handleJsonFileSelect(evt) {
   const file = evt.target.files[0];
   if (!file) return;
@@ -87,7 +85,6 @@ window.saveJsonEditEntry = function(key) {
     tags: get(`tags-${key}`)?.split(",").map(t => t.trim()).filter(t => t),
     trigger: get(`trigger-${key}`)
   };
-  // Update in memory
   if (Array.isArray(window.jsonEditData)) {
     window.jsonEditData[key] = { ...window.jsonEditData[key], ...entry };
   } else {
@@ -170,5 +167,17 @@ window.filterJsonEntries = function() {
   filtered.forEach(([key, val]) => renderResponseCard(key, val));
 };
 
-// ====== Optional: Expose for HTML Buttons ======
-window.renderAllJsonEntries = renderAllJsonEntries;
+// ====== Auto-load ems_database.json on page load ======
+window.addEventListener("DOMContentLoaded", () => {
+  fetch('ems_database.json')
+    .then(r => r.json())
+    .then(json => {
+      window.jsonEditData = json;
+      renderAllJsonEntries(window.jsonEditData);
+      downloadEditedJsonBtn.style.display = "inline-block";
+      if (logBox) logBox.innerText = "Default JSON database loaded.";
+    })
+    .catch(() => {
+      if (logBox) logBox.innerText = "Ready. No default JSON found.";
+    });
+});
