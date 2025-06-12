@@ -1,6 +1,6 @@
 import { skillSheetScoring } from './grading_skill_sheet.js';
 
-// ========== DYNAMIC FILE LOAD ==========
+// DOM Elements
 window.jsonEditData = {};
 const jsonFileInput = document.getElementById("jsonFileInput");
 const filePathInput = document.getElementById("filePathInput");
@@ -9,54 +9,62 @@ const downloadEditedJsonBtn = document.getElementById("downloadEditedJsonBtn");
 const responsesContainer = document.getElementById("responsesContainer");
 const logBox = document.getElementById("logBox");
 
-// Load JSON file from a public path (URL or relative path)
-window.loadJsonFromPath = function() {
+// ====== LOAD JSON FROM PATH (Netlify/public) ======
+window.loadJsonFromPath = async function() {
   const filePath = filePathInput.value.trim();
-  if (!filePath) return alert("Please enter a JSON file path.");
-  fetch(filePath)
-    .then(r => {
-      if (!r.ok) throw new Error(`Could not fetch file: ${filePath}`);
-      return r.json();
-    })
-    .then(json => {
-      window.jsonEditData = json;
-      renderAllJsonEntries(window.jsonEditData);
-      downloadEditedJsonBtn.style.display = "inline-block";
-      if (logBox) logBox.innerText = `Loaded file: ${filePath}`;
-    })
-    .catch(err => {
-      alert("Error loading file: " + err.message);
-      if (logBox) logBox.innerText = "Ready. Could not load file.";
-    });
+  if (!filePath) {
+    alert("Please enter a file path (e.g. /ems_database.json)");
+    return;
+  }
+  logBox.innerText = "Loading...";
+  try {
+    // Only allow same-origin fetch
+    const resp = await fetch(filePath, {cache: "reload"});
+    if (!resp.ok) throw new Error(`Could not fetch file: ${filePath} (${resp.status})`);
+    const json = await resp.json();
+    window.jsonEditData = json;
+    renderAllJsonEntries(window.jsonEditData);
+    downloadEditedJsonBtn.style.display = "inline-block";
+    logBox.innerText = `Loaded file: ${filePath}`;
+  } catch (err) {
+    logBox.innerText = "❌ " + err.message;
+    responsesContainer.innerHTML = "";
+    window.jsonEditData = {};
+  }
 };
 
-// Load JSON file from disk (manual override)
+// ====== LOAD JSON FROM UPLOADED FILE ======
 if (jsonFileInput) {
-  jsonFileInput.addEventListener("change", handleJsonFileSelect, false);
-}
-function handleJsonFileSelect(evt) {
-  const file = evt.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      window.jsonEditData = JSON.parse(e.target.result);
-      renderAllJsonEntries(window.jsonEditData);
-      downloadEditedJsonBtn.style.display = "inline-block";
-      if (logBox) logBox.innerText = "JSON file loaded from local disk.";
-    } catch (err) {
-      alert("❌ Failed to parse JSON: " + err.message);
-    }
-  };
-  reader.readAsText(file);
+  jsonFileInput.addEventListener("change", function(evt) {
+    const file = evt.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        window.jsonEditData = JSON.parse(e.target.result);
+        renderAllJsonEntries(window.jsonEditData);
+        downloadEditedJsonBtn.style.display = "inline-block";
+        logBox.innerText = "JSON file loaded from disk.";
+      } catch (err) {
+        logBox.innerText = "❌ Failed to parse JSON: " + err.message;
+        responsesContainer.innerHTML = "";
+        window.jsonEditData = {};
+      }
+    };
+    reader.readAsText(file);
+  });
 }
 
+// ====== RENDER ======
 function renderAllJsonEntries(jsonData) {
   responsesContainer.innerHTML = "";
   let entries = Array.isArray(jsonData)
     ? jsonData.map((val, idx) => [idx, val])
     : Object.entries(jsonData);
-
+  if (entries.length === 0) {
+    responsesContainer.innerHTML = "<div>No entries found in file.</div>";
+    return;
+  }
   entries.forEach(([key, val]) => renderResponseCard(key, val));
 }
 
@@ -65,10 +73,8 @@ function renderResponseCard(key, data) {
   const meta = skillSheetScoring[ssid] || {};
   const pointsDisplay = (meta.points !== undefined ? meta.points : (data.points !== undefined ? data.points : ""));
   const labelDisplay = meta.label || data.scoreCategory || "";
-
   const div = document.createElement("div");
   div.className = "response";
-
   div.innerHTML = `
     <div class="field"><strong>Key:</strong> <div contenteditable="false">${key}</div></div>
     <div class="field"><strong>Question:</strong> <div contenteditable="true" id="q-${key}">${data.question || ""}</div></div>
@@ -86,14 +92,12 @@ function renderResponseCard(key, data) {
   responsesContainer.appendChild(div);
 }
 
-// Save edits for a single entry
+// ====== SAVE/DELETE/EXPORT/ETC (same as before) ======
 window.saveJsonEditEntry = function(key) {
   if (!window.jsonEditData) return;
   const get = id => document.getElementById(id)?.innerText.trim();
-
   const ssid = get(`skillSheetID-${key}`);
   const meta = skillSheetScoring[ssid] || {};
-
   const entry = {
     question: get(`q-${key}`),
     response: get(`r-${key}`),
@@ -113,7 +117,6 @@ window.saveJsonEditEntry = function(key) {
   alert(`💾 Saved changes to "${key}"!`);
 };
 
-// Delete an entry
 window.deleteJsonEntry = function(key) {
   if (!window.jsonEditData) return;
   if (!confirm(`Delete entry "${key}"?`)) return;
@@ -126,7 +129,6 @@ window.deleteJsonEntry = function(key) {
   alert(`🗑 Deleted "${key}".`);
 };
 
-// Download edited JSON
 window.downloadEditedJson = function() {
   if (!window.jsonEditData) return alert("No JSON loaded.");
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.jsonEditData, null, 2));
@@ -138,14 +140,12 @@ window.downloadEditedJson = function() {
   a.remove();
 };
 
-// ====== Mass Auto-Assign Points/Labels for All Entries in Loaded JSON ======
 window.bulkAssignPointsLabels = function() {
   if (!window.jsonEditData) return alert("No JSON loaded.");
   let count = 0;
   let entries = Array.isArray(window.jsonEditData)
     ? window.jsonEditData.map((val, idx) => [idx, val])
     : Object.entries(window.jsonEditData);
-
   entries.forEach(([key, entry]) => {
     const ssid = entry.skillSheetID;
     const meta = skillSheetScoring[ssid] || {};
@@ -159,7 +159,6 @@ window.bulkAssignPointsLabels = function() {
   alert(`⭐ Updated ${count} entries with skill sheet points and labels.`);
 };
 
-// ====== Search/Filter ======
 window.filterJsonEntries = function() {
   const filterVal = document.getElementById("filterInput").value.toLowerCase();
   if (!window.jsonEditData) return;
@@ -173,4 +172,17 @@ window.filterJsonEntries = function() {
   );
   responsesContainer.innerHTML = "";
   filtered.forEach(([key, val]) => renderResponseCard(key, val));
+};
+
+// ====== Optionally, add a sample loader for testing ======
+window.loadSampleJson = function() {
+  fetch('ems_database_sample.json')
+    .then(r => r.json())
+    .then(json => {
+      window.jsonEditData = json;
+      renderAllJsonEntries(window.jsonEditData);
+      downloadEditedJsonBtn.style.display = "inline-block";
+      logBox.innerText = "Sample JSON loaded.";
+    })
+    .catch(() => { logBox.innerText = "Could not load sample JSON."; });
 };
