@@ -13,9 +13,7 @@
     label { font-weight: bold; display: block; margin-top: 22px; }
     .btn { background: #1976d2; color: #fff; padding: 10px 22px; border: none; border-radius: 6px; font-size: 1em; cursor: pointer; margin: 10px 0 0 0; }
     .btn:hover { background: #155fa0; }
-    .response { background: #f1f8fb; border-radius: 10px; padding: 18px 16px; margin: 18px 0; box-shadow: 0 2px 8px #e2ecf7; }
-    .field { margin-bottom: 6px; }
-    #responsesContainer { margin-top: 18px; }
+    #responsesContainer { margin-top: 18px; white-space: pre-wrap; word-break: break-all; }
     #logBox { margin: 18px 0 10px 0; font-size:.98em; color:#155459; }
     @media (max-width: 900px) { main { padding: 12px; } }
   </style>
@@ -23,30 +21,22 @@
 <body>
   <header>
     <h1>EMS Admin Panel</h1>
-    <div style="font-size:1.1rem;opacity:.88;">Load, edit, and export EMS scenario JSON files</div>
+    <div style="font-size:1.1rem;opacity:.88;">Load and preview EMS scenario JSON files</div>
   </header>
   <main>
     <h2>1. Load a JSON File from Your Site</h2>
     <label for="filePathInput">Enter path (e.g., <code>/ems_database.json</code> or <code>/scenarios/cardiac001.json</code>):</label>
     <input id="filePathInput" type="text" style="width:60%;" placeholder="/ems_database.json or /scenarios/file.json">
-    <button class="btn" id="loadPathBtn" onclick="loadJsonFromPath()">Load from path</button>
+    <button class="btn" id="loadPathBtn">Load from path</button>
 
     <h2>Or Upload a Local JSON File</h2>
     <input type="file" id="jsonFileInput" accept=".json">
-    <button class="btn" onclick="loadSampleJson()">Load Sample</button>
 
-    <h2>2. Review and Edit Each Entry</h2>
-    <button class="btn" id="downloadEditedJsonBtn" style="display:none;" onclick="downloadEditedJson()">Download Edited JSON</button>
-    <button class="btn" onclick="bulkAssignPointsLabels()">⭐ Auto-Assign All Points & Labels</button>
-    <br>
-    <input id="filterInput" type="text" placeholder="Search questions, responses, or skills..." style="width:80%;padding:8px;margin:18px 0 0 0;" oninput="filterJsonEntries()">
+    <h2>2. Results</h2>
     <div id="logBox">Ready.</div>
     <div id="responsesContainer"></div>
-    <div id="jsonEditContainer"></div>
   </main>
 
-  <!-- Load skill sheet scoring map and admin panel logic -->
-  <script type="module" src="scripts/grading_skill_sheet.js"></script>
   <script type="module" src="scripts/admin_home.js"></script>
 </body>
 </html>
