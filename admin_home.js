@@ -1,5 +1,3 @@
-import { skillSheetScoring } from './grading_skill_sheet.js';
-
 window.jsonEditData = {};
 const filePathInput = document.getElementById("filePathInput");
 const loadPathBtn = document.getElementById("loadPathBtn");
@@ -9,7 +7,6 @@ const responsesContainer = document.getElementById("responsesContainer");
 const downloadEditedJsonBtn = document.getElementById("downloadEditedJsonBtn");
 const bulkAssignBtn = document.getElementById("bulkAssignBtn");
 
-// --- Attach event listeners ---
 if (loadPathBtn) loadPathBtn.addEventListener("click", loadJsonFromPath);
 if (jsonFileInput) jsonFileInput.addEventListener("change", handleJsonFileSelect);
 if (downloadEditedJsonBtn) downloadEditedJsonBtn.addEventListener("click", downloadEditedJson);
@@ -78,10 +75,9 @@ function renderAllJsonEntries(jsonData) {
   entries.forEach(([key, val]) => renderResponseCard(key, val));
 }
 
-// --- Editable card for each entry ---
 function renderResponseCard(key, data) {
   const ssid = data.skillSheetID;
-  const meta = skillSheetScoring[ssid] || {};
+  const meta = (window.skillSheetScoring || {})[ssid] || {};
   const pointsDisplay = (meta.points !== undefined ? meta.points : (data.points !== undefined ? data.points : ""));
   const labelDisplay = meta.label || data.scoreCategory || "";
   const div = document.createElement("div");
@@ -89,7 +85,7 @@ function renderResponseCard(key, data) {
   div.innerHTML = `
     <div class="row">
       <div class="field"><label>Key:</label><input type="text" value="${key}" disabled></div>
-      <div class="field"><label>Skill Sheet ID:</label><input type="text" id="skillSheetID-${key}" value="${ssid || ""}" onchange="window.onSkillSheetIDEdit && window.onSkillSheetIDEdit('${key}')"></div>
+      <div class="field"><label>Skill Sheet ID:</label><input type="text" id="skillSheetID-${key}" value="${ssid || ""}" onchange="onSkillSheetIDEdit('${key}')"></div>
       <div class="field"><label>Score Category:</label><input type="text" id="cat-${key}" value="${labelDisplay}"></div>
       <div class="field"><label>Points:</label><input type="text" id="pts-${key}" value="${pointsDisplay}"></div>
       <div class="field"><label>Critical Fail:</label><input type="text" id="cf-${key}" value="${data.criticalFail !== undefined ? data.criticalFail : ""}"></div>
@@ -99,18 +95,17 @@ function renderResponseCard(key, data) {
     <div class="field"><label>Response:</label><textarea id="r-${key}" rows="2">${data.response || data.answer || ""}</textarea></div>
     <div class="field"><label>Tags:</label><input type="text" id="tags-${key}" value="${Array.isArray(data.tags) ? data.tags.join(", ") : (data.tags || "")}"></div>
     <div class="field"><label>Trigger:</label><input type="text" id="trigger-${key}" value="${data.trigger || ""}"></div>
-    <button class="btn" onclick="window.saveJsonEditEntry && window.saveJsonEditEntry('${key}')">💾 Save</button>
-    <button class="btn" onclick="window.deleteJsonEntry && window.deleteJsonEntry('${key}')">🗑 Delete</button>
+    <button class="btn" onclick="saveJsonEditEntry('${key}')">💾 Save</button>
+    <button class="btn" onclick="deleteJsonEntry('${key}')">🗑 Delete</button>
   `;
   responsesContainer.appendChild(div);
 }
 
-// --- Save an entry back to the data model ---
 window.saveJsonEditEntry = function(key) {
   if (!window.jsonEditData) return;
   const get = id => document.getElementById(id)?.value.trim();
   const ssid = get(`skillSheetID-${key}`);
-  const meta = skillSheetScoring[ssid] || {};
+  const meta = (window.skillSheetScoring || {})[ssid] || {};
   const entry = {
     question: get(`q-${key}`),
     response: get(`r-${key}`),
@@ -130,7 +125,6 @@ window.saveJsonEditEntry = function(key) {
   alert(`💾 Saved changes to "${key}"!`);
 };
 
-// --- Delete an entry ---
 window.deleteJsonEntry = function(key) {
   if (!window.jsonEditData) return;
   if (!confirm(`Delete entry "${key}"?`)) return;
@@ -143,7 +137,6 @@ window.deleteJsonEntry = function(key) {
   alert(`🗑 Deleted "${key}".`);
 };
 
-// --- Download the edited JSON ---
 function downloadEditedJson() {
   if (!window.jsonEditData) return alert("No JSON loaded.");
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.jsonEditData, null, 2));
@@ -155,7 +148,6 @@ function downloadEditedJson() {
   a.remove();
 }
 
-// --- Bulk auto-assign all grading fields ---
 function bulkAssignPointsLabels() {
   if (!window.jsonEditData) return alert("No JSON loaded.");
   let count = 0;
@@ -164,7 +156,7 @@ function bulkAssignPointsLabels() {
     : Object.entries(window.jsonEditData);
   entries.forEach(([key, entry]) => {
     const ssid = entry.skillSheetID;
-    const meta = skillSheetScoring[ssid] || {};
+    const meta = (window.skillSheetScoring || {})[ssid] || {};
     if (ssid && meta.points !== undefined) {
       entry.scoreCategory = meta.label;
       entry.points = meta.points;
@@ -175,10 +167,9 @@ function bulkAssignPointsLabels() {
   alert(`⭐ Updated ${count} entries with skill sheet points and labels.`);
 }
 
-// --- Live update Score Category/Points on Skill Sheet ID change ---
 window.onSkillSheetIDEdit = function(key) {
   const ssid = document.getElementById(`skillSheetID-${key}`).value.trim();
-  const meta = skillSheetScoring[ssid] || {};
+  const meta = (window.skillSheetScoring || {})[ssid] || {};
   if (meta.label !== undefined) document.getElementById(`cat-${key}`).value = meta.label;
   if (meta.points !== undefined) document.getElementById(`pts-${key}`).value = meta.points;
 };
