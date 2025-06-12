@@ -1,24 +1,22 @@
 import { skillSheetScoring } from './grading_skill_sheet.js';
 
-// DOM Elements
+// --- DOM references
 window.jsonEditData = {};
-const jsonFileInput = document.getElementById("jsonFileInput");
 const filePathInput = document.getElementById("filePathInput");
-const loadPathBtn = document.getElementById("loadPathBtn");
+const jsonFileInput = document.getElementById("jsonFileInput");
 const downloadEditedJsonBtn = document.getElementById("downloadEditedJsonBtn");
 const responsesContainer = document.getElementById("responsesContainer");
 const logBox = document.getElementById("logBox");
 
-// ====== LOAD JSON FROM PATH (Netlify/public) ======
+// --- Load JSON from site path
 window.loadJsonFromPath = async function() {
   const filePath = filePathInput.value.trim();
   if (!filePath) {
-    alert("Please enter a file path (e.g. /ems_database.json)");
+    alert("Enter a file path (e.g. /ems_database.json)");
     return;
   }
   logBox.innerText = "Loading...";
   try {
-    // Only allow same-origin fetch
     const resp = await fetch(filePath, {cache: "reload"});
     if (!resp.ok) throw new Error(`Could not fetch file: ${filePath} (${resp.status})`);
     const json = await resp.json();
@@ -33,7 +31,7 @@ window.loadJsonFromPath = async function() {
   }
 };
 
-// ====== LOAD JSON FROM UPLOADED FILE ======
+// --- Load JSON from uploaded file
 if (jsonFileInput) {
   jsonFileInput.addEventListener("change", function(evt) {
     const file = evt.target.files[0];
@@ -55,7 +53,7 @@ if (jsonFileInput) {
   });
 }
 
-// ====== RENDER ======
+// --- Render logic
 function renderAllJsonEntries(jsonData) {
   responsesContainer.innerHTML = "";
   let entries = Array.isArray(jsonData)
@@ -92,7 +90,7 @@ function renderResponseCard(key, data) {
   responsesContainer.appendChild(div);
 }
 
-// ====== SAVE/DELETE/EXPORT/ETC (same as before) ======
+// --- Save, Delete, Download, Assign, Filter
 window.saveJsonEditEntry = function(key) {
   if (!window.jsonEditData) return;
   const get = id => document.getElementById(id)?.innerText.trim();
@@ -174,7 +172,7 @@ window.filterJsonEntries = function() {
   filtered.forEach(([key, val]) => renderResponseCard(key, val));
 };
 
-// ====== Optionally, add a sample loader for testing ======
+// --- Sample loader for demo/testing
 window.loadSampleJson = function() {
   fetch('ems_database_sample.json')
     .then(r => r.json())
