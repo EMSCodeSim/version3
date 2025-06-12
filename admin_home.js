@@ -1,8 +1,66 @@
 import { skillSheetScoring } from './grading_skill_sheet.js';
 
-// ========== CARD RENDER ==========
+// ========== DYNAMIC FILE LOAD ==========
+window.jsonEditData = {};
+const jsonFileInput = document.getElementById("jsonFileInput");
+const filePathInput = document.getElementById("filePathInput");
+const loadPathBtn = document.getElementById("loadPathBtn");
+const downloadEditedJsonBtn = document.getElementById("downloadEditedJsonBtn");
+const responsesContainer = document.getElementById("responsesContainer");
+const logBox = document.getElementById("logBox");
+
+// Load JSON file from a public path (URL or relative path)
+window.loadJsonFromPath = function() {
+  const filePath = filePathInput.value.trim();
+  if (!filePath) return alert("Please enter a JSON file path.");
+  fetch(filePath)
+    .then(r => {
+      if (!r.ok) throw new Error(`Could not fetch file: ${filePath}`);
+      return r.json();
+    })
+    .then(json => {
+      window.jsonEditData = json;
+      renderAllJsonEntries(window.jsonEditData);
+      downloadEditedJsonBtn.style.display = "inline-block";
+      if (logBox) logBox.innerText = `Loaded file: ${filePath}`;
+    })
+    .catch(err => {
+      alert("Error loading file: " + err.message);
+      if (logBox) logBox.innerText = "Ready. Could not load file.";
+    });
+};
+
+// Load JSON file from disk (manual override)
+if (jsonFileInput) {
+  jsonFileInput.addEventListener("change", handleJsonFileSelect, false);
+}
+function handleJsonFileSelect(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      window.jsonEditData = JSON.parse(e.target.result);
+      renderAllJsonEntries(window.jsonEditData);
+      downloadEditedJsonBtn.style.display = "inline-block";
+      if (logBox) logBox.innerText = "JSON file loaded from local disk.";
+    } catch (err) {
+      alert("❌ Failed to parse JSON: " + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function renderAllJsonEntries(jsonData) {
+  responsesContainer.innerHTML = "";
+  let entries = Array.isArray(jsonData)
+    ? jsonData.map((val, idx) => [idx, val])
+    : Object.entries(jsonData);
+
+  entries.forEach(([key, val]) => renderResponseCard(key, val));
+}
+
 function renderResponseCard(key, data) {
-  const container = document.getElementById("responsesContainer");
   const ssid = data.skillSheetID;
   const meta = skillSheetScoring[ssid] || {};
   const pointsDisplay = (meta.points !== undefined ? meta.points : (data.points !== undefined ? data.points : ""));
@@ -25,45 +83,7 @@ function renderResponseCard(key, data) {
     <button onclick="saveJsonEditEntry('${key}')">💾 Save</button>
     <button onclick="deleteJsonEntry('${key}')">🗑 Delete</button>
   `;
-  container.appendChild(div);
-}
-
-// ========== JSON FILE EDIT/VIEW ==========
-window.jsonEditData = {};
-const jsonFileInput = document.getElementById("jsonFileInput");
-const downloadEditedJsonBtn = document.getElementById("downloadEditedJsonBtn");
-const responsesContainer = document.getElementById("responsesContainer");
-const logBox = document.getElementById("logBox");
-
-// Load JSON file from disk (manual override)
-if (jsonFileInput) {
-  jsonFileInput.addEventListener("change", handleJsonFileSelect, false);
-}
-function handleJsonFileSelect(evt) {
-  const file = evt.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      window.jsonEditData = JSON.parse(e.target.result);
-      renderAllJsonEntries(window.jsonEditData);
-      downloadEditedJsonBtn.style.display = "inline-block";
-      if (logBox) logBox.innerText = "JSON file loaded.";
-    } catch (err) {
-      alert("❌ Failed to parse JSON: " + err.message);
-    }
-  };
-  reader.readAsText(file);
-}
-
-// Render all entries in edit mode
-function renderAllJsonEntries(jsonData) {
-  responsesContainer.innerHTML = "";
-  let entries = Array.isArray(jsonData)
-    ? jsonData.map((val, idx) => [idx, val])
-    : Object.entries(jsonData);
-
-  entries.forEach(([key, val]) => renderResponseCard(key, val));
+  responsesContainer.appendChild(div);
 }
 
 // Save edits for a single entry
@@ -91,7 +111,7 @@ window.saveJsonEditEntry = function(key) {
     window.jsonEditData[key] = { ...window.jsonEditData[key], ...entry };
   }
   alert(`💾 Saved changes to "${key}"!`);
-}
+};
 
 // Delete an entry
 window.deleteJsonEntry = function(key) {
@@ -104,7 +124,7 @@ window.deleteJsonEntry = function(key) {
   }
   renderAllJsonEntries(window.jsonEditData);
   alert(`🗑 Deleted "${key}".`);
-}
+};
 
 // Download edited JSON
 window.downloadEditedJson = function() {
@@ -116,18 +136,6 @@ window.downloadEditedJson = function() {
   document.body.appendChild(a);
   a.click();
   a.remove();
-};
-
-// Load sample file (for demo/testing)
-window.loadSampleJson = function() {
-  fetch('ems_database_sample.json')
-    .then(r => r.json())
-    .then(json => {
-      window.jsonEditData = json;
-      renderAllJsonEntries(window.jsonEditData);
-      downloadEditedJsonBtn.style.display = "inline-block";
-      if (logBox) logBox.innerText = "Sample JSON loaded.";
-    });
 };
 
 // ====== Mass Auto-Assign Points/Labels for All Entries in Loaded JSON ======
@@ -151,7 +159,7 @@ window.bulkAssignPointsLabels = function() {
   alert(`⭐ Updated ${count} entries with skill sheet points and labels.`);
 };
 
-// ====== Search/Filter (Optional Enhancement) ======
+// ====== Search/Filter ======
 window.filterJsonEntries = function() {
   const filterVal = document.getElementById("filterInput").value.toLowerCase();
   if (!window.jsonEditData) return;
@@ -166,18 +174,3 @@ window.filterJsonEntries = function() {
   responsesContainer.innerHTML = "";
   filtered.forEach(([key, val]) => renderResponseCard(key, val));
 };
-
-// ====== Auto-load ems_database.json on page load ======
-window.addEventListener("DOMContentLoaded", () => {
-  fetch('ems_database.json')
-    .then(r => r.json())
-    .then(json => {
-      window.jsonEditData = json;
-      renderAllJsonEntries(window.jsonEditData);
-      downloadEditedJsonBtn.style.display = "inline-block";
-      if (logBox) logBox.innerText = "Default JSON database loaded.";
-    })
-    .catch(() => {
-      if (logBox) logBox.innerText = "Ready. No default JSON found.";
-    });
-});
