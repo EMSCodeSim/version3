@@ -1,5 +1,8 @@
 // checklist.js
 
+if (!window.scoreTracker) window.scoreTracker = {};
+
+
 const SKILL_MAP = [
   { id: "ppeBsi", el: "EMT-B-MED-1" },
   { id: "sceneSafety", el: "EMT-B-MED-2" },
