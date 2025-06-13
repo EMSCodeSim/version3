@@ -148,7 +148,7 @@ async function processUserMessage(message) {
     chatBox.appendChild(replyDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
 
-    // ---- Grading integration: if this response has a scoreCategory, grade it and update checklist!
+    // ---- Live grading: if this response has a scoreCategory, grade and update checklist!
     if (matchedEntry && matchedEntry.scoreCategory) {
       gradeActionBySkillID(matchedEntry.scoreCategory);
       if (window.updateSkillChecklistUI) window.updateSkillChecklistUI();
