@@ -1,24 +1,14 @@
-// scripts/grading.js
+// grading.js
 
-export let scoreTracker = {};
-window.scoreTracker = scoreTracker;
+window.scoreTracker = window.scoreTracker || {};
 
-// Initialize the tracker with all skill keys set to false
-export function initializeScoreTracker(gradingTemplate) {
-  scoreTracker = {};
-  Object.keys(gradingTemplate).forEach(key => scoreTracker[key] = false);
-  window.scoreTracker = scoreTracker; // Always keep in sync globally
-}
+window.initializeScoreTracker = function(gradingTemplate) {
+  window.scoreTracker = {};
+  Object.keys(gradingTemplate).forEach(key => window.scoreTracker[key] = false);
+};
 
-// Grade a skill and keep tracker in sync
-export function gradeActionBySkillID(skillID) {
-  if (scoreTracker[skillID] !== undefined) {
-    scoreTracker[skillID] = true;
-    window.scoreTracker = scoreTracker;
+window.gradeActionBySkillID = function(skillID) {
+  if (window.scoreTracker[skillID] !== undefined) {
+    window.scoreTracker[skillID] = true;
   }
-}
-
-// Optionally: get scored keys (for summary, etc.)
-export function getScoredSkills() {
-  return Object.keys(scoreTracker).filter(key => scoreTracker[key]);
-}
+};
