@@ -1,7 +1,10 @@
 // scripts/app.js
+if (!window.scoreTracker) window.scoreTracker = {};
+
 
 import { loadHardcodedResponses, routeUserInput } from './router.js';
 import { initializeScoreTracker, gradeActionBySkillID } from './grading.js';
+
 
 const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
