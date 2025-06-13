@@ -1,7 +1,5 @@
 // scripts/checklist.js
 
-import { scoreTracker } from './grading.js';
-
 const SKILL_MAP = [
   { id: "ppeBsi", el: "EMT-B-MED-1" },
   { id: "sceneSafety", el: "EMT-B-MED-2" },
@@ -37,16 +35,18 @@ const SKILL_MAP = [
   { id: "verbalizesReassessment", el: "EMT-B-MED-32" }
 ];
 
+// Live checkmark update
 export function updateSkillChecklistUI() {
   for (const { id, el } of SKILL_MAP) {
     const li = document.getElementById(el);
     if (li && li.querySelector('.status')) {
-      li.querySelector('.status').textContent = scoreTracker[id] ? "✅" : "";
+      li.querySelector('.status').textContent = window.scoreTracker && window.scoreTracker[id] ? "✅" : "";
     }
   }
 }
 window.updateSkillChecklistUI = updateSkillChecklistUI;
 
+// Reset all checkmarks (clear)
 export function resetSkillChecklistUI() {
   for (const { el } of SKILL_MAP) {
     const li = document.getElementById(el);
@@ -57,7 +57,7 @@ export function resetSkillChecklistUI() {
 }
 window.resetSkillChecklistUI = resetSkillChecklistUI;
 
-// On page load, clear and update the checklist
+// Always update/checklist on page load
 document.addEventListener("DOMContentLoaded", () => {
   resetSkillChecklistUI();
   updateSkillChecklistUI();
