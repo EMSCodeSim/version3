@@ -1,7 +1,7 @@
 // scripts/grading.js
+if (!window.scoreTracker) window.scoreTracker = {};
 
 export let scoreTracker = {};
-window.scoreTracker = scoreTracker;
 
 // Initialize the tracker with all skill keys set to false
 export function initializeScoreTracker(gradingTemplate) {
