@@ -2,6 +2,8 @@
 
 // Ensure scoreTracker exists globally
 if (!window.scoreTracker) window.scoreTracker = {};
+export let scoreTracker = window.scoreTracker;
+
 
 // Always use the global object
 export let scoreTracker = window.scoreTracker;
