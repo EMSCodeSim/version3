@@ -1,5 +1,5 @@
 {
-  "ppe": {
+  "ppeBsi": {
     "label": "Takes or verbalizes PPE precautions",
     "points": 1,
     "keywords": ["bsi", "gloves", "ppe", "body substance isolation"]
@@ -9,22 +9,22 @@
     "points": 1,
     "keywords": ["scene safe", "scene is secure", "check for hazards"]
   },
-  "moiNoi": {
+  "determinesMOIorNOI": {
     "label": "Determines MOI/NOI",
     "points": 1,
     "keywords": ["mechanism of injury", "nature of illness", "moi", "noi"]
   },
-  "numPatients": {
+  "determinesNumberOfPatients": {
     "label": "Determines number of patients",
     "points": 1,
     "keywords": ["how many patients", "number of patients"]
   },
-  "requestAls": {
+  "requestsAdditionalResources": {
     "label": "Requests additional EMS assistance if necessary",
     "points": 1,
     "keywords": ["call als", "need als", "request als", "advanced life support"]
   },
-  "cspine": {
+  "considersCSpine": {
     "label": "Considers stabilization of spine",
     "points": 1,
     "keywords": ["c-spine", "spinal motion restriction", "stabilize spine"]
@@ -34,7 +34,7 @@
     "points": 1,
     "keywords": ["sick or not sick", "general impression", "looks ill"]
   },
-  "avpu": {
+  "determinesResponsiveness": {
     "label": "Determines responsiveness (AVPU)",
     "points": 1,
     "keywords": ["alert", "verbal", "pain", "unresponsive", "avpu"]
@@ -49,12 +49,7 @@
     "points": 1,
     "keywords": ["airway", "check airway", "open airway"]
   },
-  "breathing": {
-    "label": "Assesses breathing",
-    "points": 1,
-    "keywords": ["breathing rate", "respiratory rate", "breathing"]
-  },
-  "oxygen": {
+  "oxygenTherapy": {
     "label": "Initiates appropriate oxygen therapy",
     "points": 1,
     "keywords": ["oxygen", "apply oxygen", "non-rebreather", "nasal cannula", "oxygen therapy"]
@@ -64,7 +59,7 @@
     "points": 1,
     "keywords": ["pulse", "skin signs", "bleeding", "circulation"]
   },
-  "transportDecision": {
+  "patientPriority": {
     "label": "Makes transport decision",
     "points": 1,
     "keywords": ["transport", "load and go", "emergent", "non-emergent"]
@@ -99,7 +94,7 @@
     "points": 1,
     "keywords": ["how long", "duration", "started when"]
   },
-  "opqrstClarify": {
+  "sampleSigns": {
     "label": "Clarifies associated signs/symptoms",
     "points": 2,
     "keywords": ["associated symptoms", "related symptoms", "also experiencing"]
@@ -114,12 +109,12 @@
     "points": 1,
     "keywords": ["what medications", "taking any meds"]
   },
-  "sampleHistory": {
+  "samplePastHistory": {
     "label": "SAMPLE: Past pertinent history",
     "points": 1,
     "keywords": ["medical history", "past problems", "diagnosed with"]
   },
-  "sampleIntake": {
+  "sampleLastIntake": {
     "label": "SAMPLE: Last oral intake",
     "points": 1,
     "keywords": ["last ate", "last drink", "oral intake"]
@@ -129,69 +124,29 @@
     "points": 1,
     "keywords": ["what were you doing", "what happened", "leading up to"]
   },
-  "secondaryAssessment": {
+  "assessesAffectedBodyPart": {
     "label": "Performs secondary assessment",
     "points": 5,
     "keywords": ["head to toe", "focused exam", "secondary assessment"]
   },
-  "vitalsBP": {
-    "label": "Vital Signs: Blood Pressure",
-    "points": 1,
-    "keywords": ["blood pressure", "bp"]
+  "obtainsBaselineVitals": {
+    "label": "Obtains baseline vitals (BP, HR, RR)",
+    "points": 3,
+    "keywords": ["blood pressure", "bp", "pulse", "heart rate", "respiratory rate", "breathing quality"]
   },
-  "vitalsPulse": {
-    "label": "Vital Signs: Pulse",
-    "points": 1,
-    "keywords": ["pulse", "heart rate"]
-  },
-  "vitalsResp": {
-    "label": "Vital Signs: Resp Rate & Quality",
-    "points": 1,
-    "keywords": ["respiratory rate", "breathing quality"]
-  },
-  "vitalsAvpu": {
-    "label": "Vital Signs: AVPU",
-    "points": 1,
-    "keywords": ["avpu", "alert", "verbal", "pain", "unresponsive"]
-  },
-  "diagnostics": {
-    "label": "Performs diagnostics (glucose, pulse ox)",
-    "points": 2,
-    "keywords": ["blood sugar", "glucose", "pulse ox", "oxygen saturation"]
-  },
-  "fieldImpression": {
+  "generalImpression": {
     "label": "States field impression",
     "points": 1,
     "keywords": ["i think", "field impression", "most likely"]
   },
-  "treatmentPlan": {
+  "managesSecondaryInjuries": {
     "label": "Verbalizes treatment plan and initiates interventions",
     "points": 1,
     "keywords": ["treatment plan", "doing now", "interventions"]
   },
-  "treatmentReeval": {
+  "verbalizesReassessment": {
     "label": "Reevaluates treatment decision",
     "points": 1,
-    "keywords": ["check treatment", "reevaluate", "treatment working"]
-  },
-  "reassessVitals": {
-    "label": "Reassess vital signs",
-    "points": 1,
-    "keywords": ["repeat vitals", "recheck bp", "recheck pulse"]
-  },
-  "recheckPrimary": {
-    "label": "Repeats primary survey",
-    "points": 1,
-    "keywords": ["repeat primary", "primary again"]
-  },
-  "responseEval": {
-    "label": "Evaluates patient response to treatment",
-    "points": 1,
-    "keywords": ["getting better", "any improvement", "responding"]
-  },
-  "recheckSecondary": {
-    "label": "Repeats secondary assessment",
-    "points": 1,
-    "keywords": ["repeat secondary", "second head to toe"]
+    "keywords": ["check treatment", "reevaluate", "treatment working", "repeat vitals", "recheck bp", "recheck pulse"]
   }
 }
