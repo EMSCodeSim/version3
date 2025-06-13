@@ -1,4 +1,4 @@
-// scripts/checklist.js
+// checklist.js
 
 const SKILL_MAP = [
   { id: "ppeBsi", el: "EMT-B-MED-1" },
@@ -30,35 +30,34 @@ const SKILL_MAP = [
   { id: "obtainsBaselineVitals", el: "EMT-B-MED-27" },
   { id: "obtainsBaselineVitals", el: "EMT-B-MED-28" },
   { id: "obtainsBaselineVitals", el: "EMT-B-MED-29" },
-  { id: "generalImpression", el: "EMT-B-MED-30" },
+  { id: "fieldImpression", el: "EMT-B-MED-30" },  // field impression
   { id: "managesSecondaryInjuries", el: "EMT-B-MED-31" },
   { id: "verbalizesReassessment", el: "EMT-B-MED-32" }
 ];
 
-// Live checkmark update
-export function updateSkillChecklistUI() {
+window.updateSkillChecklistUI = function() {
+  if (!window.scoreTracker) {
+    // Defensive: no tracker yet
+    return;
+  }
   for (const { id, el } of SKILL_MAP) {
     const li = document.getElementById(el);
     if (li && li.querySelector('.status')) {
-      li.querySelector('.status').textContent = window.scoreTracker && window.scoreTracker[id] ? "✅" : "";
+      li.querySelector('.status').textContent = window.scoreTracker[id] ? "✅" : "";
     }
   }
-}
-window.updateSkillChecklistUI = updateSkillChecklistUI;
+};
 
-// Reset all checkmarks (clear)
-export function resetSkillChecklistUI() {
+window.resetSkillChecklistUI = function() {
   for (const { el } of SKILL_MAP) {
     const li = document.getElementById(el);
     if (li && li.querySelector('.status')) {
       li.querySelector('.status').textContent = "";
     }
   }
-}
-window.resetSkillChecklistUI = resetSkillChecklistUI;
+};
 
-// Always update/checklist on page load
-document.addEventListener("DOMContentLoaded", () => {
-  resetSkillChecklistUI();
-  updateSkillChecklistUI();
+document.addEventListener("DOMContentLoaded", function() {
+  window.resetSkillChecklistUI();
+  window.updateSkillChecklistUI();
 });
