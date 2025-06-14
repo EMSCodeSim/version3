@@ -1,152 +1,32 @@
 {
-  "ppeBsi": {
-    "label": "Takes or verbalizes PPE precautions",
-    "points": 1,
-    "keywords": ["bsi", "gloves", "ppe", "body substance isolation"]
-  },
-  "sceneSafety": {
-    "label": "Determines the scene is safe",
-    "points": 1,
-    "keywords": ["scene safe", "scene is secure", "check for hazards"]
-  },
-  "determinesMOIorNOI": {
-    "label": "Determines MOI/NOI",
-    "points": 1,
-    "keywords": ["mechanism of injury", "nature of illness", "moi", "noi"]
-  },
-  "determinesNumberOfPatients": {
-    "label": "Determines number of patients",
-    "points": 1,
-    "keywords": ["how many patients", "number of patients"]
-  },
-  "requestsAdditionalResources": {
-    "label": "Requests additional EMS assistance if necessary",
-    "points": 1,
-    "keywords": ["call als", "need als", "request als", "advanced life support"]
-  },
-  "considersCSpine": {
-    "label": "Considers stabilization of spine",
-    "points": 1,
-    "keywords": ["c-spine", "spinal motion restriction", "stabilize spine"]
-  },
-  "generalImpression": {
-    "label": "Performs general impression",
-    "points": 1,
-    "keywords": ["sick or not sick", "general impression", "looks ill"]
-  },
-  "determinesResponsiveness": {
-    "label": "Determines responsiveness (AVPU)",
-    "points": 1,
-    "keywords": ["alert", "verbal", "pain", "unresponsive", "avpu"]
-  },
-  "chiefComplaint": {
-    "label": "Determines chief complaint",
-    "points": 1,
-    "keywords": ["what's wrong", "chief complaint", "what happened"]
-  },
-  "airway": {
-    "label": "Assesses airway",
-    "points": 1,
-    "keywords": ["airway", "check airway", "open airway"]
-  },
-  "oxygenTherapy": {
-    "label": "Initiates appropriate oxygen therapy",
-    "points": 1,
-    "keywords": ["oxygen", "apply oxygen", "non-rebreather", "nasal cannula", "oxygen therapy"]
-  },
-  "circulation": {
-    "label": "Checks circulation (pulse, bleeding, skin)",
-    "points": 1,
-    "keywords": ["pulse", "skin signs", "bleeding", "circulation"]
-  },
-  "patientPriority": {
-    "label": "Makes transport decision",
-    "points": 1,
-    "keywords": ["transport", "load and go", "emergent", "non-emergent"]
-  },
-  "opqrstOnset": {
-    "label": "History: OPQRST - Onset",
-    "points": 1,
-    "keywords": ["when did it start", "onset"]
-  },
-  "opqrstProvocation": {
-    "label": "History: OPQRST - Provocation",
-    "points": 1,
-    "keywords": ["what makes it better", "what makes it worse", "provocation"]
-  },
-  "opqrstQuality": {
-    "label": "History: OPQRST - Quality",
-    "points": 1,
-    "keywords": ["sharp", "dull", "stabbing", "aching", "quality"]
-  },
-  "opqrstRadiation": {
-    "label": "History: OPQRST - Radiation",
-    "points": 1,
-    "keywords": ["does it move", "radiate", "spreads"]
-  },
-  "opqrstSeverity": {
-    "label": "History: OPQRST - Severity",
-    "points": 1,
-    "keywords": ["how bad", "scale of 1 to 10", "severity"]
-  },
-  "opqrstTime": {
-    "label": "History: OPQRST - Time",
-    "points": 1,
-    "keywords": ["how long", "duration", "started when"]
-  },
-  "sampleSigns": {
-    "label": "Clarifies associated signs/symptoms",
-    "points": 2,
-    "keywords": ["associated symptoms", "related symptoms", "also experiencing"]
-  },
-  "sampleAllergies": {
-    "label": "SAMPLE: Allergies",
-    "points": 1,
-    "keywords": ["any allergies", "allergic to anything"]
-  },
-  "sampleMedications": {
-    "label": "SAMPLE: Medications",
-    "points": 1,
-    "keywords": ["what medications", "taking any meds"]
-  },
-  "samplePastHistory": {
-    "label": "SAMPLE: Past pertinent history",
-    "points": 1,
-    "keywords": ["medical history", "past problems", "diagnosed with"]
-  },
-  "sampleLastIntake": {
-    "label": "SAMPLE: Last oral intake",
-    "points": 1,
-    "keywords": ["last ate", "last drink", "oral intake"]
-  },
-  "sampleEvents": {
-    "label": "SAMPLE: Events leading to illness",
-    "points": 1,
-    "keywords": ["what were you doing", "what happened", "leading up to"]
-  },
-  "assessesAffectedBodyPart": {
-    "label": "Performs secondary assessment",
-    "points": 5,
-    "keywords": ["head to toe", "focused exam", "secondary assessment"]
-  },
-  "obtainsBaselineVitals": {
-    "label": "Obtains baseline vitals (BP, HR, RR)",
-    "points": 3,
-    "keywords": ["blood pressure", "bp", "pulse", "heart rate", "respiratory rate", "breathing quality"]
-  },
-  "generalImpression": {
-    "label": "States field impression",
-    "points": 1,
-    "keywords": ["i think", "field impression", "most likely"]
-  },
-  "managesSecondaryInjuries": {
-    "label": "Verbalizes treatment plan and initiates interventions",
-    "points": 1,
-    "keywords": ["treatment plan", "doing now", "interventions"]
-  },
-  "verbalizesReassessment": {
-    "label": "Reevaluates treatment decision",
-    "points": 1,
-    "keywords": ["check treatment", "reevaluate", "treatment working", "repeat vitals", "recheck bp", "recheck pulse"]
-  }
+  "ppeBsi": false,
+  "sceneSafety": false,
+  "determinesMOIorNOI": false,
+  "determinesNumberOfPatients": false,
+  "requestsAdditionalResources": false,
+  "considersCSpine": false,
+  "generalImpression": false,
+  "determinesResponsiveness": false,
+  "chiefComplaint": false,
+  "airway": false,
+  "oxygenTherapy": false,
+  "circulation": false,
+  "patientPriority": false,
+  "opqrstOnset": false,
+  "opqrstProvocation": false,
+  "opqrstQuality": false,
+  "opqrstRadiation": false,
+  "opqrstSeverity": false,
+  "opqrstTime": false,
+  "sampleSigns": false,
+  "sampleAllergies": false,
+  "sampleMedications": false,
+  "samplePastHistory": false,
+  "sampleLastIntake": false,
+  "sampleEvents": false,
+  "assessesAffectedBodyPart": false,
+  "obtainsBaselineVitals": false,
+  "fieldImpression": false,
+  "managesSecondaryInjuries": false,
+  "verbalizesReassessment": false
 }
