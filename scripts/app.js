@@ -1,10 +1,10 @@
 // scripts/app.js
+if (!window.scoreTracker) window.scoreTracker = {};
+
 
 import { loadHardcodedResponses, routeUserInput } from './router.js';
 import { initializeScoreTracker, gradeActionBySkillID } from './grading.js';
 
-// Always initialize scoreTracker in global scope for safety
-if (!window.scoreTracker) window.scoreTracker = {};
 
 const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
@@ -78,14 +78,9 @@ window.startScenario = async function () {
     const config = await configRes.json();
     console.log("startScenario: config loaded", config);
 
-    // 3. Load grading template - fall back if needed
-    try {
-      let gradingType = config.grading || "medical";
-      await loadGradingTemplate(gradingType);
-      if (window.updateSkillChecklistUI) window.updateSkillChecklistUI();
-    } catch (err) {
-      console.warn("Grading template not found, loading default 'medical'.", err);
-      await loadGradingTemplate("medical");
+    // 3. Load grading template
+    if (config.grading) {
+      await loadGradingTemplate(config.grading || "medical");
       if (window.updateSkillChecklistUI) window.updateSkillChecklistUI();
     }
 
