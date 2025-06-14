@@ -3,6 +3,9 @@
 import { loadHardcodedResponses, routeUserInput } from './router.js';
 import { initializeScoreTracker, gradeActionBySkillID } from './grading.js';
 
+// Global state
+if (!window.scoreTracker) window.scoreTracker = {};
+
 const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
 let gradingTemplate = {};
@@ -16,7 +19,7 @@ function displayChatResponse(message, userMessage, role, ttsAudio, source, origi
   div.innerHTML = `<b>${role ? role + ": " : ""}</b>${message}`;
   chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
-  // Play TTS if provided
+  // Optionally play TTS if provided
   if (ttsAudio) playAudio(ttsAudio);
 }
 
@@ -52,7 +55,7 @@ function speakOnce(text, voiceName = "", rate = 1.0, callback) {
   window.speechSynthesis.speak(utter);
 }
 
-// Only for error logging (not used for scenario data)
+// Error logging (console only)
 function logErrorToDatabase(errorInfo) {
   console.error("🔴", errorInfo);
 }
@@ -62,38 +65,34 @@ window.startScenario = async function () {
   const spinner = document.getElementById('loading-spinner');
   try {
     if (spinner) spinner.style.display = "block";
-    console.log("startScenario: called.");
-
-    // 1. Load hardcoded responses from static JSON files
+    // 1. Load hardcoded responses
     await loadHardcodedResponses();
-    console.log("startScenario: responses loaded:", window.hardcodedResponsesArray?.length);
 
     // 2. Load config.json
     const configRes = await fetch(`${scenarioPath}config.json`);
-    console.log("startScenario: config fetch response:", configRes.status);
     if (!configRes.ok) throw new Error("Missing config.json");
     const config = await configRes.json();
-    console.log("startScenario: config loaded", config);
 
     // 3. Load grading template
-    if (config.grading) {
-      await loadGradingTemplate(config.grading || "medical");
+    try {
+      let gradingType = config.grading || "medical";
+      await loadGradingTemplate(gradingType);
+      if (window.updateSkillChecklistUI) window.updateSkillChecklistUI();
+    } catch (err) {
+      // Fallback if custom grading missing
+      await loadGradingTemplate("medical");
       if (window.updateSkillChecklistUI) window.updateSkillChecklistUI();
     }
 
     // 4. Load dispatch info
     const dispatchRes = await fetch(`${scenarioPath}dispatch.txt`);
-    console.log("startScenario: dispatch fetch response:", dispatchRes.status);
     if (!dispatchRes.ok) throw new Error("Missing dispatch.txt");
     const dispatch = await dispatchRes.text();
-    console.log("startScenario: dispatch loaded", dispatch);
 
     // 5. Load patient info
     const patientRes = await fetch(`${scenarioPath}patient.txt`);
-    console.log("startScenario: patient fetch response:", patientRes.status);
     if (!patientRes.ok) throw new Error("Missing patient.txt");
     patientContext = await patientRes.text();
-    console.log("startScenario: patient context loaded", patientContext);
 
     // 6. Reset checklist
     if (window.resetSkillChecklistUI) window.resetSkillChecklistUI();
@@ -112,7 +111,6 @@ window.startScenario = async function () {
     window.scenarioStarted = false;
   } finally {
     if (typeof window.hideLoadingSpinner === "function") window.hideLoadingSpinner();
-    console.log("startScenario: done, spinner hidden");
   }
 };
 
@@ -122,6 +120,15 @@ async function loadGradingTemplate(type = "medical") {
   const res = await fetch(file);
   if (!res.ok) throw new Error(`Grading template not found: ${file}`);
   gradingTemplate = await res.json();
+
+  // If gradingTemplate is object-of-objects, convert to booleans
+  // This ensures compatibility if file uses { "ppeBsi": {label:..., ...} }
+  let firstVal = gradingTemplate[Object.keys(gradingTemplate)[0]];
+  if (typeof firstVal === "object" && firstVal !== null) {
+    let newTemplate = {};
+    for (let key of Object.keys(gradingTemplate)) newTemplate[key] = false;
+    gradingTemplate = newTemplate;
+  }
   initializeScoreTracker(gradingTemplate);
   if (window.updateSkillChecklistUI) window.updateSkillChecklistUI();
 }
@@ -148,7 +155,7 @@ async function processUserMessage(message) {
     chatBox.appendChild(replyDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
 
-    // ---- Grading integration: if this response has a scoreCategory, grade it and update checklist!
+    // ---- Live grading: if this response has a scoreCategory, grade and update checklist!
     if (matchedEntry && matchedEntry.scoreCategory) {
       gradeActionBySkillID(matchedEntry.scoreCategory);
       if (window.updateSkillChecklistUI) window.updateSkillChecklistUI();
