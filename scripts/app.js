@@ -1,10 +1,7 @@
 // scripts/app.js
-if (!window.scoreTracker) window.scoreTracker = {};
-
 
 import { loadHardcodedResponses, routeUserInput } from './router.js';
 import { initializeScoreTracker, gradeActionBySkillID } from './grading.js';
-
 
 const scenarioPath = 'scenarios/chest_pain_002/';
 let patientContext = "";
@@ -151,7 +148,7 @@ async function processUserMessage(message) {
     chatBox.appendChild(replyDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
 
-    // ---- Live grading: if this response has a scoreCategory, grade and update checklist!
+    // ---- Grading integration: if this response has a scoreCategory, grade it and update checklist!
     if (matchedEntry && matchedEntry.scoreCategory) {
       gradeActionBySkillID(matchedEntry.scoreCategory);
       if (window.updateSkillChecklistUI) window.updateSkillChecklistUI();
