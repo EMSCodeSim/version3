@@ -302,7 +302,8 @@
       <div id="gradingSummary"></div>
     </div>
   </div>
-  <script src="app.js"></script>
+  <!-- Load your app.js as an ES module! -->
+  <script type="module" src="app.js"></script>
   <script>
     // Show/hide spinner for scenario load (called by app.js)
     function showLoadingSpinner() {
@@ -316,7 +317,6 @@
     window.showLoadingSpinner = showLoadingSpinner;
     window.hideLoadingSpinner = hideLoadingSpinner;
 
-    // Keep app.js logic in control; these lines ensure legacy compatibility
     document.getElementById("start-button").onclick = function() {
       showLoadingSpinner();
       if (window.startScenario) window.startScenario();
