@@ -15,8 +15,10 @@ function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio) {
   const chatBox = document.getElementById('chat-box');
   if (!chatBox) return;
 
-  // Clear previous bubbles
-  chatBox.innerHTML = '';
+  // Clear previous bubbles (but preserve top image if present)
+  let img = chatBox.querySelector("img");
+  chatBox.innerHTML = "";
+  if (img) chatBox.appendChild(img);
 
   // User bubble
   if (userMsg && userMsg.trim()) {
@@ -123,7 +125,20 @@ window.startScenario = async function () {
 
     if (window.resetSkillChecklistUI) window.resetSkillChecklistUI();
 
-    // Show dispatch info as a single bubble (system response only)
+    // --- Show scenario image (scene1.PNG) at the top ---
+    const chatBox = document.getElementById('chat-box');
+    if (chatBox) {
+      chatBox.innerHTML = ""; // clear previous content
+      const img = document.createElement("img");
+      img.src = `${scenarioPath}scene1.PNG`;
+      img.alt = "Scene Image";
+      img.style.maxWidth = "100%";
+      img.style.borderRadius = "10px";
+      img.style.marginBottom = "14px";
+      chatBox.appendChild(img);
+    }
+
+    // Show dispatch info as the next bubble (system response only)
     displayChatPair("", `🚑 ${dispatch}`, "dispatch");
     speakOnce(dispatch, "", 1.0);
 
