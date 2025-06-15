@@ -3,340 +3,236 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>EMS Code Sim</title>
+  <title>EMS Simulator</title>
   <link rel="stylesheet" href="styles/style.css" />
+
   <style>
-    body {
-      background: linear-gradient(120deg, #eaf6ff 0%, #f4fdff 100%);
-      font-family: 'Segoe UI', Arial, sans-serif;
+    html, body {
+      height: 100%;
       margin: 0;
-      min-height: 100vh;
+      padding: 0;
+      background: #f2f9ff;
     }
-    .header {
-      background: #1976d2;
-      color: #fff;
-      padding: 24px 0 18px 0;
-      box-shadow: 0 2px 10px 0 rgba(19,97,163,0.09);
-      text-align: center;
-      font-size: 2.3rem;
-      font-weight: bold;
-      letter-spacing: 8px;
-      border-bottom-left-radius: 18px;
-      border-bottom-right-radius: 18px;
-    }
-    .top-bar {
+    body {
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
+    }
+    .ems-logo-row {
+      display: flex;
       justify-content: center;
-      align-items: center;
-      gap: 14px;
-      background: #fff;
-      border-bottom: 2px solid #c7e0f7;
-      padding: 22px 10px 8px 10px;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    .top-bar .btn {
-      font-size: 1rem;
-      background: linear-gradient(90deg,#1ad4c9,#1976d2);
-      color: #fff;
-      border: none;
-      padding: 8px 24px;
-      border-radius: 8px;
-      font-weight: 600;
-      letter-spacing: 1.2px;
-      cursor: pointer;
-      transition: background 0.23s;
-      margin-right: 0;
-    }
-    .top-bar .btn:hover {
-      background: linear-gradient(90deg,#16b3a7,#1353a3);
-    }
-    .switch-label {
-      font-weight: 500;
-      margin-left: 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-    }
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 52px;
-      height: 28px;
-    }
-    .switch input { display: none; }
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-color: #b5d6f7;
-      border-radius: 34px;
-      transition: .4s;
-    }
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 22px; width: 22px;
-      left: 3px; bottom: 3px;
-      background-color: white;
-      border-radius: 50%;
-      transition: .4s;
-    }
-    input:checked + .slider {
-      background-color: #20e3c2;
-    }
-    input:checked + .slider:before {
-      transform: translateX(24px);
-    }
-    .container {
-      max-width: 1050px;
-      margin: 35px auto 0 auto;
-      background: #fff;
-      border-radius: 17px;
-      box-shadow: 0 2px 18px 0 rgba(19, 97, 163, 0.12);
-      padding: 32px 30px 38px 30px;
-      display: flex;
-      gap: 32px;
-      flex-wrap: wrap;
       align-items: flex-start;
+      padding-top: 12px;
+      padding-bottom: 4px;
+      background: #fff;
     }
-    .left-panel {
-      flex: 2 1 420px;
-      min-width: 320px;
-      margin-right: 0;
+    #main-header {
+      padding: 8px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
-    .right-panel {
-      flex: 1 1 260px;
-      min-width: 200px;
-      margin-left: 0;
-      background: #f6fbff;
-      border-radius: 13px;
-      padding: 24px 18px 18px 18px;
-      box-shadow: 0 2px 10px 0 rgba(19,97,163,0.06);
-      position: sticky;
-      top: 110px;
-      max-height: 80vh;
-      overflow-y: auto;
+    #mainLayout {
+      display: flex;
+      flex-direction: row;
+      flex: 1;
+      padding: 10px;
     }
-    .chat-box-wrap {
-      border: 2px solid #c7e0f7;
-      border-radius: 14px;
-      min-height: 340px;
-      background: #f6fbff;
-      margin-bottom: 22px;
-      overflow-y: auto;
-      box-shadow: 0 1.5px 12px 0 rgba(0,0,0,0.07);
-      padding: 13px 0;
-      position: relative;
-      max-height: 390px;
+    #simulatorPane {
+      width: 70%;
+      padding: 10px;
+    }
+    #skillSheetPane {
+      width: 30%;
+      padding: 10px;
+      border-left: 2px solid #ccc;
+      display: none;
+    }
+    .status {
+      color: green;
+      font-weight: bold;
+    }
+    @media (max-width: 900px) {
+      #skillSheetPane {
+        display: none !important;
+      }
+    }
+    body.learning-mode #main-header {
+      justify-content: flex-start;
+      padding-left: 5%;
     }
     #chat-box {
-      min-height: 180px;
-      padding: 8px 18px 8px 18px;
-      font-size: 1.04rem;
+      height: 380px;
       overflow-y: auto;
-      max-height: 355px;
+      border: 1px solid #ccc;
+      background: #fff;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
     }
-    #loading-spinner {
-      display: none;
-      text-align: center;
-      position: absolute;
-      left: 0; right: 0;
-      top: 45%;
-      z-index: 50;
-      background: rgba(255,255,255,0.82);
-      border-radius: 14px;
-      padding: 25px 0;
-    }
-    #loading-spinner img {
-      width: 60px; height: 60px;
-      display: inline-block;
-      animation: spin 1.1s linear infinite;
-    }
-    @keyframes spin {
-      100% { transform: rotate(360deg);}
-    }
-    .chat-bubble {
-      padding: 10px 14px;
-      border-radius: 10px;
-      margin-bottom: 12px;
-      word-break: break-word;
-      font-size: 1.06rem;
-      box-shadow: 0 1.5px 8px 0 rgba(19,97,163,0.04);
-      display: inline-block;
-      max-width: 96%;
-    }
-    .user-bubble { background: #d2f7ee; color: #187669;}
-    .patient-bubble { background: #d9eaff; color: #154278;}
-    .proctor-bubble { background: #ffefd4; color: #855e13;}
-    .dispatch-bubble { background: #c9ffd4; color: #13782b;}
-    .system-bubble { background: #f2eaf9; color: #6d3bb3;}
-    .chat-bubble b { font-weight: 600;}
-    .input-bar {
+    .input-row {
       display: flex;
+      flex-direction: row;
+      gap: 8px;
       align-items: center;
-      gap: 12px;
-      margin-top: 7px;
     }
     #user-input {
-      flex: 1 1 140px;
-      border: 1.5px solid #b5d6f7;
-      border-radius: 7px;
-      padding: 8px 12px;
-      font-size: 1.07rem;
-      background: #fff;
-      font-family: inherit;
-      min-width: 100px;
-      margin-right: 0;
-      outline: none;
-      transition: border .2s;
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
     }
-    #user-input:focus { border-color: #1976d2; }
-    #send-button, #mic-button {
-      background: linear-gradient(90deg,#1ad4c9,#1976d2);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 1.09rem;
-      padding: 9px 24px;
-      cursor: pointer;
-      margin-left: 0;
-      margin-right: 0;
-      transition: background 0.23s;
+    #send-button {
+      padding: 10px 14px;
+      font-size: 14px;
     }
-    #send-button:hover, #mic-button:hover {
-      background: linear-gradient(90deg,#16b3a7,#1353a3);
+    #mic-button {
+      padding: 10px 24px;
+      font-size: 16px;
     }
-    #mic-button { padding: 7px 14px; font-size: 1.16rem;}
-    .scenario-controls {
-      display: flex;
-      gap: 16px;
-      margin-bottom: 15px;
+    #learningModeToggle {
+      margin-left: 10px;
     }
-    .scenario-controls .btn {
-      padding: 8px 22px;
+    .full-width-chat {
+      width: 100%;
     }
-    .checklist-title {
-      font-size: 1.11rem;
-      font-weight: 600;
-      color: #1976d2;
-      margin-bottom: 9px;
-      letter-spacing: 1px;
+    @media (min-width: 901px) {
+      body:not(.learning-mode) #chat-box,
+      body:not(.learning-mode) .input-row {
+        width: 100vw;
+        max-width: none;
+      }
     }
-    .skill-checklist {
-      padding: 0;
-      margin: 0 0 13px 0;
-      list-style: none;
-      font-size: 1.03rem;
-    }
-    .skill-checklist li {
-      padding: 7px 4px;
-      border-bottom: 1px solid #c7e0f7;
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      font-weight: 500;
-    }
-    .skill-checklist li:last-child { border-bottom: none; }
-    .skill-checked {
-      color: #1bc681;
-      font-size: 1.35em;
-      margin-right: 6px;
-      font-weight: bold;
-    }
-    .skill-unchecked {
-      color: #e8a900;
-      font-size: 1.35em;
-      margin-right: 6px;
-      font-weight: bold;
-    }
-    @media (max-width: 1050px) {
-      .container { flex-direction: column; gap: 16px; padding: 14px 2vw; }
-      .right-panel { position: static; margin-top: 8px; max-height: unset;}
-    }
-    @media (max-width: 700px) {
-      .header { font-size: 1.2rem; padding: 13px 0 7px 0; }
-      .container { padding: 3vw; }
-      .chat-box-wrap { padding: 6px 0; }
-      #chat-box { padding: 6px 5px;}
-      .right-panel { padding: 12px 4px; }
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
+
 <body>
-  <div class="header">EMS CODE SIM</div>
-  <div class="top-bar">
-    <div class="scenario-controls">
-      <button class="btn" id="start-button">Start Scenario</button>
-      <button class="btn" id="end-button">End Scenario</button>
-    </div>
-    <label class="switch-label">
-      <span>Learning Mode</span>
-      <span class="switch">
-        <input type="checkbox" id="learningModeToggle" />
-        <span class="slider"></span>
-      </span>
-    </label>
+  <div class="ems-logo-row">
+    <svg width="90%" height="100" viewBox="0 0 900 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="grad1" x1="0" y1="0" x2="900" y2="0" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#1976d2"/>
+          <stop offset="1" stop-color="#20e3c2"/>
+        </linearGradient>
+      </defs>
+      <rect x="60" y="18" width="780" height="64" rx="32" fill="url(#grad1)"/>
+      <text x="450" y="65" text-anchor="middle" font-family="Arial Black, Arial, sans-serif"
+        font-size="46" fill="#fff" font-weight="bold" letter-spacing="10">
+        EMS CODE SIM
+      </text>
+    </svg>
   </div>
-  <div class="container">
-    <div class="left-panel">
-      <div class="chat-box-wrap">
-        <div id="chat-box"></div>
-        <div id="loading-spinner">
-          <img src="spinner.gif" alt="Loading..." />
-        </div>
+
+  <header id="main-header">
+    <button id="start-button">Start Scenario</button>
+    <button id="end-button">End Scenario</button>
+    <label><input type="checkbox" id="learningModeToggle"> Learning Mode</label>
+  </header>
+
+  <div id="mainLayout">
+    <div id="simulatorPane">
+      <div id="chat-box" class="full-width-chat"></div>
+      <!-- Loading Spinner -->
+      <div id="loading-spinner" style="display:none;text-align:center;padding:18px;">
+        <svg width="48" height="48" viewBox="0 0 48 48" style="animation: spin 1s linear infinite;">
+          <circle cx="24" cy="24" r="20" stroke="#1976d2" stroke-width="5" fill="none" opacity="0.2"/>
+          <path d="M44 24a20 20 0 0 1-20 20" stroke="#20e3c2" stroke-width="5" fill="none" stroke-linecap="round"/>
+        </svg>
+        <div style="color:#1976d2;font-weight:bold;">Loading Scenario...</div>
       </div>
-      <div class="input-bar">
-        <input type="text" id="user-input" placeholder="Type your question or assessment..." autocomplete="off"/>
+      <div class="input-row full-width-chat">
+        <input type="text" id="user-input" placeholder="Type your response here..." />
         <button id="send-button">Send</button>
-        <button id="mic-button" title="Speak"><span role="img" aria-label="mic">🎤</span></button>
+        <button id="mic-button">🎤</button>
       </div>
     </div>
-    <div class="right-panel">
-      <div class="checklist-title">Skill Checklist</div>
-      <ul class="skill-checklist" id="skillChecklist"></ul>
-      <div id="gradingSummary"></div>
+    <div id="skillSheetPane">
+      <h3>NREMT Medical Assessment Skill Sheet</h3>
+      <ul id="skillChecklist">
+        <li id="EMT-B-MED-1">BSI/PPE <span class="status"></span></li>
+        <li id="EMT-B-MED-2">Scene Safety <span class="status"></span></li>
+        <li id="EMT-B-MED-3">Determine MOI/NOI <span class="status"></span></li>
+        <li id="EMT-B-MED-4">Determine Number of Patients <span class="status"></span></li>
+        <li id="EMT-B-MED-5">Request Additional EMS Assistance <span class="status"></span></li>
+        <li id="EMT-B-MED-6">Consider C-Spine Stabilization <span class="status"></span></li>
+        <li id="EMT-B-MED-7">General Impression <span class="status"></span></li>
+        <li id="EMT-B-MED-8">Determine Responsiveness/LOC <span class="status"></span></li>
+        <li id="EMT-B-MED-9">Determine Chief Complaint <span class="status"></span></li>
+        <li id="EMT-B-MED-10">Assess Airway/Breathing <span class="status"></span></li>
+        <li id="EMT-B-MED-11">Initiate Oxygen Therapy <span class="status"></span></li>
+        <li id="EMT-B-MED-12">Assess Circulation (Pulse, Skin, Bleeding) <span class="status"></span></li>
+        <li id="EMT-B-MED-13">Identify Patient Priority & Transport Decision <span class="status"></span></li>
+        <li id="EMT-B-MED-14">OPQRST - Onset <span class="status"></span></li>
+        <li id="EMT-B-MED-15">Provocation <span class="status"></span></li>
+        <li id="EMT-B-MED-16">Quality <span class="status"></span></li>
+        <li id="EMT-B-MED-17">Radiation <span class="status"></span></li>
+        <li id="EMT-B-MED-18">Severity <span class="status"></span></li>
+        <li id="EMT-B-MED-19">Time <span class="status"></span></li>
+        <li id="EMT-B-MED-20">SAMPLE - Signs/Symptoms <span class="status"></span></li>
+        <li id="EMT-B-MED-21">Allergies <span class="status"></span></li>
+        <li id="EMT-B-MED-22">Medications <span class="status"></span></li>
+        <li id="EMT-B-MED-23">Past Medical History <span class="status"></span></li>
+        <li id="EMT-B-MED-24">Last Oral Intake <span class="status"></span></li>
+        <li id="EMT-B-MED-25">Events Leading to Present Illness <span class="status"></span></li>
+        <li id="EMT-B-MED-26">Assess Affected Body/System <span class="status"></span></li>
+        <li id="EMT-B-MED-27">Vital Signs - BP <span class="status"></span></li>
+        <li id="EMT-B-MED-28">Heart Rate <span class="status"></span></li>
+        <li id="EMT-B-MED-29">Respiratory Rate <span class="status"></span></li>
+        <li id="EMT-B-MED-30">Field Impression of Patient <span class="status"></span></li>
+        <li id="EMT-B-MED-31">Interventions <span class="status"></span></li>
+        <li id="EMT-B-MED-32">Demonstrate How & When to Reassess <span class="status"></span></li>
+      </ul>
+      <h4>Critical Failures</h4>
+      <ul>
+        <li>Failure to initiate or call for transport within 15 minutes</li>
+        <li>Failure to provide adequate oxygen therapy</li>
+        <li>Failure to verbalize or demonstrate BSI/PPE before patient contact</li>
+        <li>Failure to assess and treat life-threatening conditions first</li>
+        <li>Failure to manage the patient as a competent EMT</li>
+        <li>Exhibits unsafe behavior</li>
+        <li>Failure to perform all critical steps</li>
+      </ul>
     </div>
   </div>
-  <script src="app.js"></script>
+
+  <!-- Script Load Order: grading.js FIRST, then checklist.js, then app.js -->
+  <script type="module" src="scripts/grading.js"></script>
+  <script type="module" src="scripts/checklist.js"></script>
+  <script type="module" src="scripts/app.js"></script>
+
+  <!-- Button Logic + Loading Spinner Show/Hide -->
   <script>
-    // Show spinner when scenario starts (hooked by app.js)
-    function showLoadingSpinner() {
-      const spinner = document.getElementById("loading-spinner");
-      if (spinner) spinner.style.display = "block";
-    }
-    function hideLoadingSpinner() {
-      const spinner = document.getElementById("loading-spinner");
-      if (spinner) spinner.style.display = "none";
-    }
-    window.showLoadingSpinner = showLoadingSpinner;
-    window.hideLoadingSpinner = hideLoadingSpinner;
-
-    document.getElementById("start-button").onclick = function() {
-      showLoadingSpinner();
-      if (window.startScenario) window.startScenario();
-    };
-    document.getElementById("end-button").onclick = function() {
-      if (window.endScenario) window.endScenario();
-    };
-
-    // Learning mode toggle
     document.addEventListener("DOMContentLoaded", function () {
       const toggle = document.getElementById("learningModeToggle");
-      toggle?.addEventListener("change", () => {
-        document.body.classList.toggle("learning-mode", toggle.checked);
-        if (typeof window.setLearningMode === "function") {
-          window.setLearningMode(toggle.checked);
-        }
+      const skillPane = document.getElementById("skillSheetPane");
+      if (toggle && skillPane) {
+        toggle.addEventListener("change", () => {
+          document.body.classList.toggle("learning-mode", toggle.checked);
+          skillPane.style.display = toggle.checked ? "block" : "none";
+        });
+      }
+
+      const startBtn = document.getElementById("start-button");
+      const endBtn = document.getElementById("end-button");
+      const sendBtn = document.getElementById("send-button");
+      const spinner = document.getElementById("loading-spinner");
+
+      if (startBtn) startBtn.addEventListener("click", () => {
+        if (spinner) spinner.style.display = "block";
+        // Let app.js hide spinner when loading is finished or errored
+        if (typeof window.startScenario === 'function') window.startScenario();
       });
+      if (endBtn) endBtn.addEventListener("click", () => window.endScenario?.());
+      if (sendBtn) sendBtn.addEventListener("click", () => window.sendMessage?.());
     });
 
-    // Hide spinner on initial load
-    hideLoadingSpinner();
+    // Hide spinner when scenario is loaded or errored (called from app.js)
+    window.hideLoadingSpinner = function () {
+      const spinner = document.getElementById("loading-spinner");
+      if (spinner) spinner.style.display = "none";
+    };
   </script>
 </body>
 </html>
