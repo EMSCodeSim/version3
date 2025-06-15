@@ -2,7 +2,7 @@
 
 import { loadHardcodedResponses, routeUserInput } from './router.js';
 import { initializeScoreTracker, gradeActionBySkillID } from './grading.js';
-import { startWhisperMic } from './mic.js';
+import { comboMic } from './mic.js';
 
 if (!window.scoreTracker) window.scoreTracker = {};
 
@@ -127,7 +127,7 @@ function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio, trigger) {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// --- Play audio utility (not needed anymore but kept for backward compatibility) ---
+// --- Play audio utility (kept for backward compatibility) ---
 function playAudio(src) {
   document.querySelectorAll("audio#scenarioTTS").forEach(audio => {
     try { audio.pause(); } catch (e) {}
@@ -307,10 +307,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Mic button: Always use Whisper
+  // Mic button: Use combo mic (browser STT or Whisper fallback)
   const micBtn = document.getElementById('mic-button');
   if (micBtn) {
-    micBtn.onclick = startWhisperMic;
+    micBtn.onclick = comboMic;
   }
 });
 
