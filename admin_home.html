@@ -1,49 +1,216 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>EMS Admin File Loader & Editor</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EMS Code Sim - Admin Panel</title>
+  <link rel="stylesheet" href="styles/style.css" />
   <style>
-    body { font-family: Arial, sans-serif; background: #f5fafd; }
-    main { max-width: 800px; margin: 24px auto; background: #fff; border-radius: 12px; box-shadow: 0 4px 24px #c3d6e5; padding: 28px 24px; }
-    .btn { background: #1976d2; color: #fff; padding: 8px 20px; border: none; border-radius: 6px; font-size: 1em; cursor: pointer; margin-left: 10px;}
-    .btn:hover { background: #155fa0; }
-    #responsesContainer { margin-top: 22px; }
-    #logBox { margin-top: 14px; color: #155459; }
-    .response { background: #f1f8fb; border-radius: 10px; padding: 18px 16px; margin: 18px 0; box-shadow: 0 2px 8px #e2ecf7; }
-    .field { margin-bottom: 6px; }
-    .field label { font-weight: bold; margin-right: 8px; }
-    input[type="text"], textarea { width: 98%; font-size: 1em; margin-top: 2px; }
-    .row { display: flex; flex-wrap: wrap; gap: 10px; }
-    .row .field { flex: 1 1 180px; min-width: 120px; }
-    .note { color: #1976d2; font-size: 0.97em; margin-top: 6px; margin-bottom: 16px; }
-    @media (max-width: 900px) { main { padding: 12px; } }
+    body {
+      background: linear-gradient(120deg, #eaf6ff 0%, #f4fdff 100%);
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+    }
+    .header {
+      background: #1976d2;
+      color: #fff;
+      padding: 22px 0 16px 0;
+      box-shadow: 0 2px 8px 0 rgba(0,0,0,0.08);
+      text-align: center;
+      letter-spacing: 7px;
+      font-size: 2rem;
+      font-weight: bold;
+    }
+    .admin-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: center;
+      align-items: center;
+      background: #fff;
+      border-bottom: 2px solid #c7e0f7;
+      padding: 20px 12px;
+    }
+    .admin-bar input[type="text"], .admin-bar input[type="file"] {
+      font-size: 1rem;
+      padding: 6px 8px;
+      border-radius: 5px;
+      border: 1px solid #a8c7f3;
+      background: #f6fbff;
+      outline: none;
+      min-width: 140px;
+    }
+    .admin-bar .btn {
+      font-size: 1rem;
+      background: linear-gradient(90deg,#1ad4c9,#1976d2);
+      color: #fff;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.25s;
+      margin-right: 0;
+    }
+    .admin-bar .btn:hover {
+      background: linear-gradient(90deg,#16b3a7,#1353a3);
+    }
+    .switch-label {
+      font-weight: 500;
+      margin-left: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 52px;
+      height: 28px;
+    }
+    .switch input { display: none; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #b5d6f7;
+      border-radius: 34px;
+      transition: .4s;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 22px; width: 22px;
+      left: 3px; bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: .4s;
+    }
+    input:checked + .slider {
+      background-color: #20e3c2;
+    }
+    input:checked + .slider:before {
+      transform: translateX(24px);
+    }
+    .container {
+      max-width: 1000px;
+      margin: 30px auto;
+      background: #fff;
+      border-radius: 15px;
+      box-shadow: 0 2px 12px 0 rgba(19, 97, 163, 0.10);
+      padding: 30px 32px 36px 32px;
+    }
+    #logBox {
+      margin-bottom: 16px;
+      padding: 7px 12px;
+      background: #e0f2fe;
+      border-radius: 7px;
+      color: #0e5070;
+      font-size: 1.1rem;
+      min-height: 28px;
+      box-shadow: 0 2px 8px 0 rgba(16,54,77,0.03);
+    }
+    #responsesContainer .response {
+      margin-bottom: 26px;
+      padding: 18px 14px 16px 14px;
+      border-radius: 11px;
+      background: #f6fbff;
+      border: 1px solid #b5d6f7;
+      box-shadow: 0 2px 10px 0 rgba(16,54,77,0.06);
+      transition: box-shadow 0.15s;
+    }
+    #responsesContainer .response:focus-within {
+      box-shadow: 0 0 0 2px #1976d2;
+      border-color: #1976d2;
+    }
+    #responsesContainer .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      margin-bottom: 7px;
+    }
+    #responsesContainer .field {
+      flex: 1;
+      min-width: 170px;
+    }
+    #responsesContainer label {
+      font-size: 0.97rem;
+      font-weight: 500;
+      color: #1976d2;
+      margin-right: 5px;
+    }
+    #responsesContainer input[type="text"], #responsesContainer textarea, #responsesContainer select {
+      width: 100%;
+      font-size: 0.98rem;
+      padding: 7px 7px;
+      margin: 1.5px 0 7px 0;
+      border: 1px solid #b5d6f7;
+      border-radius: 6px;
+      background: #fff;
+      font-family: inherit;
+      transition: border .2s;
+    }
+    #responsesContainer input[type="text"]:focus, #responsesContainer textarea:focus {
+      border: 1.5px solid #1976d2;
+    }
+    #responsesContainer textarea {
+      min-height: 40px;
+      max-width: 100%;
+      min-width: 95%;
+    }
+    #responsesContainer button.btn {
+      margin-top: 3px;
+      margin-right: 12px;
+      margin-bottom: 2px;
+    }
+    @media (max-width: 800px) {
+      .container { padding: 10px 2vw; }
+      #responsesContainer .response { padding: 10px 4px 12px 6px; }
+      #responsesContainer .row { gap: 10px; }
+      #responsesContainer .field { min-width: 120px; }
+    }
+    @media (max-width: 600px) {
+      .header { font-size: 1.1rem; letter-spacing: 3px; padding: 14px 0 8px 0;}
+      .container { padding: 0 2vw; }
+      #logBox { font-size: 0.97rem; }
+    }
   </style>
 </head>
 <body>
-  <main>
-    <h2>Load & Edit EMS Scenario JSON</h2>
-    <div>
-      <input id="filePathInput" type="text" placeholder="/ems_database.json or /scenarios/config.json" style="width:65%;">
-      <button class="btn" id="loadPathBtn">Load from path</button>
-    </div>
-    <div style="margin-top:14px;">
-      <input type="file" id="jsonFileInput" accept=".json">
-    </div>
-    <div style="margin-top:18px;">
-      <button class="btn" id="downloadEditedJsonBtn" style="display:none;">Download Edited JSON</button>
-      <button class="btn" id="bulkAssignBtn" style="display:none;">⭐ Auto-Assign All Points & Labels</button>
-      <button class="btn" id="convertLegacyBtn" style="display:none;">🔄 Convert Old Skill Sheet IDs</button>
-    </div>
-    <div class="note">
-      <strong>Tip:</strong> The <b>Trigger</b> dropdown will show all audio/image files found in your scenario folder.<br>
-      (If no files show, add a <code>files.json</code> file to your scenario folder listing filenames.)
-    </div>
-    <div id="logBox">Ready.</div>
+  <div class="header">
+    EMS CODE SIM - ADMIN PANEL
+  </div>
+  <div class="admin-bar">
+    <input type="text" id="filePathInput" placeholder="/ems_database.json" />
+    <button class="btn" id="loadPathBtn">Load from Path</button>
+    <input type="file" id="jsonFileInput" accept=".json" />
+    <button class="btn" id="downloadEditedJsonBtn" style="display:none;">Download Edited JSON</button>
+    <button class="btn" id="bulkAssignBtn" style="display:none;">Bulk Assign Points/Labels</button>
+    <button class="btn" id="convertLegacyBtn" style="display:none;">Convert Legacy IDs</button>
+    <!-- Dedupe/GPT and Learning Mode toggle inserted by JS -->
+    <label class="switch-label">
+      <span>Learning Mode</span>
+      <span class="switch">
+        <input type="checkbox" id="learningModeToggle" />
+        <span class="slider"></span>
+      </span>
+    </label>
+  </div>
+  <div class="container">
+    <div id="logBox"></div>
     <div id="responsesContainer"></div>
-  </main>
-  <script src="grading_skill_sheet.js"></script>
+  </div>
   <script src="admin_home.js"></script>
+  <script>
+    // Learning mode toggle for body class
+    document.addEventListener("DOMContentLoaded", function () {
+      const toggle = document.getElementById("learningModeToggle");
+      toggle?.addEventListener("change", () => {
+        document.body.classList.toggle("learning-mode", toggle.checked);
+      });
+    });
+  </script>
 </body>
 </html>
