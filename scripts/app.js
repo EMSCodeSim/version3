@@ -91,6 +91,8 @@ function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio, trigger) {
 
   // --- Play TTS audio before showing text ---
   if (ttsAudio) {
+    // Properly handle base64 and already-data: URIs
+    let audioSrc = ttsAudio.startsWith("data:") ? ttsAudio : "data:audio/mp3;base64," + ttsAudio;
     // Remove any existing TTS audio
     document.querySelectorAll("audio#scenarioTTS").forEach(audio => {
       try { audio.pause(); } catch (e) {}
@@ -99,7 +101,7 @@ function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio, trigger) {
 
     const audioElement = document.createElement("audio");
     audioElement.id = "scenarioTTS";
-    audioElement.src = ttsAudio;
+    audioElement.src = audioSrc;
     audioElement.autoplay = true;
     audioElement.style.display = "none";
     chatBox.appendChild(audioElement);
@@ -265,11 +267,17 @@ async function processUserMessage(message) {
     }
 
     // Play TTS audio (if present) BEFORE showing response text
+    let ttsAudio = null;
+    if (matchedEntry && matchedEntry.ttsAudio) {
+      ttsAudio = matchedEntry.ttsAudio.startsWith("data:")
+        ? matchedEntry.ttsAudio
+        : "data:audio/mp3;base64," + matchedEntry.ttsAudio;
+    }
     displayChatPair(
       message,
       response,
       replyRole,
-      matchedEntry && matchedEntry.ttsAudio ? matchedEntry.ttsAudio : null,
+      ttsAudio,
       matchedEntry && matchedEntry.trigger
     );
 
