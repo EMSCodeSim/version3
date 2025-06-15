@@ -1,3 +1,5 @@
+// admin_home.js
+
 window.jsonEditData = {};
 const filePathInput = document.getElementById("filePathInput");
 const loadPathBtn = document.getElementById("loadPathBtn");
@@ -8,12 +10,50 @@ const downloadEditedJsonBtn = document.getElementById("downloadEditedJsonBtn");
 const bulkAssignBtn = document.getElementById("bulkAssignBtn");
 const convertLegacyBtn = document.getElementById("convertLegacyBtn");
 
-// --- Event listeners ---
+window.availableScenarioFiles = []; // will hold file list
+
 if (loadPathBtn) loadPathBtn.addEventListener("click", loadJsonFromPath);
 if (jsonFileInput) jsonFileInput.addEventListener("change", handleJsonFileSelect);
 if (downloadEditedJsonBtn) downloadEditedJsonBtn.addEventListener("click", downloadEditedJson);
 if (bulkAssignBtn) bulkAssignBtn.addEventListener("click", bulkAssignPointsLabels);
 if (convertLegacyBtn) convertLegacyBtn.addEventListener("click", convertLegacySkillSheetIDs);
+
+// Try to detect scenario folder from path
+function getScenarioFolderFromPath(path) {
+  // Example: "/scenarios/chest_pain_002/database.json" => "/scenarios/chest_pain_002/"
+  if (!path) return "";
+  let lastSlash = path.lastIndexOf("/");
+  if (lastSlash === -1) return "";
+  let folder = path.substring(0, lastSlash + 1);
+  // Defensive: ensure folder starts with / and ends with /
+  if (!folder.startsWith("/")) folder = "/" + folder;
+  if (!folder.endsWith("/")) folder = folder + "/";
+  return folder;
+}
+
+// Fetch available files (images/audio) in scenario folder (Netlify must support directory listing!)
+async function getAvailableFiles(scenarioFolder) {
+  // We'll try to GET a JSON manifest first (recommended: place a files.json in each scenario folder)
+  // Otherwise, fallback: try to fetch "/scenarios/chest_pain_002/" and scrape for file links (works if directory listing is allowed)
+  let manifestPath = scenarioFolder + "files.json";
+  try {
+    let resp = await fetch(manifestPath, {cache: "reload"});
+    if (resp.ok) {
+      let files = await resp.json();
+      if (Array.isArray(files)) return files;
+    }
+  } catch (e) {}
+  // Fallback (only works if directory listing is enabled, which is often NOT the case for static hosts)
+  try {
+    let resp = await fetch(scenarioFolder, {cache: "reload"});
+    if (!resp.ok) return [];
+    let text = await resp.text();
+    // Parse filenames out of directory listing HTML
+    let matches = [...text.matchAll(/href="([^"]+\.(jpe?g|png|gif|mp3|wav|m4a|ogg))"/gi)];
+    return matches.map(m => m[1]);
+  } catch (e) {}
+  return [];
+}
 
 async function loadJsonFromPath() {
   const filePath = filePathInput.value.trim();
@@ -29,6 +69,11 @@ async function loadJsonFromPath() {
     if (!resp.ok) throw new Error(`Could not fetch file: ${filePath} (${resp.status})`);
     const json = await resp.json();
     window.jsonEditData = json;
+
+    // Try to load available files for triggers
+    const scenarioFolder = getScenarioFolderFromPath(filePath);
+    window.availableScenarioFiles = await getAvailableFiles(scenarioFolder);
+
     renderAllJsonEntries(window.jsonEditData);
     downloadEditedJsonBtn.style.display = "inline-block";
     bulkAssignBtn.style.display = "inline-block";
@@ -53,6 +98,7 @@ function handleJsonFileSelect(evt) {
   reader.onload = function(e) {
     try {
       window.jsonEditData = JSON.parse(e.target.result);
+      window.availableScenarioFiles = []; // No file scan available from disk load
       renderAllJsonEntries(window.jsonEditData);
       downloadEditedJsonBtn.style.display = "inline-block";
       bulkAssignBtn.style.display = "inline-block";
@@ -87,6 +133,15 @@ function renderResponseCard(key, data) {
   const meta = (window.skillSheetScoring || {})[ssid] || {};
   const pointsDisplay = (meta.points !== undefined ? meta.points : (data.points !== undefined ? data.points : ""));
   const labelDisplay = meta.label || data.scoreCategory || "";
+  const files = window.availableScenarioFiles || [];
+  // If trigger is present but not in files, add it for editing
+  let triggerOptions = files.map(f => `<option value="${f}"${data.trigger === f ? " selected" : ""}>${f}</option>`).join('');
+  if (data.trigger && files.indexOf(data.trigger) === -1) {
+    triggerOptions = `<option value="${data.trigger}" selected>${data.trigger}</option>` + triggerOptions;
+  }
+  // Always allow a blank/no trigger
+  triggerOptions = `<option value=""></option>` + triggerOptions;
+
   const div = document.createElement("div");
   div.className = "response";
   div.innerHTML = `
@@ -101,12 +156,33 @@ function renderResponseCard(key, data) {
     <div class="field"><label>Question:</label><textarea id="q-${key}" rows="2">${data.question || ""}</textarea></div>
     <div class="field"><label>Response:</label><textarea id="r-${key}" rows="2">${data.response || data.answer || ""}</textarea></div>
     <div class="field"><label>Tags:</label><input type="text" id="tags-${key}" value="${Array.isArray(data.tags) ? data.tags.join(", ") : (data.tags || "")}"></div>
-    <div class="field"><label>Trigger:</label><input type="text" id="trigger-${key}" value="${data.trigger || ""}"></div>
+    <div class="field">
+      <label>Trigger:</label>
+      <select id="trigger-${key}">${triggerOptions}</select>
+      <input type="text" id="trigger-manual-${key}" placeholder="or enter manually" style="width: 60%; display:inline-block; margin-left: 6px;" value="">
+      <button class="btn" type="button" onclick="setManualTrigger('${key}')">Set</button>
+    </div>
     <button class="btn" onclick="saveJsonEditEntry('${key}')">💾 Save</button>
     <button class="btn" onclick="deleteJsonEntry('${key}')">🗑 Delete</button>
   `;
   responsesContainer.appendChild(div);
 }
+
+window.setManualTrigger = function(key) {
+  const manualInput = document.getElementById(`trigger-manual-${key}`);
+  const select = document.getElementById(`trigger-${key}`);
+  if (manualInput && select) {
+    if (manualInput.value.trim()) {
+      let opt = document.createElement("option");
+      opt.value = manualInput.value.trim();
+      opt.textContent = manualInput.value.trim();
+      opt.selected = true;
+      select.appendChild(opt);
+      select.value = manualInput.value.trim();
+      manualInput.value = "";
+    }
+  }
+};
 
 window.saveJsonEditEntry = function(key) {
   if (!window.jsonEditData) return;
@@ -188,7 +264,6 @@ window.onSkillSheetIDEdit = function(key) {
   if (meta.points !== undefined) document.getElementById(`pts-${key}`).value = meta.points;
 };
 
-// ---- Legacy conversion (aggregate IDs to granular IDs) ----
 function convertLegacySkillSheetIDs() {
   if (!window.jsonEditData) return alert("No JSON loaded.");
   const legacyToGranular = {
@@ -200,7 +275,6 @@ function convertLegacySkillSheetIDs() {
       "opqrstOnset", "opqrstProvocation", "opqrstQuality",
       "opqrstRadiation", "opqrstSeverity", "opqrstTime"
     ]
-    // Add other legacy keys as needed
   };
   let newEntries = {};
   let converted = 0, kept = 0;
