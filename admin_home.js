@@ -10,21 +10,21 @@ const downloadEditedJsonBtn = document.getElementById("downloadEditedJsonBtn");
 const bulkAssignBtn = document.getElementById("bulkAssignBtn");
 const convertLegacyBtn = document.getElementById("convertLegacyBtn");
 
-window.availableScenarioFiles = [];
-
-// --- NEW: GPT-4 Turbo Skill Sheet ID Auto-Tag Button ---
-let gptTagBtn = document.getElementById("gptTagSkillSheetBtn");
-if (!gptTagBtn) {
-  gptTagBtn = document.createElement("button");
-  gptTagBtn.id = "gptTagSkillSheetBtn";
-  gptTagBtn.className = "btn";
-  gptTagBtn.textContent = "Auto-Tag All SkillSheet IDs (GPT-4 Turbo)";
-  gptTagBtn.style.marginBottom = "8px";
+// --- NEW: Dedupe & GPT Auto-Tag SkillSheet IDs ---
+let dedupeGptBtn = document.getElementById("dedupeGptBtn");
+if (!dedupeGptBtn) {
+  dedupeGptBtn = document.createElement("button");
+  dedupeGptBtn.id = "dedupeGptBtn";
+  dedupeGptBtn.className = "btn";
+  dedupeGptBtn.textContent = "Dedupe & GPT Auto-Tag SkillSheet IDs";
+  dedupeGptBtn.style.marginBottom = "8px";
   if (responsesContainer?.parentNode) {
-    responsesContainer.parentNode.insertBefore(gptTagBtn, responsesContainer);
+    responsesContainer.parentNode.insertBefore(dedupeGptBtn, responsesContainer);
   }
 }
-gptTagBtn.onclick = autoTagAllSkillSheetIDsGPT;
+dedupeGptBtn.onclick = dedupeAndGptAutoTag;
+
+window.availableScenarioFiles = [];
 
 if (loadPathBtn) loadPathBtn.addEventListener("click", loadJsonFromPath);
 if (jsonFileInput) jsonFileInput.addEventListener("change", handleJsonFileSelect);
@@ -81,7 +81,7 @@ async function loadJsonFromPath() {
     downloadEditedJsonBtn.style.display = "inline-block";
     bulkAssignBtn.style.display = "inline-block";
     convertLegacyBtn.style.display = "inline-block";
-    gptTagBtn.style.display = "inline-block";
+    dedupeGptBtn.style.display = "inline-block";
     logBox.innerText = `Loaded file: ${filePath}`;
   } catch (err) {
     logBox.innerText = "❌ " + err.message;
@@ -90,7 +90,7 @@ async function loadJsonFromPath() {
     downloadEditedJsonBtn.style.display = "none";
     bulkAssignBtn.style.display = "none";
     convertLegacyBtn.style.display = "none";
-    gptTagBtn.style.display = "none";
+    dedupeGptBtn.style.display = "none";
   }
 }
 
@@ -108,7 +108,7 @@ function handleJsonFileSelect(evt) {
       downloadEditedJsonBtn.style.display = "inline-block";
       bulkAssignBtn.style.display = "inline-block";
       convertLegacyBtn.style.display = "inline-block";
-      gptTagBtn.style.display = "inline-block";
+      dedupeGptBtn.style.display = "inline-block";
       logBox.innerText = "JSON file loaded from disk.";
     } catch (err) {
       logBox.innerText = "❌ Failed to parse JSON: " + err.message;
@@ -117,7 +117,7 @@ function handleJsonFileSelect(evt) {
       downloadEditedJsonBtn.style.display = "none";
       bulkAssignBtn.style.display = "none";
       convertLegacyBtn.style.display = "none";
-      gptTagBtn.style.display = "none";
+      dedupeGptBtn.style.display = "none";
     }
   };
   reader.readAsText(file);
@@ -313,55 +313,13 @@ function convertLegacySkillSheetIDs() {
   renderAllJsonEntries(window.jsonEditData);
 }
 
-// === Dedupe & Remap SkillSheet ID ===
-function dedupeAndRemapSkillSheetID() {
+// === Deduplicate then GPT-4 Turbo Skill Sheet ID Auto-Tag ===
+async function dedupeAndGptAutoTag() {
   if (!window.jsonEditData) return alert("No JSON loaded.");
-  const keywordToSkillSheetID = [
-    { id: "ppeBsi", kws: ["bsi", "ppe", "gloves", "body substance"] },
-    { id: "sceneSafety", kws: ["scene safe", "scene secure", "hazard", "scene safety"] },
-    { id: "determinesMOIorNOI", kws: ["moi", "noi", "mechanism", "nature of illness"] },
-    { id: "determinesNumberOfPatients", kws: ["how many patients", "number of patients"] },
-    { id: "requestsAdditionalResources", kws: ["als", "additional resource", "call backup"] },
-    { id: "considersCSpine", kws: ["c-spine", "spinal", "stabilize spine"] },
-    { id: "generalImpression", kws: ["general impression", "sick or not sick", "looks ill"] },
-    { id: "determinesResponsiveness", kws: ["avpu", "responsive", "alert", "verbal", "pain", "unresponsive"] },
-    { id: "chiefComplaint", kws: ["chief complaint", "what happened", "what's wrong"] },
-    { id: "airway", kws: ["airway", "patent airway", "open airway", "breathing"] },
-    { id: "oxygenTherapy", kws: ["oxygen", "o2", "non-rebreather", "nasal cannula"] },
-    { id: "circulation", kws: ["pulse", "circulation", "bleeding", "skin sign", "capillary refill"] },
-    { id: "patientPriority", kws: ["transport", "load and go", "priority", "emergent"] },
-    { id: "opqrstOnset", kws: ["when did it start", "onset"] },
-    { id: "opqrstProvocation", kws: ["what makes it better", "what makes it worse", "provocation"] },
-    { id: "opqrstQuality", kws: ["sharp", "dull", "stabbing", "aching", "quality"] },
-    { id: "opqrstRadiation", kws: ["does it move", "radiate", "spreads"] },
-    { id: "opqrstSeverity", kws: ["how bad", "scale 1 to 10", "severity"] },
-    { id: "opqrstTime", kws: ["how long", "duration", "started when"] },
-    { id: "sampleSigns", kws: ["associated symptoms", "signs", "other symptoms"] },
-    { id: "sampleAllergies", kws: ["allergies", "allergic"] },
-    { id: "sampleMedications", kws: ["medications", "meds", "taking any meds"] },
-    { id: "samplePastHistory", kws: ["history", "diagnosed", "past problems"] },
-    { id: "sampleLastIntake", kws: ["last ate", "last drink", "oral intake"] },
-    { id: "sampleEvents", kws: ["leading up", "what were you doing", "events"] },
-    { id: "assessesAffectedBodyPart", kws: ["head to toe", "secondary assessment", "focused exam"] },
-    { id: "obtainsBaselineVitalsBP", kws: ["blood pressure", "bp"] },
-    { id: "obtainsBaselineVitalsHR", kws: ["heart rate", "hr"] },
-    { id: "obtainsBaselineVitalsRR", kws: ["respiratory rate", "rr", "breathing quality"] },
-    { id: "fieldImpression", kws: ["field impression", "i think"] },
-    { id: "managesSecondaryInjuries", kws: ["treatment plan", "interventions", "doing now"] },
-    { id: "verbalizesReassessment", kws: ["reevaluate", "recheck", "repeat vitals"] }
-  ];
 
+  // 1. Deduplicate by normalized question text
   function normalize(str) {
     return (str || '').replace(/\s+/g, ' ').trim().toLowerCase();
-  }
-  function guessSkillID(question) {
-    const q = normalize(question);
-    for (const entry of keywordToSkillSheetID) {
-      for (const kw of entry.kws) {
-        if (q.includes(kw)) return entry.id;
-      }
-    }
-    return "";
   }
   let seenQuestions = new Set();
   let cleaned = {};
@@ -373,18 +331,9 @@ function dedupeAndRemapSkillSheetID() {
     }
   });
   window.jsonEditData = cleaned;
-  Object.values(window.jsonEditData).forEach(entry => {
-    const guessed = guessSkillID(entry.question);
-    if (guessed) entry.skillSheetID = guessed;
-  });
-  alert("Deduplicated and updated skillSheetID for all entries! Review, then Download.");
   renderAllJsonEntries(window.jsonEditData);
-}
 
-// === GPT-4 Turbo Skill Sheet ID Auto-Tag ===
-async function autoTagAllSkillSheetIDsGPT() {
-  if (!window.jsonEditData) return alert("No JSON loaded.");
-
+  // 2. GPT-4 Turbo tagging
   const SKILL_IDS = [
     "ppeBsi", "sceneSafety", "determinesMOIorNOI", "determinesNumberOfPatients", "requestsAdditionalResources", "considersCSpine",
     "generalImpression", "determinesResponsiveness", "chiefComplaint", "airway", "oxygenTherapy", "circulation", "patientPriority",
@@ -403,10 +352,10 @@ async function autoTagAllSkillSheetIDsGPT() {
     : Object.entries(window.jsonEditData);
 
   let total = entries.length, done = 0;
-  let proceed = confirm(`Auto-tag ALL (${total}) entries with GPT-4 Turbo? This will take a minute and may use OpenAI credits.`);
+  let proceed = confirm(`Deduped. Now auto-tag ALL (${total}) entries with GPT-4 Turbo? This may use OpenAI credits.`);
   if (!proceed) return;
 
-  logBox.innerText = "GPT auto-tagging in progress...";
+  logBox.innerText = "Deduped. GPT auto-tagging in progress...";
 
   for (const [key, entry] of entries) {
     let question = entry.question || entry.prompt || "";
@@ -453,11 +402,11 @@ Return ONLY the Skill Sheet ID, nothing else.`;
 
     done++;
     if (done % 10 === 0) {
-      logBox.innerText = `GPT auto-tagged ${done}/${total}...`;
+      logBox.innerText = `Deduped and GPT auto-tagged ${done}/${total}...`;
     }
-    await new Promise(r => setTimeout(r, 700)); // Slow down to avoid API limit
+    await new Promise(r => setTimeout(r, 700));
   }
   renderAllJsonEntries(window.jsonEditData);
-  logBox.innerText = "✅ GPT auto-tagging complete! Review then Download.";
+  logBox.innerText = "✅ Deduped & GPT auto-tagging complete! Review then Download.";
   alert("Done! Review your entries and download.");
 }
