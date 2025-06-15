@@ -11,14 +11,41 @@ let gradingTemplate = {};
 window.scenarioStarted = false;
 
 // Display just the user bubble + response bubble, clearing old ones
-function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio) {
+// Also display trigger image/audio if present
+function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio, trigger) {
   const chatBox = document.getElementById('chat-box');
   if (!chatBox) return;
 
-  // Clear previous bubbles (but preserve top image if present)
-  let img = chatBox.querySelector("img");
+  // Clear previous bubbles (but preserve top scenario image if present at scenario start)
+  // We'll allow multiple images: scenario-start image, then trigger media, then bubbles
+  let scenarioImg = null;
+  if (chatBox.firstChild && chatBox.firstChild.tagName === "IMG" && chatBox.firstChild.src.includes("scene1.PNG")) {
+    scenarioImg = chatBox.firstChild.cloneNode(true);
+  }
   chatBox.innerHTML = "";
-  if (img) chatBox.appendChild(img);
+  if (scenarioImg) chatBox.appendChild(scenarioImg);
+
+  // Show image/audio if trigger present
+  if (trigger) {
+    const triggerLower = trigger.toLowerCase();
+    if (triggerLower.match(/\.(jpe?g|png|gif|webp)$/)) {
+      const img = document.createElement('img');
+      img.src = `${scenarioPath}${trigger}`;
+      img.alt = "Response Image";
+      img.style.maxWidth = "100%";
+      img.style.borderRadius = "10px";
+      img.style.marginBottom = "14px";
+      chatBox.appendChild(img);
+    }
+    if (triggerLower.match(/\.(mp3|wav|m4a|ogg)$/)) {
+      const audio = document.createElement('audio');
+      audio.src = `${scenarioPath}${trigger}`;
+      audio.controls = true;
+      audio.style.display = "block";
+      audio.style.margin = "10px 0 14px 0";
+      chatBox.appendChild(audio);
+    }
+  }
 
   // User bubble
   if (userMsg && userMsg.trim()) {
@@ -171,7 +198,6 @@ async function loadGradingTemplate(type = "medical") {
 async function processUserMessage(message) {
   if (!message) return;
 
-  // Route to AI/hardcoded/patient/proctor
   try {
     const { response, source, matchedEntry } = await routeUserInput(message, {
       scenarioId: scenarioPath,
@@ -187,7 +213,14 @@ async function processUserMessage(message) {
       replyRole = "proctor";
     }
 
-    displayChatPair(message, response, replyRole);
+    // Pass trigger to displayChatPair (if present)
+    displayChatPair(
+      message,
+      response,
+      replyRole,
+      null,
+      matchedEntry && matchedEntry.trigger
+    );
 
     if (matchedEntry && matchedEntry.scoreCategory) {
       gradeActionBySkillID(matchedEntry.scoreCategory);
