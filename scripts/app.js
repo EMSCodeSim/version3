@@ -3,7 +3,6 @@
 import { loadHardcodedResponses, routeUserInput } from './router.js';
 import { initializeScoreTracker, gradeActionBySkillID } from './grading.js';
 
-// Global state
 if (!window.scoreTracker) window.scoreTracker = {};
 
 const scenarioPath = 'scenarios/chest_pain_002/';
@@ -11,16 +10,43 @@ let patientContext = "";
 let gradingTemplate = {};
 window.scenarioStarted = false;
 
-// Display a message in the chat window
-function displayChatResponse(message, userMessage, role, ttsAudio, source, original, hasAudio) {
+// Display a single role-labeled, color-coded chat bubble, clearing old ones
+function displayChatResponse(message, role, ttsAudio) {
   const chatBox = document.getElementById('chat-box');
   if (!chatBox) return;
+
+  // Clear previous bubbles
+  chatBox.innerHTML = '';
+
   const div = document.createElement('div');
-  div.innerHTML = `<b>${role ? role + ": " : ""}</b>${message}`;
+  let bubbleClass = "chat-bubble system-bubble";
+  let label = "";
+
+  if (role === "patient") {
+    bubbleClass = "chat-bubble patient-bubble";
+    label = "Patient";
+  } else if (role === "proctor") {
+    bubbleClass = "chat-bubble proctor-bubble";
+    label = "Proctor";
+  } else if (role === "dispatch") {
+    bubbleClass = "chat-bubble dispatch-bubble";
+    label = "Dispatch";
+  } else if (role === "system") {
+    bubbleClass = "chat-bubble system-bubble";
+    label = "System";
+  } else if (role === "user") {
+    bubbleClass = "chat-bubble user-bubble";
+    label = "You";
+  }
+
+  div.className = bubbleClass;
+  div.innerHTML = label ? `<b>${label}:</b> ${message}` : message;
   chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-  // Optionally play TTS if provided
+
+  // Optionally play TTS
   if (ttsAudio) playAudio(ttsAudio);
+
+  chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 // Play TTS audio from base64 or URL
@@ -65,40 +91,33 @@ window.startScenario = async function () {
   const spinner = document.getElementById('loading-spinner');
   try {
     if (spinner) spinner.style.display = "block";
-    // 1. Load hardcoded responses
     await loadHardcodedResponses();
 
-    // 2. Load config.json
     const configRes = await fetch(`${scenarioPath}config.json`);
     if (!configRes.ok) throw new Error("Missing config.json");
     const config = await configRes.json();
 
-    // 3. Load grading template
     try {
       let gradingType = config.grading || "medical";
       await loadGradingTemplate(gradingType);
       if (window.updateSkillChecklistUI) window.updateSkillChecklistUI();
     } catch (err) {
-      // Fallback if custom grading missing
       await loadGradingTemplate("medical");
       if (window.updateSkillChecklistUI) window.updateSkillChecklistUI();
     }
 
-    // 4. Load dispatch info
     const dispatchRes = await fetch(`${scenarioPath}dispatch.txt`);
     if (!dispatchRes.ok) throw new Error("Missing dispatch.txt");
     const dispatch = await dispatchRes.text();
 
-    // 5. Load patient info
     const patientRes = await fetch(`${scenarioPath}patient.txt`);
     if (!patientRes.ok) throw new Error("Missing patient.txt");
     patientContext = await patientRes.text();
 
-    // 6. Reset checklist
     if (window.resetSkillChecklistUI) window.resetSkillChecklistUI();
 
-    // 7. Show dispatch in chat
-    displayChatResponse(`🚑 Dispatch: ${dispatch}`, "", "Dispatch", null, "", "", false);
+    // Show dispatch info
+    displayChatResponse(`🚑 ${dispatch}`, "dispatch");
     speakOnce(dispatch, "", 1.0);
 
     window.scenarioStarted = true;
@@ -106,7 +125,7 @@ window.startScenario = async function () {
     console.error("startScenario ERROR:", err);
     displayChatResponse(
       "❌ Failed to load scenario: " + err.message,
-      "", "System", null, "", "", false
+      "system"
     );
     window.scenarioStarted = false;
   } finally {
@@ -114,15 +133,11 @@ window.startScenario = async function () {
   }
 };
 
-// Load the grading template file (JSON) and initialize the tracker
 async function loadGradingTemplate(type = "medical") {
   const file = `grading_templates/${type}_assessment.json`;
   const res = await fetch(file);
   if (!res.ok) throw new Error(`Grading template not found: ${file}`);
   gradingTemplate = await res.json();
-
-  // If gradingTemplate is object-of-objects, convert to booleans
-  // This ensures compatibility if file uses { "ppeBsi": {label:..., ...} }
   let firstVal = gradingTemplate[Object.keys(gradingTemplate)[0]];
   if (typeof firstVal === "object" && firstVal !== null) {
     let newTemplate = {};
@@ -136,12 +151,8 @@ async function loadGradingTemplate(type = "medical") {
 // --- Send message logic ---
 async function processUserMessage(message) {
   if (!message) return;
-  const chatBox = document.getElementById('chat-box');
-  // Display the user's message
-  const userDiv = document.createElement('div');
-  userDiv.innerHTML = `<b>You:</b> ${message}`;
-  chatBox.appendChild(userDiv);
-  chatBox.scrollTop = chatBox.scrollHeight;
+  // Show user bubble
+  displayChatResponse(message, "user");
 
   // Route to AI/hardcoded/patient/proctor
   try {
@@ -149,13 +160,18 @@ async function processUserMessage(message) {
       scenarioId: scenarioPath,
       role: "user"
     });
-    // Display AI/patient/proctor reply
-    const replyDiv = document.createElement('div');
-    replyDiv.innerHTML = `<b>Patient:</b> ${response}`;
-    chatBox.appendChild(replyDiv);
-    chatBox.scrollTop = chatBox.scrollHeight;
 
-    // ---- Live grading: if this response has a scoreCategory, grade and update checklist!
+    // Determine who is responding: patient or proctor
+    let replyRole = "patient";
+    if (matchedEntry && matchedEntry.role) {
+      if (matchedEntry.role.toLowerCase().includes("proctor")) replyRole = "proctor";
+      else if (matchedEntry.role.toLowerCase().includes("patient")) replyRole = "patient";
+    } else if (source && source.toLowerCase().includes("proctor")) {
+      replyRole = "proctor";
+    }
+
+    displayChatResponse(response, replyRole);
+
     if (matchedEntry && matchedEntry.scoreCategory) {
       gradeActionBySkillID(matchedEntry.scoreCategory);
       if (window.updateSkillChecklistUI) window.updateSkillChecklistUI();
@@ -165,10 +181,7 @@ async function processUserMessage(message) {
     // if (matchedEntry && matchedEntry.ttsAudio) playAudio(matchedEntry.ttsAudio);
 
   } catch (err) {
-    const errDiv = document.createElement('div');
-    errDiv.innerHTML = `<b>System:</b> ❌ AI processing error: ${err.message}`;
-    chatBox.appendChild(errDiv);
-    chatBox.scrollTop = chatBox.scrollHeight;
+    displayChatResponse(`❌ AI processing error: ${err.message}`, "system");
   }
 }
 
@@ -195,5 +208,4 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// Optional: expose for testing
 window.processUserMessage = processUserMessage;
