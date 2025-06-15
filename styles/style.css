@@ -1,106 +1,44 @@
-/* Global Reset */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-/* Body Styling */
-body {
-  font-family: Arial, sans-serif;
-  background-color: #f0f8ff;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-/* Header */
-header {
-  background-color: #ffffff;
-  padding: 15px;
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  border-bottom: 1px solid #ddd;
-}
-
-/* Buttons */
-button {
-  background-color: #0077cc;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  font-size: 16px;
-  font-weight: bold;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-button:hover {
-  background-color: #005fa3;
-}
-
-/* Chat Box */
-#chat-box {
-  flex: 1;
-  background-color: #ffffff;
-  margin: 20px;
-  padding: 15px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  overflow-y: auto;
-  max-height: 400px;
-}
-
-@media (max-width: 700px) {
-  #chat-box {
-    max-height: 320px !important;
-    min-height: 100px;
-    margin: 12px;
-    padding: 10px;
-    font-size: 15px;
-  }
-}
-
-/* Chat Messages */
-.response {
-  background-color: #e6f0ff;
-  padding: 10px;
+/* --- Chat bubbles by role --- */
+.chat-bubble {
+  border-radius: 18px;
+  padding: 10px 16px;
   margin-bottom: 10px;
-  border-radius: 6px;
   font-size: 16px;
+  max-width: 90%;
+  display: inline-block;
+  word-break: break-word;
 }
 
-/* Input Section */
-#user-input {
-  flex: 1;
-  padding: 12px;
-  font-size: 16px;
+.patient-bubble {
+  background: #e0f7fa;
+  color: #006064;
+  align-self: flex-start;
+  border: 1px solid #b2ebf2;
+}
+
+.proctor-bubble {
+  background: #fff9c4;
+  color: #795548;
+  align-self: flex-end;
+  border: 1px solid #ffe082;
+}
+
+.system-bubble {
+  background: #e3e3e3;
+  color: #444;
+  font-style: italic;
   border: 1px solid #ccc;
-  border-radius: 8px;
-  outline: none;
 }
 
-#user-input:focus {
-  border-color: #0077cc;
+.dispatch-bubble {
+  background: #1976d2;
+  color: #fff;
+  font-weight: bold;
+  border: 1px solid #20e3c2;
 }
 
-#send-button, #mic-button {
-  margin-left: 10px;
-}
-
-#mic-button.active {
-  background-color: red; /* Mic ON color */
-  color: white;
-}
-
-
-/* Layout for input and buttons */
-input, button {
-  margin-top: 10px;
-}
-
-div[style*="display: flex"] {
-  padding: 10px 20px;
+.user-bubble {
+  background: #fff;
+  color: #222;
+  border: 1px solid #90caf9;
 }
