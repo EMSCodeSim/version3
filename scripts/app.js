@@ -229,8 +229,10 @@ async function processUserMessage(message) {
       matchedEntry && matchedEntry.trigger
     );
 
-    if (matchedEntry && matchedEntry.scoreCategory) {
-      gradeActionBySkillID(matchedEntry.scoreCategory);
+    // === Use Skill Sheet ID for Grading ===
+    if (matchedEntry && (matchedEntry.skillSheetID || matchedEntry["Skill Sheet ID"])) {
+      let skillKey = matchedEntry.skillSheetID || matchedEntry["Skill Sheet ID"];
+      gradeActionBySkillID(skillKey);
       if (window.updateSkillChecklistUI) window.updateSkillChecklistUI();
     }
 
