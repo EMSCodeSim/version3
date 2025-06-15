@@ -2,7 +2,6 @@
 
 if (!window.scoreTracker) window.scoreTracker = {};
 
-
 const SKILL_MAP = [
   { id: "ppeBsi", el: "EMT-B-MED-1" },
   { id: "sceneSafety", el: "EMT-B-MED-2" },
@@ -30,19 +29,16 @@ const SKILL_MAP = [
   { id: "sampleLastIntake", el: "EMT-B-MED-24" },
   { id: "sampleEvents", el: "EMT-B-MED-25" },
   { id: "assessesAffectedBodyPart", el: "EMT-B-MED-26" },
-  { id: "obtainsBaselineVitals", el: "EMT-B-MED-27" },
-  { id: "obtainsBaselineVitals", el: "EMT-B-MED-28" },
-  { id: "obtainsBaselineVitals", el: "EMT-B-MED-29" },
-  { id: "fieldImpression", el: "EMT-B-MED-30" },  // field impression
+  { id: "obtainsBaselineVitalsBP", el: "EMT-B-MED-27" },
+  { id: "obtainsBaselineVitalsHR", el: "EMT-B-MED-28" },
+  { id: "obtainsBaselineVitalsRR", el: "EMT-B-MED-29" },
+  { id: "fieldImpression", el: "EMT-B-MED-30" },
   { id: "managesSecondaryInjuries", el: "EMT-B-MED-31" },
   { id: "verbalizesReassessment", el: "EMT-B-MED-32" }
 ];
 
 window.updateSkillChecklistUI = function() {
-  if (!window.scoreTracker) {
-    // Defensive: no tracker yet
-    return;
-  }
+  if (!window.scoreTracker) return;
   for (const { id, el } of SKILL_MAP) {
     const li = document.getElementById(el);
     if (li && li.querySelector('.status')) {
