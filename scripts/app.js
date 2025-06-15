@@ -11,12 +11,12 @@ let patientContext = "";
 let gradingTemplate = {};
 window.scenarioStarted = false;
 
-// Display just the user bubble + response bubble, clearing old ones
+// Display chat: user bubble shows instantly, TTS audio (if present) plays, THEN text appears
 function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio, trigger) {
   const chatBox = document.getElementById('chat-box');
   if (!chatBox) return;
 
-  // Store scenario image if present (scene1.PNG)
+  // Keep scenario image if present
   let scenarioImg = null;
   if (chatBox.firstChild && chatBox.firstChild.tagName === "IMG" && chatBox.firstChild.src.includes("scene1.PNG")) {
     scenarioImg = chatBox.firstChild.cloneNode(true);
@@ -24,10 +24,9 @@ function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio, trigger) {
   chatBox.innerHTML = "";
   if (scenarioImg) chatBox.appendChild(scenarioImg);
 
-  // --- TRIGGER IMAGE/AUDIO (if present and not already scenario image) ---
+  // TRIGGER IMAGE/AUDIO (if present and not scenario image)
   if (trigger && typeof trigger === "string" && trigger.trim() !== "") {
     const triggerLower = trigger.toLowerCase();
-    // Prevent duplicate scenario image
     if (!triggerLower.includes("scene1.png")) {
       if (triggerLower.match(/\.(jpe?g|png|gif|webp)$/)) {
         const img = document.createElement('img');
@@ -56,7 +55,7 @@ function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio, trigger) {
     }
   }
 
-  // User bubble
+  // USER bubble (always show immediately)
   if (userMsg && userMsg.trim()) {
     const userDiv = document.createElement('div');
     userDiv.className = "chat-bubble user-bubble";
@@ -64,37 +63,71 @@ function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio, trigger) {
     chatBox.appendChild(userDiv);
   }
 
-  // Response bubble
-  if (replyMsg && replyMsg.trim()) {
-    let bubbleClass = "chat-bubble system-bubble";
-    let label = "";
-    if (replyRole === "patient") {
-      bubbleClass = "chat-bubble patient-bubble";
-      label = "Patient";
-    } else if (replyRole === "proctor") {
-      bubbleClass = "chat-bubble proctor-bubble";
-      label = "Proctor";
-    } else if (replyRole === "dispatch") {
-      bubbleClass = "chat-bubble dispatch-bubble";
-      label = "Dispatch";
-    } else if (replyRole === "system") {
-      bubbleClass = "chat-bubble system-bubble";
-      label = "System";
+  // RESPONSE bubble: play audio first, then show text
+  function showReplyBubble() {
+    if (replyMsg && replyMsg.trim()) {
+      let bubbleClass = "chat-bubble system-bubble";
+      let label = "";
+      if (replyRole === "patient") {
+        bubbleClass = "chat-bubble patient-bubble";
+        label = "Patient";
+      } else if (replyRole === "proctor") {
+        bubbleClass = "chat-bubble proctor-bubble";
+        label = "Proctor";
+      } else if (replyRole === "dispatch") {
+        bubbleClass = "chat-bubble dispatch-bubble";
+        label = "Dispatch";
+      } else if (replyRole === "system") {
+        bubbleClass = "chat-bubble system-bubble";
+        label = "System";
+      }
+      const replyDiv = document.createElement('div');
+      replyDiv.className = bubbleClass;
+      replyDiv.innerHTML = label ? `<b>${label}:</b> ${replyMsg}` : replyMsg;
+      chatBox.appendChild(replyDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
     }
+  }
 
-    const replyDiv = document.createElement('div');
-    replyDiv.className = bubbleClass;
-    replyDiv.innerHTML = label ? `<b>${label}:</b> ${replyMsg}` : replyMsg;
-    chatBox.appendChild(replyDiv);
+  // --- Play TTS audio before showing text ---
+  if (ttsAudio) {
+    // Remove any existing TTS audio
+    document.querySelectorAll("audio#scenarioTTS").forEach(audio => {
+      try { audio.pause(); } catch (e) {}
+      audio.remove();
+    });
 
-    // Optionally play TTS
-    if (ttsAudio) playAudio(ttsAudio);
+    const audioElement = document.createElement("audio");
+    audioElement.id = "scenarioTTS";
+    audioElement.src = ttsAudio;
+    audioElement.autoplay = true;
+    audioElement.style.display = "none";
+    chatBox.appendChild(audioElement);
+
+    // When audio ends, display the text
+    audioElement.onended = () => {
+      showReplyBubble();
+      audioElement.remove(); // Clean up
+    };
+    audioElement.onerror = () => {
+      showReplyBubble();
+      audioElement.remove();
+    };
+
+    // Play immediately in case autoplay works
+    audioElement.play().catch(() => {
+      // If browser blocks, show text after a brief pause
+      setTimeout(showReplyBubble, 500);
+    });
+  } else {
+    // No audio, show text immediately
+    showReplyBubble();
   }
 
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Play TTS audio from base64 or URL
+// --- Play audio utility (not needed anymore but kept for backward compatibility) ---
 function playAudio(src) {
   document.querySelectorAll("audio#scenarioTTS").forEach(audio => {
     try { audio.pause(); } catch (e) {}
@@ -112,7 +145,7 @@ function playAudio(src) {
   audioElement.play().catch(() => {});
 }
 
-// Speak text using browser speech synthesis
+// Speak text using browser speech synthesis (not used in normal TTS flow)
 function speakOnce(text, voiceName = "", rate = 1.0, callback) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
@@ -231,11 +264,12 @@ async function processUserMessage(message) {
       replyRole = "proctor";
     }
 
+    // Play TTS audio (if present) BEFORE showing response text
     displayChatPair(
       message,
       response,
       replyRole,
-      null,
+      matchedEntry && matchedEntry.ttsAudio ? matchedEntry.ttsAudio : null,
       matchedEntry && matchedEntry.trigger
     );
 
@@ -245,9 +279,6 @@ async function processUserMessage(message) {
       gradeActionBySkillID(skillKey);
       if (window.updateSkillChecklistUI) window.updateSkillChecklistUI();
     }
-
-    // Optionally: play audio if needed
-    // if (matchedEntry && matchedEntry.ttsAudio) playAudio(matchedEntry.ttsAudio);
 
   } catch (err) {
     displayChatPair(message, `❌ AI processing error: ${err.message}`, "system");
