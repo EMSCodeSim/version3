@@ -1,7 +1,8 @@
-// scripts/app.js
+// app.js
 
 import { loadHardcodedResponses, routeUserInput } from './router.js';
 import { initializeScoreTracker, gradeActionBySkillID } from './grading.js';
+import { startWhisperMic } from './mic.js';
 
 if (!window.scoreTracker) window.scoreTracker = {};
 
@@ -11,7 +12,6 @@ let gradingTemplate = {};
 window.scenarioStarted = false;
 
 // Display just the user bubble + response bubble, clearing old ones
-// Also display trigger image/audio if present
 function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio, trigger) {
   const chatBox = document.getElementById('chat-box');
   if (!chatBox) return;
@@ -274,6 +274,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sendBtn) sendBtn.click();
       }
     });
+  }
+
+  // Mic button: Always use Whisper
+  const micBtn = document.getElementById('mic-button');
+  if (micBtn) {
+    micBtn.onclick = startWhisperMic;
   }
 });
 
