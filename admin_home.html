@@ -17,6 +17,7 @@
     input[type="text"], textarea { width: 98%; font-size: 1em; margin-top: 2px; }
     .row { display: flex; flex-wrap: wrap; gap: 10px; }
     .row .field { flex: 1 1 180px; min-width: 120px; }
+    .note { color: #1976d2; font-size: 0.97em; margin-top: 6px; margin-bottom: 16px; }
     @media (max-width: 900px) { main { padding: 12px; } }
   </style>
 </head>
@@ -34,6 +35,10 @@
       <button class="btn" id="downloadEditedJsonBtn" style="display:none;">Download Edited JSON</button>
       <button class="btn" id="bulkAssignBtn" style="display:none;">⭐ Auto-Assign All Points & Labels</button>
       <button class="btn" id="convertLegacyBtn" style="display:none;">🔄 Convert Old Skill Sheet IDs</button>
+    </div>
+    <div class="note">
+      <strong>Tip:</strong> The <b>Trigger</b> dropdown will show all audio/image files found in your scenario folder.<br>
+      (If no files show, add a <code>files.json</code> file to your scenario folder listing filenames.)
     </div>
     <div id="logBox">Ready.</div>
     <div id="responsesContainer"></div>
