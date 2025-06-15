@@ -16,8 +16,7 @@ function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio, trigger) {
   const chatBox = document.getElementById('chat-box');
   if (!chatBox) return;
 
-  // Clear previous bubbles (but preserve top scenario image if present at scenario start)
-  // We'll allow multiple images: scenario-start image, then trigger media, then bubbles
+  // Store scenario image if present (scene1.PNG)
   let scenarioImg = null;
   if (chatBox.firstChild && chatBox.firstChild.tagName === "IMG" && chatBox.firstChild.src.includes("scene1.PNG")) {
     scenarioImg = chatBox.firstChild.cloneNode(true);
@@ -25,25 +24,35 @@ function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio, trigger) {
   chatBox.innerHTML = "";
   if (scenarioImg) chatBox.appendChild(scenarioImg);
 
-  // Show image/audio if trigger present
-  if (trigger) {
+  // --- TRIGGER IMAGE/AUDIO (if present and not already scenario image) ---
+  if (trigger && typeof trigger === "string" && trigger.trim() !== "") {
     const triggerLower = trigger.toLowerCase();
-    if (triggerLower.match(/\.(jpe?g|png|gif|webp)$/)) {
-      const img = document.createElement('img');
-      img.src = `${scenarioPath}${trigger}`;
-      img.alt = "Response Image";
-      img.style.maxWidth = "100%";
-      img.style.borderRadius = "10px";
-      img.style.marginBottom = "14px";
-      chatBox.appendChild(img);
-    }
-    if (triggerLower.match(/\.(mp3|wav|m4a|ogg)$/)) {
-      const audio = document.createElement('audio');
-      audio.src = `${scenarioPath}${trigger}`;
-      audio.controls = true;
-      audio.style.display = "block";
-      audio.style.margin = "10px 0 14px 0";
-      chatBox.appendChild(audio);
+    // Prevent duplicate scenario image
+    if (!triggerLower.includes("scene1.png")) {
+      if (triggerLower.match(/\.(jpe?g|png|gif|webp)$/)) {
+        const img = document.createElement('img');
+        img.src = `${scenarioPath}${trigger}`;
+        img.alt = "Response Image";
+        img.style.maxWidth = "100%";
+        img.style.borderRadius = "10px";
+        img.style.marginBottom = "14px";
+        img.onerror = function() {
+          this.style.display = "none";
+          const warn = document.createElement('div');
+          warn.textContent = "Image not found: " + img.src;
+          warn.style.color = "red";
+          chatBox.insertBefore(warn, chatBox.children[scenarioImg ? 1 : 0] || null);
+        };
+        chatBox.appendChild(img);
+      }
+      if (triggerLower.match(/\.(mp3|wav|m4a|ogg)$/)) {
+        const audio = document.createElement('audio');
+        audio.src = `${scenarioPath}${trigger}`;
+        audio.controls = true;
+        audio.style.display = "block";
+        audio.style.margin = "10px 0 14px 0";
+        chatBox.appendChild(audio);
+      }
     }
   }
 
@@ -204,7 +213,6 @@ async function processUserMessage(message) {
       role: "user"
     });
 
-    // Determine who is responding: patient or proctor
     let replyRole = "patient";
     if (matchedEntry && matchedEntry.role) {
       if (matchedEntry.role.toLowerCase().includes("proctor")) replyRole = "proctor";
@@ -213,7 +221,6 @@ async function processUserMessage(message) {
       replyRole = "proctor";
     }
 
-    // Pass trigger to displayChatPair (if present)
     displayChatPair(
       message,
       response,
