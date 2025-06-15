@@ -131,7 +131,8 @@ function logErrorToDatabase(errorInfo) {
   console.error("🔴", errorInfo);
 }
 
-window.startScenario = async function () {
+// --- MAIN: Start Scenario ---
+async function startScenario() {
   if (window.scenarioStarted) return;
   const spinner = document.getElementById('loading-spinner');
   try {
@@ -186,8 +187,17 @@ window.startScenario = async function () {
   } finally {
     if (typeof window.hideLoadingSpinner === "function") window.hideLoadingSpinner();
   }
-};
+}
 
+// --- End Scenario handler ---
+function endScenario() {
+  window.scenarioStarted = false;
+  const chatBox = document.getElementById('chat-box');
+  if (chatBox) chatBox.innerHTML += `<div class="chat-bubble system-bubble">Scenario ended.</div>`;
+  // Optionally reset skill checklist, grading, etc.
+}
+
+// --- Grading template loader ---
 async function loadGradingTemplate(type = "medical") {
   const file = `grading_templates/${type}_assessment.json`;
   const res = await fetch(file);
@@ -267,4 +277,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// --- Attach to window for ES module compatibility ---
+window.startScenario = startScenario;
+window.endScenario = endScenario;
 window.processUserMessage = processUserMessage;
+window.displayChatPair = displayChatPair;
