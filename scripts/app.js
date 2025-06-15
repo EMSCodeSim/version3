@@ -10,41 +10,48 @@ let patientContext = "";
 let gradingTemplate = {};
 window.scenarioStarted = false;
 
-// Display a single role-labeled, color-coded chat bubble, clearing old ones
-function displayChatResponse(message, role, ttsAudio) {
+// Display just the user bubble + response bubble, clearing old ones
+function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio) {
   const chatBox = document.getElementById('chat-box');
   if (!chatBox) return;
 
   // Clear previous bubbles
   chatBox.innerHTML = '';
 
-  const div = document.createElement('div');
-  let bubbleClass = "chat-bubble system-bubble";
-  let label = "";
-
-  if (role === "patient") {
-    bubbleClass = "chat-bubble patient-bubble";
-    label = "Patient";
-  } else if (role === "proctor") {
-    bubbleClass = "chat-bubble proctor-bubble";
-    label = "Proctor";
-  } else if (role === "dispatch") {
-    bubbleClass = "chat-bubble dispatch-bubble";
-    label = "Dispatch";
-  } else if (role === "system") {
-    bubbleClass = "chat-bubble system-bubble";
-    label = "System";
-  } else if (role === "user") {
-    bubbleClass = "chat-bubble user-bubble";
-    label = "You";
+  // User bubble
+  if (userMsg && userMsg.trim()) {
+    const userDiv = document.createElement('div');
+    userDiv.className = "chat-bubble user-bubble";
+    userDiv.innerHTML = `<b>You:</b> ${userMsg}`;
+    chatBox.appendChild(userDiv);
   }
 
-  div.className = bubbleClass;
-  div.innerHTML = label ? `<b>${label}:</b> ${message}` : message;
-  chatBox.appendChild(div);
+  // Response bubble
+  if (replyMsg && replyMsg.trim()) {
+    let bubbleClass = "chat-bubble system-bubble";
+    let label = "";
+    if (replyRole === "patient") {
+      bubbleClass = "chat-bubble patient-bubble";
+      label = "Patient";
+    } else if (replyRole === "proctor") {
+      bubbleClass = "chat-bubble proctor-bubble";
+      label = "Proctor";
+    } else if (replyRole === "dispatch") {
+      bubbleClass = "chat-bubble dispatch-bubble";
+      label = "Dispatch";
+    } else if (replyRole === "system") {
+      bubbleClass = "chat-bubble system-bubble";
+      label = "System";
+    }
 
-  // Optionally play TTS
-  if (ttsAudio) playAudio(ttsAudio);
+    const replyDiv = document.createElement('div');
+    replyDiv.className = bubbleClass;
+    replyDiv.innerHTML = label ? `<b>${label}:</b> ${replyMsg}` : replyMsg;
+    chatBox.appendChild(replyDiv);
+
+    // Optionally play TTS
+    if (ttsAudio) playAudio(ttsAudio);
+  }
 
   chatBox.scrollTop = chatBox.scrollHeight;
 }
@@ -116,17 +123,14 @@ window.startScenario = async function () {
 
     if (window.resetSkillChecklistUI) window.resetSkillChecklistUI();
 
-    // Show dispatch info
-    displayChatResponse(`🚑 ${dispatch}`, "dispatch");
+    // Show dispatch info as a single bubble (system response only)
+    displayChatPair("", `🚑 ${dispatch}`, "dispatch");
     speakOnce(dispatch, "", 1.0);
 
     window.scenarioStarted = true;
   } catch (err) {
     console.error("startScenario ERROR:", err);
-    displayChatResponse(
-      "❌ Failed to load scenario: " + err.message,
-      "system"
-    );
+    displayChatPair("", "❌ Failed to load scenario: " + err.message, "system");
     window.scenarioStarted = false;
   } finally {
     if (typeof window.hideLoadingSpinner === "function") window.hideLoadingSpinner();
@@ -151,8 +155,6 @@ async function loadGradingTemplate(type = "medical") {
 // --- Send message logic ---
 async function processUserMessage(message) {
   if (!message) return;
-  // Show user bubble
-  displayChatResponse(message, "user");
 
   // Route to AI/hardcoded/patient/proctor
   try {
@@ -170,7 +172,7 @@ async function processUserMessage(message) {
       replyRole = "proctor";
     }
 
-    displayChatResponse(response, replyRole);
+    displayChatPair(message, response, replyRole);
 
     if (matchedEntry && matchedEntry.scoreCategory) {
       gradeActionBySkillID(matchedEntry.scoreCategory);
@@ -181,7 +183,7 @@ async function processUserMessage(message) {
     // if (matchedEntry && matchedEntry.ttsAudio) playAudio(matchedEntry.ttsAudio);
 
   } catch (err) {
-    displayChatResponse(`❌ AI processing error: ${err.message}`, "system");
+    displayChatPair(message, `❌ AI processing error: ${err.message}`, "system");
   }
 }
 
