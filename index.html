@@ -217,7 +217,6 @@
   <header id="main-header">
     <button id="start-button">Start Scenario</button>
     <button id="handoff-button">Give Handoff Report</button>
-    <!-- <button id="end-button">End Scenario</button> -->
     <label style="display:flex;align-items:center;gap:5px;">
       <input type="checkbox" id="learningModeToggle"> Learning Mode
     </label>
@@ -239,10 +238,41 @@
         <button id="mic-button">🎤</button>
       </div>
     </div>
-    <div id="skillSheetPane" style="display:none;">
+    <div id="skillSheetPane">
       <h3>NREMT Medical Assessment Skill Sheet</h3>
       <ul id="skillChecklist">
-        <!-- Skills are dynamically populated here -->
+        <li id="EMT-B-MED-1">BSI/PPE <span class="status"></span></li>
+        <li id="EMT-B-MED-2">Scene Safety <span class="status"></span></li>
+        <li id="EMT-B-MED-3">Determine MOI/NOI <span class="status"></span></li>
+        <li id="EMT-B-MED-4">Determine Number of Patients <span class="status"></span></li>
+        <li id="EMT-B-MED-5">Request Additional EMS Assistance <span class="status"></span></li>
+        <li id="EMT-B-MED-6">Consider C-Spine Stabilization <span class="status"></span></li>
+        <li id="EMT-B-MED-7">General Impression <span class="status"></span></li>
+        <li id="EMT-B-MED-8">Determine Responsiveness/LOC <span class="status"></span></li>
+        <li id="EMT-B-MED-9">Determine Chief Complaint <span class="status"></span></li>
+        <li id="EMT-B-MED-10">Assess Airway/Breathing <span class="status"></span></li>
+        <li id="EMT-B-MED-11">Initiate Oxygen Therapy <span class="status"></span></li>
+        <li id="EMT-B-MED-12">Assess Circulation (Pulse, Skin, Bleeding) <span class="status"></span></li>
+        <li id="EMT-B-MED-13">Identify Patient Priority & Transport Decision <span class="status"></span></li>
+        <li id="EMT-B-MED-14">OPQRST - Onset <span class="status"></span></li>
+        <li id="EMT-B-MED-15">Provocation <span class="status"></span></li>
+        <li id="EMT-B-MED-16">Quality <span class="status"></span></li>
+        <li id="EMT-B-MED-17">Radiation <span class="status"></span></li>
+        <li id="EMT-B-MED-18">Severity <span class="status"></span></li>
+        <li id="EMT-B-MED-19">Time <span class="status"></span></li>
+        <li id="EMT-B-MED-20">SAMPLE - Signs/Symptoms <span class="status"></span></li>
+        <li id="EMT-B-MED-21">Allergies <span class="status"></span></li>
+        <li id="EMT-B-MED-22">Medications <span class="status"></span></li>
+        <li id="EMT-B-MED-23">Past Medical History <span class="status"></span></li>
+        <li id="EMT-B-MED-24">Last Oral Intake <span class="status"></span></li>
+        <li id="EMT-B-MED-25">Events Leading to Present Illness <span class="status"></span></li>
+        <li id="EMT-B-MED-26">Assess Affected Body/System <span class="status"></span></li>
+        <li id="EMT-B-MED-27">Vital Signs - BP <span class="status"></span></li>
+        <li id="EMT-B-MED-28">Heart Rate <span class="status"></span></li>
+        <li id="EMT-B-MED-29">Respiratory Rate <span class="status"></span></li>
+        <li id="EMT-B-MED-30">Field Impression of Patient <span class="status"></span></li>
+        <li id="EMT-B-MED-31">Interventions <span class="status"></span></li>
+        <li id="EMT-B-MED-32">Demonstrate How & When to Reassess <span class="status"></span></li>
       </ul>
       <h4>Critical Failures</h4>
       <ul>
@@ -272,8 +302,6 @@
           document.body.classList.toggle("learning-mode", toggle.checked);
           skillPane.style.display = toggle.checked ? "block" : "none";
         });
-        // Make sure correct state on load:
-        skillPane.style.display = toggle.checked ? "block" : "none";
       }
 
       const startBtn = document.getElementById("start-button");
@@ -283,6 +311,7 @@
 
       if (startBtn) startBtn.addEventListener("click", () => {
         if (spinner) spinner.style.display = "block";
+        // Let app.js hide spinner when loading is finished or errored
         if (typeof window.startScenario === 'function') window.startScenario();
       });
       if (handoffBtn) handoffBtn.addEventListener("click", () => {
@@ -291,6 +320,7 @@
       if (sendBtn) sendBtn.addEventListener("click", () => window.sendMessage?.());
     });
 
+    // Hide spinner when scenario is loaded or errored (called from app.js)
     window.hideLoadingSpinner = function () {
       const spinner = document.getElementById("loading-spinner");
       if (spinner) spinner.style.display = "none";
