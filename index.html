@@ -120,7 +120,8 @@
       display: flex;
       flex-direction: column;
     }
-    #skillSheetPane {
+    #skillSheetPane,
+    #handoffInstructionsPane {
       flex: 1;
       min-width: 230px;
       max-width: 340px;
@@ -130,9 +131,15 @@
       box-shadow: 0 2px 10px 0 rgba(32,227,194,0.08);
       border-left: 2px solid #bae6fd;
       margin-left: 0;
-      display: block;
       transition: box-shadow .22s, opacity .18s;
       opacity: 1;
+      display: block;
+    }
+    #handoffInstructionsPane {
+      background: #fffbea;
+      border-left: 2px solid #fcd34d;
+      color: #92400e;
+      display: none;
     }
     .hide-skill-sheet {
       display: none !important;
@@ -206,7 +213,7 @@
         gap: 24px;
         padding: 3vw;
       }
-      #skillSheetPane {
+      #skillSheetPane, #handoffInstructionsPane {
         display: none !important;
       }
       #simulatorPane {
@@ -334,107 +341,27 @@
         <li>Failure to perform all critical steps</li>
       </ul>
     </div>
+    <div id="handoffInstructionsPane">
+      <h3 style="margin-top:0;color:#d97706;">How to Give a Handoff Report</h3>
+      <ol style="margin:12px 0 0 15px;">
+        <li>State age, gender, chief complaint.</li>
+        <li>Summarize key assessment findings (vitals, exam, history).</li>
+        <li>List major treatments/interventions provided.</li>
+        <li>Report any changes or response to treatment.</li>
+        <li>Current status and recommendations.</li>
+        <li>Be concise, use a clear structure.</li>
+      </ol>
+      <div style="margin-top:11px;font-size:1em;color:#b45309;">
+        <b>MIST Format:</b> <u>M</u>echanism/Complaint, <u>I</u>njuries/Findings, <u>S</u>igns/Vitals, <u>T</u>reatments.
+      </div>
+      <div style="margin-top:18px;font-size:.98em;">
+        <span style="color:#ea580c;">Tip:</span> Speak clearly or type your report below. Your report will be graded automatically!
+      </div>
+    </div>
   </div>
 
   <!-- Load scripts in correct order -->
   <script type="module" src="scripts/grading.js"></script>
   <script type="module" src="scripts/checklist.js"></script>
   <script type="module" src="scripts/app.js"></script>
-  <script type="module" src="scripts/handoff_inline.js"></script>
-  <script type="module" src="scripts/mic.js"></script>
-  
-  <script>
-    // Helper for robust chat message display if appendChatBubble missing
-    window.appendChatBubble = window.appendChatBubble || function(role, html) {
-      var chat = document.getElementById("chat-box");
-      var div = document.createElement("div");
-      div.innerHTML = "<b>" + role + ":</b> " + html;
-      chat.appendChild(div);
-      chat.scrollTop = chat.scrollHeight;
-    };
-
-    document.addEventListener("DOMContentLoaded", function () {
-      const toggle = document.getElementById("learningModeToggle");
-      const skillPane = document.getElementById("skillSheetPane");
-      // Learning Mode Toggle (true switch, not checkbox)
-      if (toggle && skillPane) {
-        toggle.addEventListener("change", () => {
-          document.body.classList.toggle("learning-mode", toggle.checked);
-          if (toggle.checked) {
-            skillPane.classList.remove("hide-skill-sheet");
-            skillPane.style.opacity = "1";
-          } else {
-            skillPane.classList.add("hide-skill-sheet");
-            skillPane.style.opacity = "0";
-          }
-          if (typeof window.updateSkillChecklistUI === "function") {
-            window.updateSkillChecklistUI();
-          }
-        });
-        // Set initial state
-        if (toggle.checked) {
-          skillPane.classList.remove("hide-skill-sheet");
-          skillPane.style.opacity = "1";
-        } else {
-          skillPane.classList.add("hide-skill-sheet");
-          skillPane.style.opacity = "0";
-        }
-        if (typeof window.updateSkillChecklistUI === "function") {
-          window.updateSkillChecklistUI();
-        }
-      }
-
-      // Button handlers
-      const startBtn = document.getElementById("start-button");
-      const handoffBtn = document.getElementById("handoff-button");
-      const sendBtn = document.getElementById("send-button");
-      const micBtn = document.getElementById("mic-button");
-      const inp = document.getElementById("user-input");
-      const spinner = document.getElementById("loading-spinner");
-
-      if (startBtn) startBtn.addEventListener("click", () => {
-        if (spinner) spinner.style.display = "block";
-        if (typeof window.startScenario === 'function') window.startScenario();
-      });
-
-      // --- GIVE HANDOFF REPORT BUTTON ---
-      if (handoffBtn) handoffBtn.addEventListener("click", () => {
-        if (typeof window.startHandoffInline === "function") {
-          window.startHandoffInline();
-        } else {
-          window.appendChatBubble("system", "Handoff module not loaded.");
-        }
-      });
-
-      // --- SEND BUTTON ---
-      if (sendBtn) sendBtn.addEventListener("click", () => {
-        if (!inp) return;
-        if (window.handoffActive && typeof window.handleHandoffSubmission === "function") {
-          window.handleHandoffSubmission(inp.value);
-          inp.value = "";
-          return;
-        }
-        if (typeof window.sendMessage === "function") window.sendMessage();
-      });
-
-      // --- MIC BUTTON ---
-      if (micBtn && typeof window.comboMic === "function") {
-        micBtn.addEventListener("click", async () => {
-          // Add red "recording" effect
-          micBtn.classList.add("recording");
-          try {
-            await window.comboMic();
-          } finally {
-            micBtn.classList.remove("recording");
-          }
-        });
-      }
-    });
-
-    window.hideLoadingSpinner = function () {
-      const spinner = document.getElementById("loading-spinner");
-      if (spinner) spinner.style.display = "none";
-    };
-  </script>
-</body>
-</html>
+  <script
