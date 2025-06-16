@@ -6,7 +6,6 @@
   <title>EMS Simulator</title>
   <link rel="stylesheet" href="styles/style.css" />
   <style>
-    /* [ ...keep your style as in previous working versions... ] */
     html, body {
       height: 100%;
       margin: 0;
@@ -242,6 +241,7 @@
     <div id="skillSheetPane">
       <h3>NREMT Medical Assessment Skill Sheet</h3>
       <ul id="skillChecklist">
+        <!-- Full checklist, unchanged, omitted for brevity -->
         <li id="EMT-B-MED-1">BSI/PPE <span class="status"></span></li>
         <li id="EMT-B-MED-2">Scene Safety <span class="status"></span></li>
         <li id="EMT-B-MED-3">Determine MOI/NOI <span class="status"></span></li>
@@ -288,13 +288,15 @@
     </div>
   </div>
 
-  <!-- Script Load Order: grading.js FIRST, then checklist.js, then app.js, then handoff_inline.js -->
+  <!-- Script Load Order -->
   <script type="module" src="scripts/grading.js"></script>
   <script type="module" src="scripts/checklist.js"></script>
   <script type="module" src="scripts/app.js"></script>
   <script type="module" src="scripts/handoff_inline.js"></script>
+  <script type="module" src="scripts/mic.js"></script>
+  <!-- If using a separate transcribe.js (for Whisper fallback), include as well -->
+  <!-- <script type="module" src="scripts/transcribe.js"></script> -->
 
-  <!-- Button Logic + Loading Spinner Show/Hide -->
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const toggle = document.getElementById("learningModeToggle");
@@ -307,18 +309,18 @@
             window.updateSkillChecklistUI();
           }
         });
-        // On page load, show/hide and update checklist if needed
         skillPane.style.display = toggle.checked ? "block" : "none";
         if (toggle.checked && typeof window.updateSkillChecklistUI === "function") {
           window.updateSkillChecklistUI();
         }
       }
 
-      // --- Button handlers ---
+      // Button handlers
       const startBtn = document.getElementById("start-button");
       const handoffBtn = document.getElementById("handoff-button");
       const sendBtn = document.getElementById("send-button");
       const micBtn = document.getElementById("mic-button");
+      const inp = document.getElementById("user-input");
       const spinner = document.getElementById("loading-spinner");
 
       if (startBtn) startBtn.addEventListener("click", () => {
@@ -331,7 +333,7 @@
       });
 
       if (sendBtn) sendBtn.addEventListener("click", () => {
-        const inp = document.getElementById("user-input");
+        if (!inp) return;
         if (window.handoffActive && typeof window.handleHandoffSubmission === "function") {
           window.handleHandoffSubmission(inp.value);
           inp.value = "";
@@ -339,6 +341,13 @@
         }
         if (typeof window.sendMessage === "function") window.sendMessage();
       });
+
+      // MIC BUTTON uses your comboMic function from mic.js
+      if (micBtn && typeof window.comboMic === "function") {
+        micBtn.addEventListener("click", () => {
+          window.comboMic();
+        });
+      }
     });
 
     window.hideLoadingSpinner = function () {
