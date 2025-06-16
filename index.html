@@ -239,10 +239,10 @@
         <button id="mic-button">🎤</button>
       </div>
     </div>
-    <div id="skillSheetPane">
+    <div id="skillSheetPane" style="display:none;">
       <h3>NREMT Medical Assessment Skill Sheet</h3>
       <ul id="skillChecklist">
-        <!-- ...list items... -->
+        <!-- Skills are dynamically populated here -->
       </ul>
       <h4>Critical Failures</h4>
       <ul>
@@ -272,6 +272,8 @@
           document.body.classList.toggle("learning-mode", toggle.checked);
           skillPane.style.display = toggle.checked ? "block" : "none";
         });
+        // Make sure correct state on load:
+        skillPane.style.display = toggle.checked ? "block" : "none";
       }
 
       const startBtn = document.getElementById("start-button");
