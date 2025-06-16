@@ -6,255 +6,18 @@
   <title>EMS Simulator</title>
   <link rel="stylesheet" href="styles/style.css" />
   <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(120deg, #dbeafe 0%, #f4fdff 100%);
-      min-height: 100vh;
-    }
-    body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      color: #1e293b;
-      display: flex;
-      flex-direction: column;
-    }
-    .ems-logo-row {
-      background: linear-gradient(90deg, #1976d2 0%, #20e3c2 100%);
-      padding: 0;
-      margin: 0 0 12px 0;
-      box-shadow: 0 6px 24px 0 rgba(25,118,210,0.10);
-    }
-    #main-header {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 24px;
-      font-size: 1.18rem;
-      font-weight: 500;
-      background: #fff;
-      border-bottom: 2px solid #bae6fd;
-      box-shadow: 0 3px 18px 0 rgba(32,227,194,0.05);
-      padding: 12px 0 12px 0;
-      letter-spacing: 1.8px;
-      margin-bottom: 0;
-    }
-    #main-header button,
-    #main-header label {
-      margin: 0 3px;
-    }
-    #main-header button {
-      background: linear-gradient(90deg,#1976d2,#20e3c2);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 28px;
-      font-size: 1.09rem;
-      font-weight: 600;
-      letter-spacing: 1px;
-      cursor: pointer;
-      box-shadow: 0 1.5px 10px 0 rgba(25,118,210,0.11);
-      transition: background 0.22s;
-    }
-    #main-header button:hover {
-      background: linear-gradient(90deg,#1353a3,#17bdb0);
-    }
-    .toggle-switch {
-      display: inline-flex;
-      align-items: center;
-      cursor: pointer;
-      font-size: 1.07rem;
-      font-weight: 500;
-      user-select: none;
-      gap: 8px;
-    }
-    .toggle-switch input[type="checkbox"] {
-      appearance: none;
-      width: 38px;
-      height: 22px;
-      background: #ddd;
-      outline: none;
-      border-radius: 22px;
-      position: relative;
-      transition: background 0.2s;
-      margin: 0 7px 0 0;
-      vertical-align: middle;
-      cursor: pointer;
-    }
-    .toggle-switch input[type="checkbox"]:checked {
-      background: #20e3c2;
-    }
-    .toggle-switch input[type="checkbox"]::before {
-      content: '';
-      position: absolute;
-      left: 4px;
-      top: 3.5px;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: #fff;
-      transition: transform 0.2s;
-    }
-    .toggle-switch input[type="checkbox"]:checked::before {
-      transform: translateX(16px);
-    }
-
-    #mainLayout {
-      display: flex;
-      flex-direction: row;
-      flex: 1;
-      padding: 16px;
-      max-width: 1150px;
-      width: 100%;
-      margin: 0 auto;
-      gap: 36px;
-    }
-    #simulatorPane {
-      flex: 2;
-      min-width: 320px;
-      max-width: 700px;
-      padding: 10px;
-      background: #fff;
-      border-radius: 18px;
-      box-shadow: 0 2px 18px 0 rgba(25,118,210,0.09);
-      display: flex;
-      flex-direction: column;
-    }
-    #skillSheetPane,
-    #handoffInstructionsPane {
-      flex: 1;
-      min-width: 230px;
-      max-width: 340px;
-      padding: 20px 18px 20px 22px;
-      border-radius: 18px;
-      background: #f6fbff;
-      box-shadow: 0 2px 10px 0 rgba(32,227,194,0.08);
-      border-left: 2px solid #bae6fd;
-      margin-left: 0;
-      transition: box-shadow .22s, opacity .18s;
-      opacity: 1;
-      display: block;
-    }
-    #handoffInstructionsPane {
-      background: #fffbea;
-      border-left: 2px solid #fcd34d;
-      color: #92400e;
-      display: none;
-    }
-    .hide-skill-sheet {
-      display: none !important;
-      opacity: 0;
-    }
-    .status {
-      color: #14b88c;
-      font-weight: bold;
-      margin-left: 6px;
-    }
-    #chat-box {
-      height: 380px;
-      overflow-y: auto;
-      background: #f4fdff;
-      padding: 14px 16px 8px 16px;
-      border-radius: 13px;
-      border: 2.2px solid #dbeafe;
-      box-shadow: 0 2px 16px 0 rgba(25,118,210,0.08);
-      margin-bottom: 18px;
-      font-size: 1.09rem;
-    }
-    .input-row {
-      display: flex;
-      flex-direction: row;
-      gap: 12px;
-      align-items: center;
-      width: 100%;
-    }
-    #user-input {
-      flex: 1;
-      padding: 13px 12px;
-      font-size: 1.07rem;
-      border-radius: 7px;
-      border: 1.7px solid #bae6fd;
-      background: #fff;
-      transition: border .22s;
-    }
-    #user-input:focus { border-color: #20e3c2; }
-    #send-button, #mic-button {
-      background: linear-gradient(90deg,#1976d2,#20e3c2);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 1.12rem;
-      padding: 10px 20px;
-      cursor: pointer;
-      transition: background 0.22s;
-      box-shadow: 0 1px 6px 0 rgba(25,118,210,0.07);
-    }
-    #send-button:hover, #mic-button:hover {
-      background: linear-gradient(90deg,#1353a3,#1cd3be);
-    }
-    #mic-button.recording, #mic-button:active.recording {
-      background: #be123c !important;
-      color: #fff;
-      animation: pulseRed 1s infinite;
-    }
-    @keyframes pulseRed {
-      0% { box-shadow: 0 0 0 0 #be123c77; }
-      70% { box-shadow: 0 0 0 8px #be123c22; }
-      100% { box-shadow: 0 0 0 0 #be123c00; }
-    }
-    #mic-button {
-      padding: 10px 18px;
-      font-size: 1.17rem;
-    }
-    @media (max-width: 900px) {
-      #mainLayout {
-        flex-direction: column;
-        gap: 24px;
-        padding: 3vw;
-      }
-      #skillSheetPane, #handoffInstructionsPane {
-        display: none !important;
-      }
-      #simulatorPane {
-        max-width: 100vw;
-      }
-    }
-    #skillSheetPane h3 {
-      font-size: 1.17rem;
-      margin-bottom: 14px;
-      color: #1976d2;
-      letter-spacing: 2px;
-      font-weight: 700;
-    }
-    #skillChecklist {
-      padding-left: 0;
-      list-style: none;
-      font-size: 1.06rem;
-      margin: 0 0 14px 0;
-    }
-    #skillChecklist li {
-      padding: 5px 0 3px 0;
-      border-bottom: 1px solid #bae6fd;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    #skillChecklist li:last-child { border-bottom: none; }
-    #skillSheetPane h4 {
-      margin-top: 18px;
-      color: #ea580c;
-      font-size: 1.06rem;
-    }
-    #skillSheetPane ul {
-      margin-bottom: 8px;
-      margin-top: 6px;
-    }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
+    /* ... (keep all the CSS you already have from previous answers) ... */
+    html, body { height:100%; margin:0; padding:0; background:linear-gradient(120deg,#dbeafe 0%,#f4fdff 100%); min-height:100vh; }
+    body { font-family:'Segoe UI',Arial,sans-serif; color:#1e293b; display:flex; flex-direction:column; }
+    /* ... rest of your CSS ... */
+    /* (omit for brevity here, but KEEP IT from previous versions) */
   </style>
 </head>
 <body>
+  <!-- ... (header, logo, main layout, etc) ... -->
+  <!-- ... keep ALL HTML from previous version (logo, header, chat, inputs, both right panes) ... -->
   <div class="ems-logo-row">
+    <!-- ... your SVG logo ... -->
     <svg width="100%" height="100" viewBox="0 0 900 100" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="grad1" x1="0" y1="0" x2="900" y2="0" gradientUnits="userSpaceOnUse">
@@ -280,7 +43,6 @@
   <div id="mainLayout">
     <div id="simulatorPane">
       <div id="chat-box"></div>
-      <!-- Loading Spinner -->
       <div id="loading-spinner" style="display:none;text-align:center;padding:18px;">
         <svg width="48" height="48" viewBox="0 0 48 48" style="animation: spin 1s linear infinite;">
           <circle cx="24" cy="24" r="20" stroke="#1976d2" stroke-width="5" fill="none" opacity="0.2"/>
@@ -295,40 +57,11 @@
       </div>
     </div>
     <div id="skillSheetPane">
+      <!-- ... Skill sheet checklist ... -->
       <h3>NREMT Medical Assessment Skill Sheet</h3>
       <ul id="skillChecklist">
         <li id="EMT-B-MED-1">BSI/PPE <span class="status"></span></li>
-        <li id="EMT-B-MED-2">Scene Safety <span class="status"></span></li>
-        <li id="EMT-B-MED-3">Determine MOI/NOI <span class="status"></span></li>
-        <li id="EMT-B-MED-4">Determine Number of Patients <span class="status"></span></li>
-        <li id="EMT-B-MED-5">Request Additional EMS Assistance <span class="status"></span></li>
-        <li id="EMT-B-MED-6">Consider C-Spine Stabilization <span class="status"></span></li>
-        <li id="EMT-B-MED-7">General Impression <span class="status"></span></li>
-        <li id="EMT-B-MED-8">Determine Responsiveness/LOC <span class="status"></span></li>
-        <li id="EMT-B-MED-9">Determine Chief Complaint <span class="status"></span></li>
-        <li id="EMT-B-MED-10">Assess Airway/Breathing <span class="status"></span></li>
-        <li id="EMT-B-MED-11">Initiate Oxygen Therapy <span class="status"></span></li>
-        <li id="EMT-B-MED-12">Assess Circulation (Pulse, Skin, Bleeding) <span class="status"></span></li>
-        <li id="EMT-B-MED-13">Identify Patient Priority & Transport Decision <span class="status"></span></li>
-        <li id="EMT-B-MED-14">OPQRST - Onset <span class="status"></span></li>
-        <li id="EMT-B-MED-15">Provocation <span class="status"></span></li>
-        <li id="EMT-B-MED-16">Quality <span class="status"></span></li>
-        <li id="EMT-B-MED-17">Radiation <span class="status"></span></li>
-        <li id="EMT-B-MED-18">Severity <span class="status"></span></li>
-        <li id="EMT-B-MED-19">Time <span class="status"></span></li>
-        <li id="EMT-B-MED-20">SAMPLE - Signs/Symptoms <span class="status"></span></li>
-        <li id="EMT-B-MED-21">Allergies <span class="status"></span></li>
-        <li id="EMT-B-MED-22">Medications <span class="status"></span></li>
-        <li id="EMT-B-MED-23">Past Medical History <span class="status"></span></li>
-        <li id="EMT-B-MED-24">Last Oral Intake <span class="status"></span></li>
-        <li id="EMT-B-MED-25">Events Leading to Present Illness <span class="status"></span></li>
-        <li id="EMT-B-MED-26">Assess Affected Body/System <span class="status"></span></li>
-        <li id="EMT-B-MED-27">Vital Signs - BP <span class="status"></span></li>
-        <li id="EMT-B-MED-28">Heart Rate <span class="status"></span></li>
-        <li id="EMT-B-MED-29">Respiratory Rate <span class="status"></span></li>
-        <li id="EMT-B-MED-30">Field Impression of Patient <span class="status"></span></li>
-        <li id="EMT-B-MED-31">Interventions <span class="status"></span></li>
-        <li id="EMT-B-MED-32">Demonstrate How & When to Reassess <span class="status"></span></li>
+        <!-- ... all the rest ... -->
       </ul>
       <h4>Critical Failures</h4>
       <ul>
@@ -342,6 +75,7 @@
       </ul>
     </div>
     <div id="handoffInstructionsPane">
+      <!-- ... your handoff instructions ... -->
       <h3 style="margin-top:0;color:#d97706;">How to Give a Handoff Report</h3>
       <ol style="margin:12px 0 0 15px;">
         <li>State age, gender, chief complaint.</li>
@@ -360,7 +94,107 @@
     </div>
   </div>
 
-  <!-- Load scripts in correct order -->
+  <!-- Load app logic and modules -->
   <script type="module" src="scripts/grading.js"></script>
   <script type="module" src="scripts/checklist.js"></script>
-  <script type="module" src="
+  <script type="module" src="scripts/app.js"></script>
+  <script type="module" src="scripts/handoff_inline.js"></script>
+  <script type="module" src="scripts/mic.js"></script>
+
+  <!-- MAIN EVENT HANDLERS (keep as a plain script, not module) -->
+  <script>
+    window.appendChatBubble = window.appendChatBubble || function(role, html) {
+      var chat = document.getElementById("chat-box");
+      var div = document.createElement("div");
+      div.innerHTML = "<b>" + role + ":</b> " + html;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    };
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const toggle = document.getElementById("learningModeToggle");
+      const skillPane = document.getElementById("skillSheetPane");
+      const handoffPane = document.getElementById("handoffInstructionsPane");
+      const startBtn = document.getElementById("start-button");
+      const handoffBtn = document.getElementById("handoff-button");
+      const sendBtn = document.getElementById("send-button");
+      const micBtn = document.getElementById("mic-button");
+      const inp = document.getElementById("user-input");
+      const spinner = document.getElementById("loading-spinner");
+
+      // Show/hide skill sheet vs. handoff instructions
+      function showHandoffInstructions() {
+        if (skillPane) skillPane.style.display = "none";
+        if (handoffPane) handoffPane.style.display = "block";
+      }
+      function hideHandoffInstructions() {
+        if (skillPane) skillPane.style.display = "";
+        if (handoffPane) handoffPane.style.display = "none";
+      }
+      window.hideHandoffInstructions = hideHandoffInstructions;
+
+      // Learning mode toggle
+      if (toggle && skillPane && handoffPane) {
+        toggle.addEventListener("change", () => {
+          document.body.classList.toggle("learning-mode", toggle.checked);
+          if (toggle.checked) {
+            if (skillPane.style.display !== "none") {
+              skillPane.classList.remove("hide-skill-sheet");
+              skillPane.style.opacity = "1";
+            }
+          } else {
+            if (skillPane.style.display !== "none") {
+              skillPane.classList.add("hide-skill-sheet");
+              skillPane.style.opacity = "0";
+            }
+          }
+          if (typeof window.updateSkillChecklistUI === "function") {
+            window.updateSkillChecklistUI();
+          }
+        });
+      }
+
+      if (startBtn) startBtn.addEventListener("click", () => {
+        if (spinner) spinner.style.display = "block";
+        hideHandoffInstructions();
+        if (typeof window.startScenario === 'function') window.startScenario();
+      });
+
+      if (handoffBtn) handoffBtn.addEventListener("click", () => {
+        showHandoffInstructions();
+        if (typeof window.startHandoffInline === "function") {
+          window.startHandoffInline();
+        } else {
+          window.appendChatBubble("system", "Handoff module not loaded.");
+        }
+      });
+
+      if (sendBtn) sendBtn.addEventListener("click", () => {
+        if (!inp) return;
+        if (window.handoffActive && typeof window.handleHandoffSubmission === "function") {
+          window.handleHandoffSubmission(inp.value);
+          inp.value = "";
+          return;
+        }
+        if (typeof window.sendMessage === "function") window.sendMessage();
+      });
+
+      if (micBtn && typeof window.comboMic === "function") {
+        micBtn.addEventListener("click", async () => {
+          micBtn.classList.add("recording");
+          try {
+            await window.comboMic();
+          } finally {
+            micBtn.classList.remove("recording");
+          }
+        });
+      }
+    });
+
+    window.hideLoadingSpinner = function () {
+      const spinner = document.getElementById("loading-spinner");
+      if (spinner) spinner.style.display = "none";
+    };
+  </script>
+</body>
+</html>
