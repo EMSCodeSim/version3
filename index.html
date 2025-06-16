@@ -6,6 +6,7 @@
   <title>EMS Simulator</title>
   <link rel="stylesheet" href="styles/style.css" />
   <style>
+    /* [ ...keep your style as in previous working versions... ] */
     html, body {
       height: 100%;
       margin: 0;
@@ -287,10 +288,11 @@
     </div>
   </div>
 
-  <!-- Script Load Order: grading.js FIRST, then checklist.js, then app.js -->
+  <!-- Script Load Order: grading.js FIRST, then checklist.js, then app.js, then handoff_inline.js -->
   <script type="module" src="scripts/grading.js"></script>
   <script type="module" src="scripts/checklist.js"></script>
   <script type="module" src="scripts/app.js"></script>
+  <script type="module" src="scripts/handoff_inline.js"></script>
 
   <!-- Button Logic + Loading Spinner Show/Hide -->
   <script>
@@ -301,26 +303,44 @@
         toggle.addEventListener("change", () => {
           document.body.classList.toggle("learning-mode", toggle.checked);
           skillPane.style.display = toggle.checked ? "block" : "none";
+          if (toggle.checked && typeof window.updateSkillChecklistUI === "function") {
+            window.updateSkillChecklistUI();
+          }
         });
+        // On page load, show/hide and update checklist if needed
+        skillPane.style.display = toggle.checked ? "block" : "none";
+        if (toggle.checked && typeof window.updateSkillChecklistUI === "function") {
+          window.updateSkillChecklistUI();
+        }
       }
 
+      // --- Button handlers ---
       const startBtn = document.getElementById("start-button");
       const handoffBtn = document.getElementById("handoff-button");
       const sendBtn = document.getElementById("send-button");
+      const micBtn = document.getElementById("mic-button");
       const spinner = document.getElementById("loading-spinner");
 
       if (startBtn) startBtn.addEventListener("click", () => {
         if (spinner) spinner.style.display = "block";
-        // Let app.js hide spinner when loading is finished or errored
         if (typeof window.startScenario === 'function') window.startScenario();
       });
+
       if (handoffBtn) handoffBtn.addEventListener("click", () => {
-        window.open('handoff.html', '_blank');
+        if (typeof window.startHandoffInline === "function") window.startHandoffInline();
       });
-      if (sendBtn) sendBtn.addEventListener("click", () => window.sendMessage?.());
+
+      if (sendBtn) sendBtn.addEventListener("click", () => {
+        const inp = document.getElementById("user-input");
+        if (window.handoffActive && typeof window.handleHandoffSubmission === "function") {
+          window.handleHandoffSubmission(inp.value);
+          inp.value = "";
+          return;
+        }
+        if (typeof window.sendMessage === "function") window.sendMessage();
+      });
     });
 
-    // Hide spinner when scenario is loaded or errored (called from app.js)
     window.hideLoadingSpinner = function () {
       const spinner = document.getElementById("loading-spinner");
       if (spinner) spinner.style.display = "none";
