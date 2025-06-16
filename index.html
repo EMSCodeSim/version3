@@ -241,38 +241,9 @@
     <div id="skillSheetPane">
       <h3>NREMT Medical Assessment Skill Sheet</h3>
       <ul id="skillChecklist">
-        <!-- Full checklist, unchanged, omitted for brevity -->
+        <!-- Checklist lines omitted for brevity; keep your full list here -->
         <li id="EMT-B-MED-1">BSI/PPE <span class="status"></span></li>
-        <li id="EMT-B-MED-2">Scene Safety <span class="status"></span></li>
-        <li id="EMT-B-MED-3">Determine MOI/NOI <span class="status"></span></li>
-        <li id="EMT-B-MED-4">Determine Number of Patients <span class="status"></span></li>
-        <li id="EMT-B-MED-5">Request Additional EMS Assistance <span class="status"></span></li>
-        <li id="EMT-B-MED-6">Consider C-Spine Stabilization <span class="status"></span></li>
-        <li id="EMT-B-MED-7">General Impression <span class="status"></span></li>
-        <li id="EMT-B-MED-8">Determine Responsiveness/LOC <span class="status"></span></li>
-        <li id="EMT-B-MED-9">Determine Chief Complaint <span class="status"></span></li>
-        <li id="EMT-B-MED-10">Assess Airway/Breathing <span class="status"></span></li>
-        <li id="EMT-B-MED-11">Initiate Oxygen Therapy <span class="status"></span></li>
-        <li id="EMT-B-MED-12">Assess Circulation (Pulse, Skin, Bleeding) <span class="status"></span></li>
-        <li id="EMT-B-MED-13">Identify Patient Priority & Transport Decision <span class="status"></span></li>
-        <li id="EMT-B-MED-14">OPQRST - Onset <span class="status"></span></li>
-        <li id="EMT-B-MED-15">Provocation <span class="status"></span></li>
-        <li id="EMT-B-MED-16">Quality <span class="status"></span></li>
-        <li id="EMT-B-MED-17">Radiation <span class="status"></span></li>
-        <li id="EMT-B-MED-18">Severity <span class="status"></span></li>
-        <li id="EMT-B-MED-19">Time <span class="status"></span></li>
-        <li id="EMT-B-MED-20">SAMPLE - Signs/Symptoms <span class="status"></span></li>
-        <li id="EMT-B-MED-21">Allergies <span class="status"></span></li>
-        <li id="EMT-B-MED-22">Medications <span class="status"></span></li>
-        <li id="EMT-B-MED-23">Past Medical History <span class="status"></span></li>
-        <li id="EMT-B-MED-24">Last Oral Intake <span class="status"></span></li>
-        <li id="EMT-B-MED-25">Events Leading to Present Illness <span class="status"></span></li>
-        <li id="EMT-B-MED-26">Assess Affected Body/System <span class="status"></span></li>
-        <li id="EMT-B-MED-27">Vital Signs - BP <span class="status"></span></li>
-        <li id="EMT-B-MED-28">Heart Rate <span class="status"></span></li>
-        <li id="EMT-B-MED-29">Respiratory Rate <span class="status"></span></li>
-        <li id="EMT-B-MED-30">Field Impression of Patient <span class="status"></span></li>
-        <li id="EMT-B-MED-31">Interventions <span class="status"></span></li>
+        <!-- ... rest of your checklist ... -->
         <li id="EMT-B-MED-32">Demonstrate How & When to Reassess <span class="status"></span></li>
       </ul>
       <h4>Critical Failures</h4>
@@ -288,16 +259,23 @@
     </div>
   </div>
 
-  <!-- Script Load Order -->
+  <!-- Load JS in correct order -->
   <script type="module" src="scripts/grading.js"></script>
   <script type="module" src="scripts/checklist.js"></script>
   <script type="module" src="scripts/app.js"></script>
   <script type="module" src="scripts/handoff_inline.js"></script>
   <script type="module" src="scripts/mic.js"></script>
-  <!-- If using a separate transcribe.js (for Whisper fallback), include as well -->
-  <!-- <script type="module" src="scripts/transcribe.js"></script> -->
-
+  
   <script>
+    // Helper for robust chat message display if appendChatBubble missing
+    window.appendChatBubble = window.appendChatBubble || function(role, html) {
+      var chat = document.getElementById("chat-box");
+      var div = document.createElement("div");
+      div.innerHTML = "<b>" + role + ":</b> " + html;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    };
+
     document.addEventListener("DOMContentLoaded", function () {
       const toggle = document.getElementById("learningModeToggle");
       const skillPane = document.getElementById("skillSheetPane");
@@ -328,10 +306,16 @@
         if (typeof window.startScenario === 'function') window.startScenario();
       });
 
+      // --- GIVE HANDOFF REPORT BUTTON ---
       if (handoffBtn) handoffBtn.addEventListener("click", () => {
-        if (typeof window.startHandoffInline === "function") window.startHandoffInline();
+        if (typeof window.startHandoffInline === "function") {
+          window.startHandoffInline();
+        } else {
+          window.appendChatBubble("system", "Handoff module not loaded.");
+        }
       });
 
+      // --- SEND BUTTON ---
       if (sendBtn) sendBtn.addEventListener("click", () => {
         if (!inp) return;
         if (window.handoffActive && typeof window.handleHandoffSubmission === "function") {
@@ -342,7 +326,7 @@
         if (typeof window.sendMessage === "function") window.sendMessage();
       });
 
-      // MIC BUTTON uses your comboMic function from mic.js
+      // --- MIC BUTTON ---
       if (micBtn && typeof window.comboMic === "function") {
         micBtn.addEventListener("click", () => {
           window.comboMic();
