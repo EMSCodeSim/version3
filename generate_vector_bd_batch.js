@@ -1,38 +1,51 @@
-// generate_vector_db_batch.js
+// generate_vector_db_batch_multi.js
 
 const fs = require('fs');
 const { Configuration, OpenAIApi } = require('openai');
 
-// CONFIG
-const INPUT_FILE = 'hardcodedResponses.json';  // Source file with your questions
-const OUTPUT_FILE = 'vector-db.json';          // Where embeddings will be saved
-const BATCH_SIZE = 100;                        // 2048 max for OpenAI; 100 is safe for most users
+// ---- EDIT THESE TO MATCH YOUR PROJECT ----
+const INPUT_FILES = [
+  'hardcodedResponses1.json',
+  'hardcodedResponses2.json',
+  'hardcodedResponses3.json'
+];
+const OUTPUT_FILE = 'vector-db.json';
+const BATCH_SIZE = 100; // 2048 max for OpenAI, 100 is safe and efficient
 
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
 
-// Normalize question for dedupe
 const normalize = q => (q || '').replace(/\s+/g, ' ').trim().toLowerCase();
 
 async function main() {
-  // 1. Load and dedupe questions
-  const file = fs.readFileSync(INPUT_FILE, 'utf8');
+  // 1. Load and combine items from all input files
   let items = [];
-  try {
-    const parsed = JSON.parse(file);
-    if (Array.isArray(parsed)) {
-      items = parsed;
-    } else {
-      items = Object.values(parsed);
+  for (const file of INPUT_FILES) {
+    if (!fs.existsSync(file)) {
+      console.warn(`⚠️ File not found: ${file} (skipping)`);
+      continue;
     }
-  } catch (err) {
-    console.error('Failed to parse input file:', err);
+    const raw = fs.readFileSync(file, 'utf8');
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        items = items.concat(parsed);
+      } else {
+        items = items.concat(Object.values(parsed));
+      }
+    } catch (err) {
+      console.error(`Failed to parse ${file}:`, err);
+    }
+  }
+
+  if (items.length === 0) {
+    console.error("❌ No items loaded from input files. Exiting.");
     process.exit(1);
   }
 
-  // Deduplicate
+  // 2. Deduplicate by normalized question
   const seen = new Set();
   const deduped = [];
   for (let item of items) {
@@ -42,8 +55,9 @@ async function main() {
       deduped.push(item);
     }
   }
+  console.log(`Loaded ${items.length} items, deduplicated to ${deduped.length} unique questions.`);
 
-  // 2. Prepare for batch processing
+  // 3. Generate embeddings in batches
   const result = [];
   for (let i = 0; i < deduped.length; i += BATCH_SIZE) {
     const batch = deduped.slice(i, i + BATCH_SIZE);
@@ -61,15 +75,14 @@ async function main() {
       }
       console.log("OK");
     } catch (err) {
-      console.error("\nBatch embedding failed:", err);
-      // Optionally add failed batch without embedding
+      console.error("\nBatch embedding failed:", err.message);
       for (let j = 0; j < batch.length; ++j) {
         result.push({ ...batch[j], embedding: [] });
       }
     }
   }
 
-  // 3. Save results
+  // 4. Save results
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(result, null, 2));
   console.log(`✅ Saved ${result.length} entries with embeddings to ${OUTPUT_FILE}`);
 }
