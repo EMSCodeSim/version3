@@ -5,9 +5,9 @@ const { Configuration, OpenAIApi } = require('openai');
 
 // ---- EDIT THESE TO MATCH YOUR PROJECT ----
 const INPUT_FILES = [
-  'hardcodedResponses1.json',
-  'hardcodedResponses2.json',
-  'hardcodedResponses3.json'
+  'scenarios/chest_pain_002/ems_database_part1.json',
+  'scenarios/chest_pain_002/ems_database_part2.json',
+  'scenarios/chest_pain_002/ems_database_part3.json'
 ];
 const OUTPUT_FILE = 'vector-db.json';
 const BATCH_SIZE = 100; // 2048 max for OpenAI, 100 is safe and efficient
