@@ -10,6 +10,7 @@ const downloadEditedJsonBtn = document.getElementById("downloadEditedJsonBtn");
 const bulkAssignBtn = document.getElementById("bulkAssignBtn");
 const convertLegacyBtn = document.getElementById("convertLegacyBtn");
 
+// --- Dedupe/GPT Button ---
 let dedupeGptBtn = document.getElementById("dedupeGptBtn");
 if (!dedupeGptBtn) {
   dedupeGptBtn = document.createElement("button");
@@ -207,6 +208,8 @@ window.saveJsonEditEntry = function(key) {
   const get = id => document.getElementById(id)?.value.trim();
   const ssid = get(`skillSheetID-${key}`);
   const meta = (window.skillSheetScoring || {})[ssid] || {};
+  // preserve ttsAudio if present
+  const ttsAudio = (window.jsonEditData[key] && window.jsonEditData[key].ttsAudio) || undefined;
   const entry = {
     question: get(`q-${key}`),
     response: get(`r-${key}`),
@@ -217,7 +220,7 @@ window.saveJsonEditEntry = function(key) {
     role: get(`role-${key}`),
     tags: get(`tags-${key}`)?.split(",").map(t => t.trim()).filter(t => t),
     trigger: get(`trigger-${key}`),
-    ttsAudio: (window.jsonEditData[key] && window.jsonEditData[key].ttsAudio) || undefined // Preserve ttsAudio if present
+    ttsAudio: ttsAudio
   };
   if (Array.isArray(window.jsonEditData)) {
     window.jsonEditData[key] = { ...window.jsonEditData[key], ...entry };
@@ -350,7 +353,6 @@ window.reRecordTTS = async function(key) {
   if (role.includes("proctor")) voice = "shimmer";
   if (role.includes("instructor")) voice = "shimmer";
   if (role.includes("patient")) voice = "onyx";
-  // fallback default: onyx
 
   // UI status
   const statusSpan = document.getElementById(`audio-status-${key}`);
@@ -367,41 +369,9 @@ window.reRecordTTS = async function(key) {
       body: JSON.stringify({
         model: "tts-1",
         input: responseText,
-        voice: voice, // onyx or shimmer
+        voice: voice,
         response_format: "mp3"
       })
     });
 
-    if (!resp.ok) throw new Error("TTS API failed: " + resp.statusText);
-    const arrayBuffer = await resp.arrayBuffer();
-    // Convert mp3 to base64
-    const base64 = arrayBufferToBase64(arrayBuffer);
-
-    // Save to entry and update UI
-    entry.ttsAudio = base64;
-    if (Array.isArray(window.jsonEditData)) {
-      window.jsonEditData[key] = entry;
-    } else {
-      window.jsonEditData[key] = entry;
-    }
-    statusSpan.textContent = " ✔️ Audio updated!";
-    setTimeout(() => { statusSpan.textContent = ""; }, 2200);
-    renderAllJsonEntries(window.jsonEditData); // re-render for playback
-  } catch (err) {
-    if (statusSpan) statusSpan.textContent = " ❌ TTS failed!";
-    alert("TTS failed: " + err.message);
-  }
-};
-
-function arrayBufferToBase64(buffer) {
-  let binary = '';
-  let bytes = new Uint8Array(buffer);
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
-
-// === Deduplicate then GPT-4 Turbo Skill Sheet ID Auto-Tag ===
-// ... [rest of your GPT auto-tagging code unchanged] ...
-// [keep your dedupeAndGptAutoTag() function here from your original code]
+    if (!resp.ok) throw new Error("T
