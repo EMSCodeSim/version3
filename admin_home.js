@@ -372,4 +372,36 @@ window.reRecordTTS = async function(key) {
       })
     });
 
-    if (!resp.ok) throw new Error("TTS API failed:
+    if (!resp.ok) throw new Error("TTS API failed: " + resp.statusText);
+    const arrayBuffer = await resp.arrayBuffer();
+    // Convert mp3 to base64
+    const base64 = arrayBufferToBase64(arrayBuffer);
+
+    // Save to entry and update UI
+    entry.ttsAudio = base64;
+    if (Array.isArray(window.jsonEditData)) {
+      window.jsonEditData[key] = entry;
+    } else {
+      window.jsonEditData[key] = entry;
+    }
+    statusSpan.textContent = " ✔️ Audio updated!";
+    setTimeout(() => { statusSpan.textContent = ""; }, 2200);
+    renderAllJsonEntries(window.jsonEditData); // re-render for playback
+  } catch (err) {
+    if (statusSpan) statusSpan.textContent = " ❌ TTS failed!";
+    alert("TTS failed: " + err.message);
+  }
+};
+
+function arrayBufferToBase64(buffer) {
+  let binary = '';
+  let bytes = new Uint8Array(buffer);
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+// === Deduplicate then GPT-4 Turbo Skill Sheet ID Auto-Tag ===
+// ... [rest of your GPT auto-tagging code unchanged] ...
+// [keep your dedupeAndGptAutoTag() function here from your original code]
