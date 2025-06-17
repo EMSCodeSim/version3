@@ -10,7 +10,7 @@ const downloadEditedJsonBtn = document.getElementById("downloadEditedJsonBtn");
 const bulkAssignBtn = document.getElementById("bulkAssignBtn");
 const convertLegacyBtn = document.getElementById("convertLegacyBtn");
 
-// --- Dedupe/GPT Button ---
+// --- NEW: Dedupe & GPT Auto-Tag SkillSheet IDs ---
 let dedupeGptBtn = document.getElementById("dedupeGptBtn");
 if (!dedupeGptBtn) {
   dedupeGptBtn = document.createElement("button");
@@ -147,19 +147,6 @@ function renderResponseCard(key, data) {
   }
   triggerOptions = `<option value=""></option>` + triggerOptions;
 
-  // --- AUDIO CONTROLS ---
-  let audioControls = '';
-  if (data.ttsAudio) {
-    audioControls += `<audio id="audio-${key}" controls src="data:audio/mp3;base64,${data.ttsAudio}"></audio>`;
-  } else {
-    audioControls += `<div style="color: #888; font-size: 0.95em;">No audio</div>`;
-  }
-  audioControls += `
-    <button class="btn" type="button" onclick="reRecordTTS('${key}')">🔴 Record New Audio</button>
-    <span style="font-size:0.98em;margin-left:8px;color:#555;">(Role: ${data.role || "unknown"})</span>
-    <span id="audio-status-${key}" style="margin-left:8px;color:#1976d2"></span>
-  `;
-
   const div = document.createElement("div");
   div.className = "response";
   div.innerHTML = `
@@ -180,7 +167,6 @@ function renderResponseCard(key, data) {
       <input type="text" id="trigger-manual-${key}" placeholder="or enter manually" style="width: 60%; display:inline-block; margin-left: 6px;" value="">
       <button class="btn" type="button" onclick="setManualTrigger('${key}')">Set</button>
     </div>
-    <div class="field"><label>Audio Review/Record:</label><div>${audioControls}</div></div>
     <button class="btn" onclick="saveJsonEditEntry('${key}')">💾 Save</button>
     <button class="btn" onclick="deleteJsonEntry('${key}')">🗑 Delete</button>
   `;
@@ -208,8 +194,6 @@ window.saveJsonEditEntry = function(key) {
   const get = id => document.getElementById(id)?.value.trim();
   const ssid = get(`skillSheetID-${key}`);
   const meta = (window.skillSheetScoring || {})[ssid] || {};
-  // preserve ttsAudio if present
-  const ttsAudio = (window.jsonEditData[key] && window.jsonEditData[key].ttsAudio) || undefined;
   const entry = {
     question: get(`q-${key}`),
     response: get(`r-${key}`),
@@ -219,8 +203,7 @@ window.saveJsonEditEntry = function(key) {
     criticalFail: get(`cf-${key}`) === "true",
     role: get(`role-${key}`),
     tags: get(`tags-${key}`)?.split(",").map(t => t.trim()).filter(t => t),
-    trigger: get(`trigger-${key}`),
-    ttsAudio: ttsAudio
+    trigger: get(`trigger-${key}`)
   };
   if (Array.isArray(window.jsonEditData)) {
     window.jsonEditData[key] = { ...window.jsonEditData[key], ...entry };
@@ -228,7 +211,6 @@ window.saveJsonEditEntry = function(key) {
     window.jsonEditData[key] = { ...window.jsonEditData[key], ...entry };
   }
   alert(`💾 Saved changes to "${key}"!`);
-  renderAllJsonEntries(window.jsonEditData);
 };
 
 window.deleteJsonEntry = function(key) {
@@ -331,79 +313,100 @@ function convertLegacySkillSheetIDs() {
   renderAllJsonEntries(window.jsonEditData);
 }
 
-// === AUDIO RE-RECORD TTS ===
-window.reRecordTTS = async function(key) {
-  if (!window.jsonEditData || !window.jsonEditData[key]) return;
-  const entry = window.jsonEditData[key];
-  const responseText = document.getElementById(`r-${key}`)?.value || entry.response || entry.answer || "";
-  if (!responseText.trim()) {
-    alert("No response text found to synthesize.");
-    return;
-  }
+// === Deduplicate then GPT-4 Turbo Skill Sheet ID Auto-Tag ===
+async function dedupeAndGptAutoTag() {
+  if (!window.jsonEditData) return alert("No JSON loaded.");
 
-  // Ask for API key if not present
+  // 1. Deduplicate by normalized question text
+  function normalize(str) {
+    return (str || '').replace(/\s+/g, ' ').trim().toLowerCase();
+  }
+  let seenQuestions = new Set();
+  let cleaned = {};
+  Object.entries(window.jsonEditData).forEach(([key, entry]) => {
+    const normQ = normalize(entry.question);
+    if (normQ && !seenQuestions.has(normQ)) {
+      cleaned[key] = entry;
+      seenQuestions.add(normQ);
+    }
+  });
+  window.jsonEditData = cleaned;
+  renderAllJsonEntries(window.jsonEditData);
+
+  // 2. GPT-4 Turbo tagging
+  const SKILL_IDS = [
+    "ppeBsi", "sceneSafety", "determinesMOIorNOI", "determinesNumberOfPatients", "requestsAdditionalResources", "considersCSpine",
+    "generalImpression", "determinesResponsiveness", "chiefComplaint", "airway", "oxygenTherapy", "circulation", "patientPriority",
+    "opqrstOnset", "opqrstProvocation", "opqrstQuality", "opqrstRadiation", "opqrstSeverity", "opqrstTime", "sampleSigns",
+    "sampleAllergies", "sampleMedications", "samplePastHistory", "sampleLastIntake", "sampleEvents", "assessesAffectedBodyPart",
+    "obtainsBaselineVitalsBP", "obtainsBaselineVitalsHR", "obtainsBaselineVitalsRR", "fieldImpression", "managesSecondaryInjuries", "verbalizesReassessment"
+  ];
+
   if (!window.openaiApiKey) {
     window.openaiApiKey = prompt("Enter your OpenAI API Key (will NOT be sent anywhere except OpenAI):", "");
     if (!window.openaiApiKey) return alert("API key required.");
   }
 
-  // Select correct TTS voice for role
-  let role = (document.getElementById(`role-${key}`)?.value || entry.role || "").toLowerCase();
-  let voice = "onyx"; // Default to Onyx for Patient
-  if (role.includes("proctor")) voice = "shimmer";
-  if (role.includes("instructor")) voice = "shimmer";
-  if (role.includes("patient")) voice = "onyx";
+  let entries = Array.isArray(window.jsonEditData)
+    ? window.jsonEditData.map((val, idx) => [idx, val])
+    : Object.entries(window.jsonEditData);
 
-  // UI status
-  const statusSpan = document.getElementById(`audio-status-${key}`);
-  if (statusSpan) statusSpan.textContent = " Recording via OpenAI TTS...";
+  let total = entries.length, done = 0;
+  let proceed = confirm(`Deduped. Now auto-tag ALL (${total}) entries with GPT-4 Turbo? This may use OpenAI credits.`);
+  if (!proceed) return;
 
-  try {
-    // OpenAI TTS API call
-    const resp = await fetch("https://api.openai.com/v1/audio/speech", {
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer " + window.openaiApiKey,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "tts-1",
-        input: responseText,
-        voice: voice,
-        response_format: "mp3"
-      })
-    });
+  logBox.innerText = "Deduped. GPT auto-tagging in progress...";
 
-    if (!resp.ok) throw new Error("TTS API failed: " + resp.statusText);
-    const arrayBuffer = await resp.arrayBuffer();
-    // Convert mp3 to base64
-    const base64 = arrayBufferToBase64(arrayBuffer);
+  for (const [key, entry] of entries) {
+    let question = entry.question || entry.prompt || "";
+    if (!question.trim()) continue;
 
-    // Save to entry and update UI
-    entry.ttsAudio = base64;
-    if (Array.isArray(window.jsonEditData)) {
-      window.jsonEditData[key] = entry;
-    } else {
-      window.jsonEditData[key] = entry;
+    let prompt = `
+You are an EMS educator. From the following list of NREMT Medical Assessment Skill Sheet IDs, pick the **single best matching ID** for this question:
+
+Skill Sheet IDs: ${SKILL_IDS.join(", ")}
+
+Question: "${question}"
+
+Return ONLY the Skill Sheet ID, nothing else.`;
+
+    try {
+      let resp = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + window.openaiApiKey,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "gpt-4-turbo",
+          messages: [
+            { role: "system", content: "You are an EMS educator and NREMT instructor." },
+            { role: "user", content: prompt }
+          ],
+          max_tokens: 15,
+          temperature: 0
+        })
+      });
+      let data = await resp.json();
+      let answer = data.choices && data.choices[0]?.message?.content?.trim().split(/\s/)[0];
+      if (SKILL_IDS.includes(answer)) {
+        entry.skillSheetID = answer;
+      } else {
+        entry.skillSheetID = "";
+        console.warn(`GPT response not in list: "${answer}"\nQ: ${question}`);
+      }
+    } catch (err) {
+      entry.skillSheetID = "";
+      console.error("GPT error:", err);
     }
-    statusSpan.textContent = " ✔️ Audio updated!";
-    setTimeout(() => { statusSpan.textContent = ""; }, 2200);
-    renderAllJsonEntries(window.jsonEditData);
-  } catch (err) {
-    if (statusSpan) statusSpan.textContent = " ❌ TTS failed!";
-    alert("TTS failed: " + err.message);
-  }
-};
 
-function arrayBufferToBase64(buffer) {
-  let binary = '';
-  let bytes = new Uint8Array(buffer);
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
+    done++;
+    if (done % 10 === 0) {
+      logBox.innerText = `Deduped and GPT auto-tagged ${done}/${total}...`;
+    }
+    await new Promise(r => setTimeout(r, 700));
   }
-  return btoa(binary);
+  renderAllJsonEntries(window.jsonEditData);
+  logBox.innerText = "✅ Deduped & GPT auto-tagging complete! Review then Download.";
+  alert("Done! Review your entries and download.");
 }
-
-// ==== GPT Tagging remains unchanged from your previous code ====
-
-/* Place your dedupeAndGptAutoTag() function here if not already included */
