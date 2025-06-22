@@ -1,9 +1,9 @@
 // .netlify/functions/embed.js
-import OpenAI from 'openai';
+const OpenAI = require('openai');
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-export default async (event, context) => {
+exports.handler = async (event, context) => {
   try {
     const { input } = JSON.parse(event.body);
     const response = await openai.embeddings.create({
