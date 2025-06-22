@@ -1,0 +1,166 @@
+[
+  {
+    "question": "Is the scene safe?",
+    "answer": "The scene is safe. There are no hazards present.",
+    "scoreCategory": "Scene Size-up",
+    "tags": ["scene safety", "bsi", "hazards", "ppe"]
+  },
+  {
+    "question": "Do I need additional resources?",
+    "answer": "You have your partner, and ALS backup is en route if needed.",
+    "scoreCategory": "Scene Size-up",
+    "tags": ["additional resources", "als", "scene size-up"]
+  },
+  {
+    "question": "What do I see?",
+    "answer": "You see a 24-year-old female sitting on the couch, anxious and scratching at red, raised hives on her neck and arms. She is pale and appears short of breath.",
+    "scoreCategory": "Initial Impression",
+    "tags": ["general impression", "appearance", "hives", "patient look", "scene"],
+    "trigger": "patient_with_hives.jpg"
+  },
+  {
+    "question": "Is there any life threat?",
+    "answer": "The patient has difficulty breathing, wheezing, and swelling of her lips and tongue—these are immediate life threats.",
+    "scoreCategory": "Primary Assessment",
+    "tags": ["life threats", "anaphylaxis", "airway swelling", "scene size-up"]
+  },
+  {
+    "question": "What is her airway status?",
+    "answer": "Her airway is open, but you note mild swelling of her lips and tongue.",
+    "scoreCategory": "Airway",
+    "tags": ["airway", "assessment", "swelling", "primary"]
+  },
+  {
+    "question": "How is her breathing?",
+    "answer": "She is breathing rapidly, and you hear diffuse wheezing throughout both lung fields.",
+    "scoreCategory": "Breathing",
+    "tags": ["breathing", "respiratory", "wheezing", "primary assessment"]
+  },
+  {
+    "question": "How is her circulation?",
+    "answer": "She is pale, cool, diaphoretic with a rapid pulse. Capillary refill is about 2 seconds.",
+    "scoreCategory": "Circulation",
+    "tags": ["circulation", "shock", "cap refill", "skin", "primary"]
+  },
+  {
+    "question": "What are her vitals?",
+    "answer": "BP 98/56, HR 124, RR 28, SpO2 91%, Temp 98.6°F.",
+    "scoreCategory": "Vital Signs",
+    "tags": ["vital signs", "assessment", "primary", "bp", "hr", "spo2"]
+  },
+  {
+    "question": "Describe her skin signs.",
+    "answer": "Her skin is pale, cool, and clammy. She has raised hives on her neck and arms.",
+    "scoreCategory": "Skin Signs",
+    "tags": ["skin signs", "hives", "assessment", "primary"]
+  },
+  {
+    "question": "Is she alert?",
+    "answer": "She is alert but anxious, speaking in short sentences.",
+    "scoreCategory": "Level of Consciousness",
+    "tags": ["loc", "avpu", "mental status", "primary assessment"]
+  },
+  {
+    "question": "What is the chief complaint?",
+    "answer": "My throat feels tight and it’s hard to breathe. I’m very itchy.",
+    "scoreCategory": "Chief Complaint",
+    "tags": ["chief complaint", "cc", "history", "sample"]
+  },
+  {
+    "question": "Can you tell me what happened?",
+    "answer": "I ate some cookies at work. About 15 minutes later, I started itching and my throat felt tight.",
+    "scoreCategory": "History of Present Illness",
+    "tags": ["history of present illness", "hpi", "onset", "sample"]
+  },
+  {
+    "question": "Do you have any allergies?",
+    "answer": "Yes, I’m severely allergic to peanuts.",
+    "scoreCategory": "SAMPLE History",
+    "tags": ["allergies", "sample", "history", "food allergy"]
+  },
+  {
+    "question": "Are you taking any medications?",
+    "answer": "I don’t take any medications regularly.",
+    "scoreCategory": "SAMPLE History",
+    "tags": ["medications", "sample", "history"]
+  },
+  {
+    "question": "Do you have an EpiPen?",
+    "answer": "Yes, I have one in my purse, but I haven’t used it yet.",
+    "scoreCategory": "SAMPLE History",
+    "tags": ["epipen", "medications", "sample", "history", "interventions"]
+  },
+  {
+    "question": "Have you ever had this before?",
+    "answer": "Yes, I had a reaction as a child, but it was not this bad.",
+    "scoreCategory": "Past Medical History",
+    "tags": ["past medical history", "pmh", "sample", "history"]
+  },
+  {
+    "question": "When did this start?",
+    "answer": "It started about 15 minutes ago after eating the cookies.",
+    "scoreCategory": "Onset",
+    "tags": ["onset", "sample", "timing", "history"]
+  },
+  {
+    "question": "When did you last eat or drink?",
+    "answer": "I had lunch at work and then cookies. I think the cookies had peanuts.",
+    "scoreCategory": "Last Oral Intake",
+    "tags": ["last oral intake", "sample", "history", "food"]
+  },
+  {
+    "question": "What do her lungs sound like?",
+    "answer": "You hear diffuse wheezing in both lungs.",
+    "scoreCategory": "Physical Exam",
+    "tags": ["lung sounds", "assessment", "wheezing", "secondary"]
+  },
+  {
+    "question": "Is there swelling anywhere?",
+    "answer": "There is mild swelling of her lips and tongue. Hives are present on her neck and arms.",
+    "scoreCategory": "Physical Exam",
+    "tags": ["swelling", "angioedema", "assessment", "secondary"]
+  },
+  {
+    "question": "Can I check her pupils?",
+    "answer": "Her pupils are equal and reactive to light.",
+    "scoreCategory": "Physical Exam",
+    "tags": ["pupils", "assessment", "secondary", "neuro"]
+  },
+  {
+    "question": "I am giving her the EpiPen.",
+    "answer": "You administer the EpiPen. Within two minutes, her breathing improves and her hives begin to fade. Vitals are now BP 110/70, HR 102, RR 20, SpO2 96%.",
+    "scoreCategory": "Medication Administration",
+    "tags": ["epipen", "epinephrine", "med admin", "intervention", "treatment"],
+    "trigger": "updateVitals"
+  },
+  {
+    "question": "I’m giving high-flow oxygen.",
+    "answer": "You place her on high-flow oxygen. Her oxygen saturation begins to improve.",
+    "scoreCategory": "Oxygen Administration",
+    "tags": ["oxygen", "airway", "intervention", "treatment"]
+  },
+  {
+    "question": "I am calling for ALS backup.",
+    "answer": "ALS is en route and will arrive shortly.",
+    "scoreCategory": "Team Leadership",
+    "tags": ["als", "team lead", "additional resources", "command"]
+  },
+  {
+    "question": "How does the patient look after treatment?",
+    "answer": "She is less anxious, her hives are fading, and her breathing is less labored. Vitals are improving.",
+    "scoreCategory": "Reassessment",
+    "tags": ["reassessment", "response to treatment", "monitor"]
+  },
+  {
+    "question": "I am preparing for immediate transport.",
+    "answer": "Excellent. This patient requires rapid transport to the hospital.",
+    "scoreCategory": "Transport Decision",
+    "tags": ["transport", "decision", "priority", "load and go"]
+  },
+  {
+    "question": "I will reassess vitals every five minutes.",
+    "answer": "You continue to monitor her vitals and symptoms during transport.",
+    "scoreCategory": "Ongoing Assessment",
+    "tags": ["reassessment", "vitals", "monitoring", "transport"]
+  }
+]
