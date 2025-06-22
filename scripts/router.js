@@ -4,13 +4,13 @@ let hardcodedResponses = [];
 let vectorDb = [];
 window.hardcodedResponsesArray = hardcodedResponses;
 
-// Load hardcoded responses
-export async function loadHardcodedResponses() {
-  const base = '/scenarios/chest_pain_002/';
+// Load hardcoded responses for current scenario
+export async function loadHardcodedResponses(scenarioPath) {
+  // Use scenarioPath, e.g. 'scenarios/allergic_reaction_001/'
   const files = [
-    `${base}ems_database_part1.json`,
-    `${base}ems_database_part2.json`,
-    `${base}ems_database_part3.json`
+    `${scenarioPath}ems_database_part1.json`,
+    `${scenarioPath}ems_database_part2.json`,
+    `${scenarioPath}ems_database_part3.json`
   ];
   hardcodedResponses.length = 0;
   for (const file of files) {
@@ -18,7 +18,12 @@ export async function loadHardcodedResponses() {
       const resp = await fetch(file);
       if (!resp.ok) throw new Error(`Failed to load ${file}`);
       const obj = await resp.json();
-      hardcodedResponses.push(...Object.values(obj));
+      // Accept array or object style
+      if (Array.isArray(obj)) {
+        hardcodedResponses.push(...obj);
+      } else {
+        hardcodedResponses.push(...Object.values(obj));
+      }
     } catch (err) {
       console.error(`Failed to load ${file}:`, err);
     }
@@ -26,12 +31,11 @@ export async function loadHardcodedResponses() {
   window.hardcodedResponsesArray = hardcodedResponses;
 }
 
-// Load vector DB from two parts
-export async function loadVectorDb() {
-  const base = '/scenarios/chest_pain_002/';
+// Load vector DB for current scenario
+export async function loadVectorDb(scenarioPath) {
   const files = [
-    `${base}vector-db-1.json`,
-    `${base}vector-db-2.json`
+    `${scenarioPath}vector-db-1.json`,
+    `${scenarioPath}vector-db-2.json`
   ];
   vectorDb.length = 0;
   for (const file of files) {
