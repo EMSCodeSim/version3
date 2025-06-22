@@ -1,0 +1,29 @@
+{
+  "scenarioId": "allergic_reaction_001",
+  "scenarioName": "Allergic Reaction - 24F",
+  "type": "medical",
+  "chiefComplaint": "Allergic reaction",
+  "mediaPath": "scenarios/allergic_reaction_001/",
+  "vectorDB": [
+    "scenarios/allergic_reaction_001/vector-db-1.json"
+  ],
+  "hardcodedResponses": "scenarios/allergic_reaction_001/hardcodedResponses.json",
+  "dispatchFile": "scenarios/allergic_reaction_001/dispatch.txt",
+  "patientFile": "scenarios/allergic_reaction_001/patient.txt",
+  "triggers": [
+    {
+      "event": "arrival",
+      "media": "patient_with_hives.jpg"
+    },
+    {
+      "event": "give_epipen",
+      "action": "updateVitals",
+      "vitals": {
+        "BP": "110/70",
+        "HR": "102",
+        "RR": "20",
+        "SpO2": "96%"
+      }
+    }
+  ]
+}
