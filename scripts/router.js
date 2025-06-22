@@ -63,18 +63,26 @@ function cosineSimilarity(a, b) {
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
-// Alias match
-function matchByAlias(userInput) {
-  const norm = normalize(userInput);
-  for (const entry of hardcodedResponses) {
-    if (Array.isArray(entry.aliases) && entry.aliases.some(a => normalize(a) === norm)) {
-      return entry;
+// Rephrase match: call Netlify function to rephrase user input
+async function rephraseUserInput(input) {
+  try {
+    const res = await fetch('/.netlify/functions/gpt3_rephrase', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: input })
+    });
+    const data = await res.json();
+    if (res.ok && data.rephrased) {
+      return data.rephrased;
     }
+    return null;
+  } catch (err) {
+    console.error("Rephrase failed:", err);
+    return null;
   }
-  return null;
 }
 
-// Tag match
+// Tag match (unchanged)
 function matchByTags(userInput) {
   const norm = normalize(userInput);
   for (const entry of hardcodedResponses) {
@@ -87,7 +95,7 @@ function matchByTags(userInput) {
 }
 
 // VECTOR MATCH (calls serverless function to get embedding)
-async function findVectorMatch(userInput, threshold = 0.30) {
+async function findVectorMatch(userInput, threshold = 0.80) {
   const embedRes = await fetch('/.netlify/functions/embed', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -109,7 +117,7 @@ async function findVectorMatch(userInput, threshold = 0.30) {
   return null;
 }
 
-// === MATCH ORDER: hardcoded → vector → alias → tag → GPT ===
+// === MATCH ORDER: hardcoded → vector → rephrase → tag → GPT ===
 export async function routeUserInput(message, { scenarioId, role }) {
   const norm = normalize(message);
 
@@ -136,10 +144,20 @@ export async function routeUserInput(message, { scenarioId, role }) {
     console.error("Vector search failed:", err);
   }
 
-  // 3. Alias match
-  const aliasMatch = matchByAlias(message);
-  if (aliasMatch && (aliasMatch.response || aliasMatch.answer)) {
-    return { response: aliasMatch.response || aliasMatch.answer, source: "alias", matchedEntry: aliasMatch };
+  // 3. Rephrase match (uses gpt3_rephrase)
+  try {
+    const rephrased = await rephraseUserInput(message);
+    if (rephrased) {
+      const rephraseMatch = hardcodedResponses.find(entry =>
+        normalize(entry.question) === normalize(rephrased) ||
+        normalize(entry.userQuestion) === normalize(rephrased)
+      );
+      if (rephraseMatch && (rephraseMatch.response || rephraseMatch.answer)) {
+        return { response: rephraseMatch.response || rephraseMatch.answer, source: "rephrase", matchedEntry: rephraseMatch };
+      }
+    }
+  } catch (err) {
+    console.error("Rephrase search failed:", err);
   }
 
   // 4. Tag match
