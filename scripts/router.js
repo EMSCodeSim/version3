@@ -109,7 +109,7 @@ async function findVectorMatch(userInput, threshold = 0.80) {
   return null;
 }
 
-// Main router: exact > alias > tag > vector > gpt
+// === MATCH ORDER: hardcoded → vector → alias → tag → GPT ===
 export async function routeUserInput(message, { scenarioId, role }) {
   const norm = normalize(message);
 
@@ -122,19 +122,7 @@ export async function routeUserInput(message, { scenarioId, role }) {
     return { response: match.response || match.answer, source: "hardcoded", matchedEntry: match };
   }
 
-  // 2. Alias match
-  const aliasMatch = matchByAlias(message);
-  if (aliasMatch && (aliasMatch.response || aliasMatch.answer)) {
-    return { response: aliasMatch.response || aliasMatch.answer, source: "alias", matchedEntry: aliasMatch };
-  }
-
-  // 3. Tag match
-  const tagMatch = matchByTags(message);
-  if (tagMatch && (tagMatch.response || tagMatch.answer)) {
-    return { response: tagMatch.response || tagMatch.answer, source: "tag-match", matchedEntry: tagMatch };
-  }
-
-  // 4. Vector match
+  // 2. Vector match
   try {
     const vectorRes = await findVectorMatch(message, 0.80);
     if (vectorRes && (vectorRes.entry.response || vectorRes.entry.answer)) {
@@ -146,6 +134,18 @@ export async function routeUserInput(message, { scenarioId, role }) {
     }
   } catch (err) {
     console.error("Vector search failed:", err);
+  }
+
+  // 3. Alias match
+  const aliasMatch = matchByAlias(message);
+  if (aliasMatch && (aliasMatch.response || aliasMatch.answer)) {
+    return { response: aliasMatch.response || aliasMatch.answer, source: "alias", matchedEntry: aliasMatch };
+  }
+
+  // 4. Tag match
+  const tagMatch = matchByTags(message);
+  if (tagMatch && (tagMatch.response || tagMatch.answer)) {
+    return { response: tagMatch.response || tagMatch.answer, source: "tag-match", matchedEntry: tagMatch };
   }
 
   // 5. GPT fallback
