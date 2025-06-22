@@ -1,3 +1,32 @@
 {
-  "grading": "medical"
+  "scenarioId": "chest_pain_002",
+  "scenarioName": "Chest Pain - 55M",
+  "type": "medical",
+  "chiefComplaint": "Chest pain",
+  "mediaPath": "scenarios/chest_pain_002/",
+  "vectorDB": [
+    "scenarios/chest_pain_002/vector-db-1.json",
+    "scenarios/chest_pain_002/vector-db-2.json"
+  ],
+  "hardcodedResponses": "scenarios/chest_pain_002/hardcodedResponses.json",
+  "dispatchFile": "scenarios/chest_pain_002/dispatch.txt",
+  "patientFile": "scenarios/chest_pain_002/patient.txt",
+  "grading": "medical",
+  "triggers": [
+    {
+      "event": "arrival",
+      "media": "scene1.PNG"
+    },
+    {
+      "event": "give_aspirin",
+      "action": "updateVitals",
+      "vitals": {
+        "BP": "128/82",
+        "HR": "88",
+        "RR": "16",
+        "SpO2": "98%"
+      }
+    }
+    // Add more as needed for your scenario
+  ]
 }
