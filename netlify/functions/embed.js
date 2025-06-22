@@ -3,15 +3,21 @@ import OpenAI from 'openai';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-export default async (req, res) => {
+export default async (event, context) => {
   try {
-    const { input } = req.body;
+    const { input } = JSON.parse(event.body);
     const response = await openai.embeddings.create({
       model: 'text-embedding-3-small',
       input
     });
-    res.json({ embedding: response.data[0].embedding });
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ embedding: response.data[0].embedding })
+    };
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: err.message })
+    };
   }
 };
