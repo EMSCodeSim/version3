@@ -1,6 +1,6 @@
 // app.js
 
-import { loadHardcodedResponses, routeUserInput } from './router.js';
+import { loadHardcodedResponses, routeUserInput, loadVectorDb } from './router.js';
 import { initializeScoreTracker, gradeActionBySkillID } from './grading.js';
 import { comboMic } from './mic.js';
 
@@ -173,6 +173,7 @@ async function startScenario() {
   try {
     if (spinner) spinner.style.display = "block";
     await loadHardcodedResponses();
+    await loadVectorDb(); // LOAD BOTH VECTOR DB PARTS
 
     const configRes = await fetch(`${scenarioPath}config.json`);
     if (!configRes.ok) throw new Error("Missing config.json");
