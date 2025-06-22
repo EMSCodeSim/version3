@@ -1,7 +1,7 @@
-// generate_vector_db_batch_multi.js
+// generate_vector_db_batch_multi.mjs
 
-const fs = require('fs');
-const { Configuration, OpenAIApi } = require('openai');
+import fs from 'fs';
+import OpenAI from 'openai';
 
 // ---- EDIT THESE TO MATCH YOUR PROJECT ----
 const INPUT_FILES = [
@@ -12,10 +12,7 @@ const INPUT_FILES = [
 const OUTPUT_FILE = 'vector-db.json';
 const BATCH_SIZE = 100; // 2048 max for OpenAI, 100 is safe and efficient
 
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-const openai = new OpenAIApi(configuration);
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const normalize = q => (q || '').replace(/\s+/g, ' ').trim().toLowerCase();
 
@@ -64,11 +61,11 @@ async function main() {
     const batchQuestions = batch.map(x => x.question || "");
     process.stdout.write(`Embedding batch ${i + 1}-${i + batch.length} of ${deduped.length}... `);
     try {
-      const resp = await openai.createEmbedding({
+      const resp = await openai.embeddings.create({
         model: "text-embedding-3-small",
         input: batchQuestions
       });
-      const embeddings = resp.data.data.map(e => e.embedding);
+      const embeddings = resp.data.map(e => e.embedding);
       for (let j = 0; j < batch.length; ++j) {
         const entry = { ...batch[j], embedding: embeddings[j] };
         result.push(entry);
