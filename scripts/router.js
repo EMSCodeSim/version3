@@ -87,7 +87,7 @@ function matchByTags(userInput) {
 }
 
 // VECTOR MATCH (calls serverless function to get embedding)
-async function findVectorMatch(userInput, threshold = 0.50) {
+async function findVectorMatch(userInput, threshold = 0.30) {
   const embedRes = await fetch('/.netlify/functions/embed', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
