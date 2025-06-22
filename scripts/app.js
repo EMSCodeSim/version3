@@ -259,6 +259,8 @@ async function processUserMessage(message) {
       role: "user"
     });
 
+    console.log("Answer source:", source, matchedEntry);
+
     let replyRole = "patient";
     if (matchedEntry && matchedEntry.role) {
       if (matchedEntry.role.toLowerCase().includes("proctor")) replyRole = "proctor";
@@ -274,13 +276,16 @@ async function processUserMessage(message) {
         ? matchedEntry.ttsAudio
         : "data:audio/mp3;base64," + matchedEntry.ttsAudio;
     }
+
+    // ===== Add the [source] tag for debugging =====
     displayChatPair(
       message,
-      response,
+      `[${source}] ${response}`,
       replyRole,
       ttsAudio,
       matchedEntry && matchedEntry.trigger
     );
+    // ===== End change =====
 
     // === Use Skill Sheet ID for Grading ===
     if (matchedEntry && (matchedEntry.skillSheetID || matchedEntry["Skill Sheet ID"])) {
