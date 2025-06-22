@@ -10,7 +10,6 @@ let patientContext = "";
 let gradingTemplate = {};
 window.scenarioStarted = false;
 
-// --- SCENARIO PICKER LOGIC ---
 let currentScenarioId = 'chest_pain_002';
 
 function getCurrentScenarioPath() {
@@ -232,7 +231,7 @@ async function startScenario() {
     window.scenarioStarted = false;
     showScenarioPicker(true);
   } finally {
-    if (typeof window.hideLoadingSpinner === "function") window.hideLoadingSpinner();
+    if (spinner) spinner.style.display = "none";
   }
 }
 
