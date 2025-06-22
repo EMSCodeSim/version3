@@ -24,6 +24,16 @@
       margin: 0 0 12px 0;
       box-shadow: 0 6px 24px 0 rgba(25,118,210,0.10);
     }
+    #scenario-select-container {
+      max-width: 700px;
+      margin: 18px auto 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    #scenario-select-container[hidden] {
+      display: none !important;
+    }
     #main-header {
       display: flex;
       align-items: center;
@@ -96,18 +106,6 @@
     .toggle-switch input[type="checkbox"]:checked::before {
       transform: translateX(16px);
     }
-
-    #scenario-select-container {
-      max-width: 700px;
-      margin: 18px auto 0 auto;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    #scenario-select-container[hidden] {
-      display: none !important;
-    }
-
     #mainLayout {
       display: flex;
       flex-direction: row;
@@ -154,11 +152,6 @@
     .hide-skill-sheet {
       display: none !important;
       opacity: 0;
-    }
-    .status {
-      color: #14b88c;
-      font-weight: bold;
-      margin-left: 6px;
     }
     #chat-box {
       height: 380px;
@@ -264,6 +257,16 @@
   </style>
 </head>
 <body>
+  <!-- SCENARIO PICKER (only visible before scenario starts) -->
+  <div id="scenario-select-container">
+    <label for="scenario-picker"><b>Choose Scenario:</b></label>
+    <select id="scenario-picker" style="font-size:1.1em;padding:4px 16px;border-radius:7px;">
+      <option value="chest_pain_002">Chest Pain - 55M</option>
+      <option value="allergic_reaction_001">Allergic Reaction - 24F</option>
+    </select>
+    <button id="start-scenario-btn">Start Scenario</button>
+  </div>
+
   <div class="ems-logo-row">
     <svg width="100%" height="100" viewBox="0 0 900 100" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -279,20 +282,9 @@
       </text>
     </svg>
   </div>
-
-  <!-- SCENARIO PICKER (shows only before scenario starts) -->
-  <div id="scenario-select-container">
-    <label for="scenario-picker"><b>Choose Scenario:</b></label>
-    <select id="scenario-picker" style="font-size:1.1em;padding:4px 16px;border-radius:7px;">
-      <option value="chest_pain_002">Chest Pain - 55M</option>
-      <option value="allergic_reaction_001">Allergic Reaction - 24F</option>
-    </select>
-    <button id="start-scenario-btn">Start Scenario</button>
-  </div>
-
   <header id="main-header">
-    <button id="end-button">End Scenario</button>
     <button id="handoff-button">Give Handoff Report</button>
+    <button id="end-button">End Scenario</button>
     <label class="toggle-switch">
       <input type="checkbox" id="learningModeToggle">
       <span>Learning Mode</span>
@@ -315,68 +307,10 @@
       </div>
     </div>
     <div id="skillSheetPane">
-      <h3>NREMT Medical Assessment Skill Sheet</h3>
-      <ul id="skillChecklist">
-        <li id="EMT-B-MED-1">BSI/PPE <span class="status"></span></li>
-        <li id="EMT-B-MED-2">Scene Safety <span class="status"></span></li>
-        <li id="EMT-B-MED-3">Determine MOI/NOI <span class="status"></span></li>
-        <li id="EMT-B-MED-4">Determine Number of Patients <span class="status"></span></li>
-        <li id="EMT-B-MED-5">Request Additional EMS Assistance <span class="status"></span></li>
-        <li id="EMT-B-MED-6">Consider C-Spine Stabilization <span class="status"></span></li>
-        <li id="EMT-B-MED-7">General Impression <span class="status"></span></li>
-        <li id="EMT-B-MED-8">Determine Responsiveness/LOC <span class="status"></span></li>
-        <li id="EMT-B-MED-9">Determine Chief Complaint <span class="status"></span></li>
-        <li id="EMT-B-MED-10">Assess Airway/Breathing <span class="status"></span></li>
-        <li id="EMT-B-MED-11">Initiate Oxygen Therapy <span class="status"></span></li>
-        <li id="EMT-B-MED-12">Assess Circulation (Pulse, Skin, Bleeding) <span class="status"></span></li>
-        <li id="EMT-B-MED-13">Identify Patient Priority & Transport Decision <span class="status"></span></li>
-        <li id="EMT-B-MED-14">OPQRST - Onset <span class="status"></span></li>
-        <li id="EMT-B-MED-15">Provocation <span class="status"></span></li>
-        <li id="EMT-B-MED-16">Quality <span class="status"></span></li>
-        <li id="EMT-B-MED-17">Radiation <span class="status"></span></li>
-        <li id="EMT-B-MED-18">Severity <span class="status"></span></li>
-        <li id="EMT-B-MED-19">Time <span class="status"></span></li>
-        <li id="EMT-B-MED-20">SAMPLE - Signs/Symptoms <span class="status"></span></li>
-        <li id="EMT-B-MED-21">Allergies <span class="status"></span></li>
-        <li id="EMT-B-MED-22">Medications <span class="status"></span></li>
-        <li id="EMT-B-MED-23">Past Medical History <span class="status"></span></li>
-        <li id="EMT-B-MED-24">Last Oral Intake <span class="status"></span></li>
-        <li id="EMT-B-MED-25">Events Leading to Present Illness <span class="status"></span></li>
-        <li id="EMT-B-MED-26">Assess Affected Body/System <span class="status"></span></li>
-        <li id="EMT-B-MED-27">Vital Signs - BP <span class="status"></span></li>
-        <li id="EMT-B-MED-28">Heart Rate <span class="status"></span></li>
-        <li id="EMT-B-MED-29">Respiratory Rate <span class="status"></span></li>
-        <li id="EMT-B-MED-30">Field Impression of Patient <span class="status"></span></li>
-        <li id="EMT-B-MED-31">Interventions <span class="status"></span></li>
-        <li id="EMT-B-MED-32">Demonstrate How & When to Reassess <span class="status"></span></li>
-      </ul>
-      <h4>Critical Failures</h4>
-      <ul>
-        <li>Failure to initiate or call for transport within 15 minutes</li>
-        <li>Failure to provide adequate oxygen therapy</li>
-        <li>Failure to verbalize or demonstrate BSI/PPE before patient contact</li>
-        <li>Failure to assess and treat life-threatening conditions first</li>
-        <li>Failure to manage the patient as a competent EMT</li>
-        <li>Exhibits unsafe behavior</li>
-        <li>Failure to perform all critical steps</li>
-      </ul>
+      <!-- ... skill sheet HTML as in your file ... -->
     </div>
     <div id="handoffInstructionsPane">
-      <h3 style="margin-top:0;color:#d97706;">How to Give a Handoff Report</h3>
-      <ol style="margin:12px 0 0 15px;">
-        <li>State age, gender, chief complaint.</li>
-        <li>Summarize key assessment findings (vitals, exam, history).</li>
-        <li>List major treatments/interventions provided.</li>
-        <li>Report any changes or response to treatment.</li>
-        <li>Current status and recommendations.</li>
-        <li>Be concise, use a clear structure.</li>
-      </ol>
-      <div style="margin-top:11px;font-size:1em;color:#b45309;">
-        <b>MIST Format:</b> <u>M</u>echanism/Complaint, <u>I</u>njuries/Findings, <u>S</u>igns/Vitals, <u>T</u>reatments.
-      </div>
-      <div style="margin-top:18px;font-size:.98em;">
-        <span style="color:#ea580c;">Tip:</span> Speak clearly or type your report below. Your report will be graded automatically!
-      </div>
+      <!-- ... handoff instructions HTML as in your file ... -->
     </div>
   </div>
 
@@ -387,15 +321,13 @@
   <script type="module" src="scripts/handoff_inline.js"></script>
   <script type="module" src="scripts/mic.js"></script>
 
+  <!-- Picker show/hide utility for app.js -->
   <script>
-    // Scenario Picker: hide when scenario is running, show when stopped
     function showScenarioPicker(show) {
       const picker = document.getElementById('scenario-select-container');
       if (picker) picker.hidden = !show;
     }
     window.showScenarioPicker = showScenarioPicker;
-
-    // Initial state: picker is visible
     document.addEventListener('DOMContentLoaded', function() {
       showScenarioPicker(true);
     });
