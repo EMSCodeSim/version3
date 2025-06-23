@@ -1,4 +1,17 @@
 const { OpenAI } = require("openai");
+const admin = require("firebase-admin");
+
+// Initialize Firebase only once
+let firebaseApp;
+if (!admin.apps.length) {
+  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON); // store JSON string in Netlify env var
+  firebaseApp = admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    databaseURL: process.env.FIREBASE_DATABASE_URL // also set this as env var
+  });
+} else {
+  firebaseApp = admin.app();
+}
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -9,7 +22,7 @@ exports.handler = async function(event, context) {
     if (event.httpMethod !== "POST") {
       return { statusCode: 405, body: "Method Not Allowed" };
     }
-    const { content, role } = JSON.parse(event.body);
+    const { content, role, scenarioId = "unknown_scenario" } = JSON.parse(event.body);
 
     if (!content || content.length < 1) {
       return { statusCode: 400, body: JSON.stringify({ error: "Missing content." }) };
@@ -31,7 +44,7 @@ exports.handler = async function(event, context) {
     }
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o", // Or "gpt-4-turbo" if available and cheaper
+      model: "gpt-4o",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content }
@@ -41,6 +54,23 @@ exports.handler = async function(event, context) {
     });
 
     let reply = completion.choices?.[0]?.message?.content?.trim() || "";
+
+    // --- Save Q&A to Firebase Realtime DB ---
+    try {
+      const db = admin.database();
+      const logRef = db.ref(`gpt4turbo_logs/${scenarioId}`);
+      const logEntry = {
+        question: content,
+        answer: reply,
+        timestamp: Date.now(),
+        role: role || "patient"
+      };
+      // Use push for unique key, or set with question as key
+      await logRef.push(logEntry);
+    } catch (fbErr) {
+      console.error("Firebase logging error:", fbErr);
+    }
+
     return {
       statusCode: 200,
       body: JSON.stringify({ reply })
