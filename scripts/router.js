@@ -86,17 +86,6 @@ async function rephraseUserInput(input) {
   }
 }
 
-// Tag match (unchanged)
-function matchByTags(userInput) {
-  const norm = normalize(userInput);
-  for (const entry of hardcodedResponses) {
-    if (!entry.tags || !Array.isArray(entry.tags)) continue;
-    if (entry.tags.some(tag => norm.includes(tag.toLowerCase()))) {
-      return entry;
-    }
-  }
-  return null;
-}
 
 // VECTOR MATCH (calls serverless function to get embedding)
 async function findVectorMatch(userInput, threshold = 0.40) {
