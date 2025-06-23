@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Firebase Q/A Reviewer & Exporter</title>
+  <style>
+    body { font-family: sans-serif; background: #f9fafc; margin: 0; padding: 2rem; }
+    #qa-table { border-collapse: collapse; width: 100%; }
+    #qa-table th, #qa-table td { border: 1px solid #ddd; padding: 8px; }
+    #qa-table th { background: #f3f3f3; }
+    tr.selected { background: #cfe7ff; }
+    .btn { padding: 6px 14px; border: none; background: #4285f4; color: #fff; border-radius: 5px; cursor: pointer; }
+    .btn:hover { background: #206bdb; }
+    .btn-delete { background: #e64b4b; }
+    .btn-delete:hover { background: #b90d0d; }
+    textarea { width: 90%; min-height: 40px; }
+  </style>
+</head>
+<body>
+  <h2>Firebase Q/A Reviewer & Exporter</h2>
+  <div>
+    <label for="scenario-select"><b>Scenario:</b></label>
+    <select id="scenario-select"></select>
+    <button class="btn" onclick="downloadJson()">Export Visible as JSON</button>
+    <span id="status"></span>
+  </div>
+  <table id="qa-table"></table>
+  <script type="module">
+    // --- FILL IN YOUR CONFIG BELOW (from Firebase Console, Web App) ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "ems-code-sim-a315a.firebaseapp.com",
+      databaseURL: "https://ems-code-sim-a315a-default-rtdb.firebaseio.com",
+      projectId: "ems-code-sim-a315a",
+      storageBucket: "ems-code-sim-a315a.appspot.com",
+      messagingSenderId: "100284465695074997295",
+      appId: "YOUR_APP_ID"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // UI elements
+    const table = document.getElementById('qa-table');
+    const scenarioSelect = document.getElementById('scenario-select');
+    const statusSpan = document.getElementById('status');
+
+    let allLogs = {}; // All Q/A, { scenario: {key: {question,answer,...}} }
+    let currentScenario = null;
+
+    // 1. Load scenario list
+    function loadScenarioList() {
+      const logsRef = ref(db, 'gpt4turbo_logs');
+      onValue(logsRef, (snap) => {
+        allLogs = snap.val() || {};
+        scenarioSelect.innerHTML = '';
+        Object.keys(allLogs).forEach(sc => {
+          const opt = document.createElement('option');
+          opt.value = sc;
+          opt.textContent = sc;
+          scenarioSelect.appendChild(opt);
+        });
+        if (!currentScenario || !allLogs[currentScenario]) {
+          currentScenario = Object.keys(allLogs)[0] || null;
+        }
+        scenarioSelect.value = currentScenario;
+        loadTable();
+      });
+    }
+    scenarioSelect.addEventListener('change', () => {
+      currentScenario = scenarioSelect.value;
+      loadTable();
+    });
+
+    // 2. Load Q/A table for selected scenario
+    function loadTable() {
+      table.innerHTML = '';
+      if (!currentScenario || !allLogs[currentScenario]) {
+        table.innerHTML = '<tr><td>No Q/A found for this scenario.</td></tr>';
+        return;
+      }
+      const keys = Object.keys(allLogs[currentScenario]);
+      table.innerHTML = `<tr>
+        <th>#</th>
+        <th>Question</th>
+        <th>Answer</th>
+        <th>Role</th>
+        <th>Time</th>
+        <th>Edit</th>
+        <th>Delete</th>
+      </tr>`;
+      keys.forEach((k, idx) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${idx+1}</td>
+          <td><textarea onchange="markDirty('${k}', 'question', this.value)">${allLogs[currentScenario][k].question||''}</textarea></td>
+          <td><textarea onchange="markDirty('${k}', 'answer', this.value)">${allLogs[currentScenario][k].answer||''}</textarea></td>
+          <td>${allLogs[currentScenario][k].role||''}</td>
+          <td>${formatTime(allLogs[currentScenario][k].timestamp||0)}</td>
+          <td><button class="btn" onclick="saveRow('${k}')">Save</button></td>
+          <td><button class="btn btn-delete" onclick="deleteRow('${k}')">X</button></td>
+        `;
+        table.appendChild(row);
+      });
+    }
+
+    // 3. Edit/save/delete helpers
+    window.markDirty = function(key, field, value) {
+      if (!allLogs[currentScenario][key]._dirty) allLogs[currentScenario][key]._dirty = {};
+      allLogs[currentScenario][key]._dirty[field] = value;
+    }
+    window.saveRow = function(key) {
+      const row = allLogs[currentScenario][key];
+      if (!row._dirty) return;
+      const updates = {};
+      if (row._dirty.question !== undefined) updates['question'] = row._dirty.question;
+      if (row._dirty.answer !== undefined) updates['answer'] = row._dirty.answer;
+      if (Object.keys(updates).length) {
+        const rowRef = ref(db, `gpt4turbo_logs/${currentScenario}/${key}`);
+        update(rowRef, updates).then(() => {
+          statusSpan.textContent = "Saved!";
+          setTimeout(()=>statusSpan.textContent="", 1200);
+        });
+      }
+      delete row._dirty;
+    }
+    window.deleteRow = function(key) {
+      if (!confirm("Delete this entry?")) return;
+      const rowRef = ref(db, `gpt4turbo_logs/${currentScenario}/${key}`);
+      remove(rowRef).then(() => {
+        statusSpan.textContent = "Deleted!";
+        setTimeout(()=>statusSpan.textContent="", 1200);
+      });
+    }
+
+    // 4. Export visible as JSON
+    window.downloadJson = function() {
+      if (!currentScenario || !allLogs[currentScenario]) return;
+      const arr = Object.values(allLogs[currentScenario]).map(entry => ({
+        question: entry.question,
+        answer: entry.answer,
+        role: entry.role || "",
+        timestamp: entry.timestamp || 0
+      }));
+      const blob = new Blob([JSON.stringify(arr, null, 2)], {type: "application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentScenario}_qa.json`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+    }
+
+    function formatTime(ts) {
+      if (!ts) return "";
+      const d = new Date(ts);
+      return d.toLocaleString();
+    }
+
+    // On load
+    loadScenarioList();
+  </script>
+</body>
+</html>
