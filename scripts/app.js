@@ -16,6 +16,11 @@ function getCurrentScenarioPath() {
   return `scenarios/${currentScenarioId}/`;
 }
 
+// ✨ NEW: Helper to get just the scenario ID for routing
+function getCurrentScenarioId() {
+  return currentScenarioId;
+}
+
 function showScenarioPicker(show) {
   const pickerRow = document.getElementById('scenario-select-container');
   if (pickerRow) pickerRow.hidden = !show;
@@ -264,9 +269,10 @@ async function processUserMessage(message) {
   if (!message) return;
 
   try {
-    const scenarioPath = getCurrentScenarioPath();
+    // FIX: use scenarioId, not full scenarioPath!
+    const scenarioId = getCurrentScenarioId();
     const { response, source, matchedEntry } = await routeUserInput(message, {
-      scenarioId: scenarioPath,
+      scenarioId,
       role: "user"
     });
 
