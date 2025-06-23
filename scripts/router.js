@@ -2,63 +2,58 @@
 
 import { getEmbeddings, cosineSimilarity } from './embed.js';
 
+// These will be loaded at scenario start
 let hardcodedResponses = [];
 let vectorDb = [];
 
+// Loads scenario hardcoded DB
 export async function loadHardcodedResponses(scenarioPath) {
   try {
-    // Load all ems_database_part*.json files in the scenario folder
     let i = 1;
-    let newData = [];
+    let all = [];
     while (true) {
-      try {
-        const res = await fetch(`${scenarioPath}ems_database_part${i}.json`);
-        if (!res.ok) break;
-        const part = await res.json();
-        if (Array.isArray(part)) newData = newData.concat(part);
-        i++;
-      } catch (err) {
-        break;
-      }
+      const file = `${scenarioPath}ems_database_part${i}.json`;
+      const res = await fetch(file);
+      if (!res.ok) break;
+      const part = await res.json();
+      if (Array.isArray(part)) all = all.concat(part);
+      i++;
     }
-    hardcodedResponses = newData;
+    hardcodedResponses = all;
   } catch (err) {
     hardcodedResponses = [];
   }
 }
 
+// Loads scenario vector DB
 export async function loadVectorDb(scenarioPath) {
   try {
     let i = 1;
-    let newDb = [];
+    let all = [];
     while (true) {
-      try {
-        const res = await fetch(`${scenarioPath}vector-db-${i}.json`);
-        if (!res.ok) break;
-        const part = await res.json();
-        if (Array.isArray(part)) newDb = newDb.concat(part);
-        i++;
-      } catch (err) {
-        break;
-      }
+      const file = `${scenarioPath}vector-db-${i}.json`;
+      const res = await fetch(file);
+      if (!res.ok) break;
+      const part = await res.json();
+      if (Array.isArray(part)) all = all.concat(part);
+      i++;
     }
-    vectorDb = newDb;
+    vectorDb = all;
   } catch (err) {
     vectorDb = [];
   }
 }
 
-async function matchHardcoded(userMessage, scenarioId) {
-  return (
-    hardcodedResponses.find(entry =>
-      entry.question &&
-      typeof entry.question === "string" &&
-      entry.question.trim().toLowerCase() === userMessage.trim().toLowerCase()
-    ) || null
-  );
+// Exact match (case-insensitive, trimmed)
+async function matchHardcoded(userMessage) {
+  const norm = userMessage.trim().toLowerCase();
+  return hardcodedResponses.find(
+    entry => entry.question && entry.question.trim().toLowerCase() === norm
+  ) || null;
 }
 
-async function matchVector(userMessage, scenarioId) {
+// Vector match
+async function matchVector(userMessage) {
   if (!vectorDb.length) return null;
   try {
     const userEmbedding = await getEmbeddings(userMessage);
@@ -66,20 +61,18 @@ async function matchVector(userMessage, scenarioId) {
     for (const entry of vectorDb) {
       if (entry.embedding) {
         const sim = cosineSimilarity(userEmbedding, entry.embedding);
-        if (sim > best.score) {
-          best = { score: sim, entry };
-        }
+        if (sim > best.score) best = { score: sim, entry };
       }
     }
-    // Adjust threshold as desired
+    // Threshold: adjust as needed
     if (best.score >= 0.86) return best.entry;
     return null;
-  } catch (err) {
+  } catch {
     return null;
   }
 }
 
-// Rephrase match (Netlify function)
+// Rephrase match (optional: you can remove this section too)
 async function matchByRephrase(userMessage, scenarioId) {
   try {
     const res = await fetch('/.netlify/functions/gpt3_rephrase', {
@@ -95,7 +88,7 @@ async function matchByRephrase(userMessage, scenarioId) {
   }
 }
 
-// GPT fallback (Netlify function)
+// GPT fallback
 async function getGPTResponse(userMessage, scenarioId, role = "patient") {
   try {
     const res = await fetch('/.netlify/functions/gpt4-turbo', {
@@ -112,8 +105,8 @@ async function getGPTResponse(userMessage, scenarioId, role = "patient") {
 }
 
 export async function routeUserInput(userMessage, { scenarioId, role = "patient" }) {
-  // 1. Hardcoded match
-  const hardcodedMatch = await matchHardcoded(userMessage, scenarioId);
+  // 1. Hardcoded
+  const hardcodedMatch = await matchHardcoded(userMessage);
   if (hardcodedMatch) {
     return {
       response: hardcodedMatch.answer,
@@ -122,8 +115,8 @@ export async function routeUserInput(userMessage, { scenarioId, role = "patient"
     };
   }
 
-  // 2. Vector match
-  const vectorMatch = await matchVector(userMessage, scenarioId);
+  // 2. Vector
+  const vectorMatch = await matchVector(userMessage);
   if (vectorMatch) {
     return {
       response: vectorMatch.answer,
@@ -132,7 +125,7 @@ export async function routeUserInput(userMessage, { scenarioId, role = "patient"
     };
   }
 
-  // 3. Rephrase match
+  // 3. Rephrase (can be removed if not wanted)
   const rephraseMatch = await matchByRephrase(userMessage, scenarioId);
   if (rephraseMatch) {
     return {
@@ -142,7 +135,7 @@ export async function routeUserInput(userMessage, { scenarioId, role = "patient"
     };
   }
 
-  // 4. Fallback to GPT (and log)
+  // 4. GPT
   const gptResponse = await getGPTResponse(userMessage, scenarioId, role);
   return {
     response: gptResponse,
