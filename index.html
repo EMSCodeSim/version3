@@ -21,7 +21,6 @@
     }
     .ems-logo-row {
       background: linear-gradient(90deg, #1976d2 0%, #20e3c2 100%);
-      padding: 0;
       margin: 0 0 12px 0;
       box-shadow: 0 6px 24px 0 rgba(25,118,210,0.10);
     }
@@ -35,9 +34,8 @@
       background: #fff;
       border-bottom: 2px solid #bae6fd;
       box-shadow: 0 3px 18px 0 rgba(32,227,194,0.05);
-      padding: 12px 0 12px 0;
+      padding: 12px 0;
       letter-spacing: 1.8px;
-      margin-bottom: 0;
     }
     #main-header button,
     #main-header label,
@@ -109,11 +107,12 @@
       width: 100%;
       margin: 0 auto;
       gap: 36px;
+      align-items: flex-start;
     }
     #simulatorPane {
       flex: 2;
-      min-width: 320px;
-      max-width: 700px;
+      min-width: 340px;
+      max-width: 720px;
       padding: 10px;
       background: #fff;
       border-radius: 18px;
@@ -121,19 +120,26 @@
       display: flex;
       flex-direction: column;
     }
-    #skillSheetPane {
+    #skillSheetPane,
+    #handoffInstructionsPane {
       flex: 1;
-      min-width: 230px;
-      max-width: 340px;
+      min-width: 255px;
+      max-width: 380px;
       padding: 20px 18px 20px 22px;
       border-radius: 18px;
       background: #f6fbff;
       box-shadow: 0 2px 10px 0 rgba(32,227,194,0.08);
       border-left: 2px solid #bae6fd;
       margin-left: 0;
-      display: block;
       transition: box-shadow .22s, opacity .18s;
       opacity: 1;
+      display: block;
+    }
+    #handoffInstructionsPane {
+      background: #fffbea;
+      border-left: 2px solid #fcd34d;
+      color: #92400e;
+      display: none;
     }
     .hide-skill-sheet {
       display: none !important;
@@ -207,7 +213,7 @@
         gap: 24px;
         padding: 3vw;
       }
-      #skillSheetPane {
+      #skillSheetPane, #handoffInstructionsPane {
         display: none !important;
       }
       #simulatorPane {
@@ -299,7 +305,38 @@
     <div id="skillSheetPane">
       <h3>NREMT Medical Assessment Skill Sheet</h3>
       <ul id="skillChecklist">
-        <!-- Checklist items dynamically populated by checklist.js -->
+        <li id="EMT-B-MED-1">BSI/PPE <span class="status"></span></li>
+        <li id="EMT-B-MED-2">Scene Safety <span class="status"></span></li>
+        <li id="EMT-B-MED-3">Determine MOI/NOI <span class="status"></span></li>
+        <li id="EMT-B-MED-4">Determine Number of Patients <span class="status"></span></li>
+        <li id="EMT-B-MED-5">Request Additional EMS Assistance <span class="status"></span></li>
+        <li id="EMT-B-MED-6">Consider C-Spine Stabilization <span class="status"></span></li>
+        <li id="EMT-B-MED-7">General Impression <span class="status"></span></li>
+        <li id="EMT-B-MED-8">Determine Responsiveness/LOC <span class="status"></span></li>
+        <li id="EMT-B-MED-9">Determine Chief Complaint <span class="status"></span></li>
+        <li id="EMT-B-MED-10">Assess Airway/Breathing <span class="status"></span></li>
+        <li id="EMT-B-MED-11">Initiate Oxygen Therapy <span class="status"></span></li>
+        <li id="EMT-B-MED-12">Assess Circulation (Pulse, Skin, Bleeding) <span class="status"></span></li>
+        <li id="EMT-B-MED-13">Identify Patient Priority & Transport Decision <span class="status"></span></li>
+        <li id="EMT-B-MED-14">OPQRST - Onset <span class="status"></span></li>
+        <li id="EMT-B-MED-15">Provocation <span class="status"></span></li>
+        <li id="EMT-B-MED-16">Quality <span class="status"></span></li>
+        <li id="EMT-B-MED-17">Radiation <span class="status"></span></li>
+        <li id="EMT-B-MED-18">Severity <span class="status"></span></li>
+        <li id="EMT-B-MED-19">Time <span class="status"></span></li>
+        <li id="EMT-B-MED-20">SAMPLE - Signs/Symptoms <span class="status"></span></li>
+        <li id="EMT-B-MED-21">Allergies <span class="status"></span></li>
+        <li id="EMT-B-MED-22">Medications <span class="status"></span></li>
+        <li id="EMT-B-MED-23">Past Medical History <span class="status"></span></li>
+        <li id="EMT-B-MED-24">Last Oral Intake <span class="status"></span></li>
+        <li id="EMT-B-MED-25">Events Leading to Present Illness <span class="status"></span></li>
+        <li id="EMT-B-MED-26">Assess Affected Body/System <span class="status"></span></li>
+        <li id="EMT-B-MED-27">Vital Signs - BP <span class="status"></span></li>
+        <li id="EMT-B-MED-28">Heart Rate <span class="status"></span></li>
+        <li id="EMT-B-MED-29">Respiratory Rate <span class="status"></span></li>
+        <li id="EMT-B-MED-30">Field Impression of Patient <span class="status"></span></li>
+        <li id="EMT-B-MED-31">Interventions <span class="status"></span></li>
+        <li id="EMT-B-MED-32">Demonstrate How & When to Reassess <span class="status"></span></li>
       </ul>
       <h4>Critical Failures</h4>
       <ul>
@@ -312,40 +349,130 @@
         <li>Failure to perform all critical steps</li>
       </ul>
     </div>
+    <div id="handoffInstructionsPane">
+      <h3 style="margin-top:0;color:#d97706;">How to Give a Handoff Report</h3>
+      <ol style="margin:12px 0 0 15px;">
+        <li>State age, gender, chief complaint.</li>
+        <li>Summarize key assessment findings (vitals, exam, history).</li>
+        <li>List major treatments/interventions provided.</li>
+        <li>Report any changes or response to treatment.</li>
+        <li>Current status and recommendations.</li>
+        <li>Be concise, use a clear structure.</li>
+      </ol>
+      <div style="margin-top:11px;font-size:1em;color:#b45309;">
+        <b>MIST Format:</b> <u>M</u>echanism/Complaint, <u>I</u>njuries/Findings, <u>S</u>igns/Vitals, <u>T</u>reatments.
+      </div>
+      <div style="margin-top:18px;font-size:.98em;">
+        <span style="color:#ea580c;">Tip:</span> Speak clearly or type your report below. Your report will be graded automatically!
+      </div>
+    </div>
   </div>
-  <!-- Load scripts in correct order -->
+
+  <!-- Load app logic and modules -->
   <script type="module" src="scripts/grading.js"></script>
   <script type="module" src="scripts/checklist.js"></script>
   <script type="module" src="scripts/app.js"></script>
   <script type="module" src="scripts/handoff_inline.js"></script>
   <script type="module" src="scripts/mic.js"></script>
+
+  <!-- Button and pane event handlers -->
   <script>
+    window.appendChatBubble = window.appendChatBubble || function(role, html) {
+      var chat = document.getElementById("chat-box");
+      var div = document.createElement("div");
+      div.innerHTML = "<b>" + role + ":</b> " + html;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    };
+
     document.addEventListener("DOMContentLoaded", function () {
       const toggle = document.getElementById("learningModeToggle");
       const skillPane = document.getElementById("skillSheetPane");
-      // Hide skill sheet on mobile always
-      function updateSkillSheetVisibility() {
-        if (window.innerWidth < 900) {
-          skillPane.classList.add("hide-skill-sheet");
-        } else {
-          if (toggle.checked) {
-            skillPane.classList.remove("hide-skill-sheet");
-            skillPane.style.opacity = "1";
-          } else {
-            skillPane.classList.add("hide-skill-sheet");
-            skillPane.style.opacity = "0";
-          }
-        }
-        if (typeof window.updateSkillChecklistUI === "function") {
-          window.updateSkillChecklistUI();
-        }
+      const handoffPane = document.getElementById("handoffInstructionsPane");
+      const startBtn = document.getElementById("start-button");
+      const handoffBtn = document.getElementById("handoff-button");
+      const sendBtn = document.getElementById("send-button");
+      const micBtn = document.getElementById("mic-button");
+      const inp = document.getElementById("user-input");
+      const spinner = document.getElementById("loading-spinner");
+      const scenarioPicker = document.getElementById("scenario-picker");
+
+      function showHandoffInstructions() {
+        if (skillPane) skillPane.style.display = "none";
+        if (handoffPane) handoffPane.style.display = "block";
       }
-      if (toggle && skillPane) {
-        toggle.addEventListener("change", updateSkillSheetVisibility);
-        window.addEventListener("resize", updateSkillSheetVisibility);
-        updateSkillSheetVisibility();
+      function hideHandoffInstructions() {
+        if (skillPane) skillPane.style.display = "";
+        if (handoffPane) handoffPane.style.display = "none";
+      }
+      window.hideHandoffInstructions = hideHandoffInstructions;
+
+      // Learning mode toggle
+      if (toggle && skillPane && handoffPane) {
+        toggle.addEventListener("change", () => {
+          document.body.classList.toggle("learning-mode", toggle.checked);
+          if (toggle.checked) {
+            if (skillPane.style.display !== "none") {
+              skillPane.classList.remove("hide-skill-sheet");
+              skillPane.style.opacity = "1";
+            }
+          } else {
+            if (skillPane.style.display !== "none") {
+              skillPane.classList.add("hide-skill-sheet");
+              skillPane.style.opacity = "0";
+            }
+          }
+          if (typeof window.updateSkillChecklistUI === "function") {
+            window.updateSkillChecklistUI();
+          }
+        });
+      }
+
+      if (startBtn) startBtn.addEventListener("click", () => {
+        if (spinner) spinner.style.display = "block";
+        hideHandoffInstructions();
+        // Pass selected scenario to global, or dispatch event
+        if (scenarioPicker) {
+          window.selectedScenario = scenarioPicker.value;
+        }
+        if (typeof window.startScenario === 'function') window.startScenario();
+      });
+
+      if (handoffBtn) handoffBtn.addEventListener("click", () => {
+        showHandoffInstructions();
+        if (typeof window.startHandoffInline === "function") {
+          window.startHandoffInline();
+        } else {
+          window.appendChatBubble("system", "Handoff module not loaded.");
+        }
+      });
+
+      if (sendBtn) sendBtn.addEventListener("click", () => {
+        if (!inp) return;
+        if (window.handoffActive && typeof window.handleHandoffSubmission === "function") {
+          window.handleHandoffSubmission(inp.value);
+          inp.value = "";
+          return;
+        }
+        if (typeof window.sendMessage === "function") window.sendMessage();
+      });
+
+      if (micBtn && typeof window.comboMic === "function") {
+        micBtn.addEventListener("click", async () => {
+          micBtn.classList.add("recording");
+          try {
+            await window.comboMic();
+          } finally {
+            micBtn.classList.remove("recording");
+          }
+        });
       }
     });
+
+    window.hideLoadingSpinner = function () {
+      const spinner = document.getElementById("loading-spinner");
+      if (spinner) spinner.style.display = "none";
+    };
   </script>
 </body>
 </html>
