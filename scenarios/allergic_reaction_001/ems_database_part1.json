@@ -355,5 +355,115 @@
     "answer": "copy, c-spine has been considered",
     "role": "patient",
     "timestamp": 1750710900342
+  },
+  
+  {
+    "question": "what were you eating",
+    "answer": "All I had was a cookie",
+    "role": "patient",
+    "timestamp": 1750708526620
+  },
+  {
+    "question": "check blood pressure",
+    "answer": "Blood pressure is 106/70",
+    "role": "patient",
+    "timestamp": 1750713258010
+  },
+  {
+    "question": "what is the blood pressure",
+    "answer": "Blood pressure is 104/66",
+    "role": "patient",
+    "timestamp": 1750713269625
+  },
+  {
+    "question": "check respirations",
+    "answer": "Respirations are 22/minute",
+    "role": "patient",
+    "timestamp": 1750713283123
+  },
+  {
+    "question": "check breath sounds",
+    "answer": "Some wheezes are present in all lobes",
+    "role": "patient",
+    "timestamp": 1750713292991
+  },
+  {
+    "question": "check Airway",
+    "answer": "Stridor is present",
+    "role": "patient",
+    "timestamp": 1750713320098
+  },
+  {
+    "question": "do you have a EpiPen",
+    "answer": "Yes, I have an EpiPen but have never used it.",
+    "role": "patient",
+    "timestamp": 1750713405483
+  },
+  {
+    "question": "have you used your EpiPen",
+    "answer": "No, I am not quite sure how to use it.",
+    "role": "patient",
+    "timestamp": 1750713418923
+  },
+  {
+    "question": "on a scale of 1 to 10 how much pain do you have",
+    "answer": "It's not really pain, it's just hard to breath",
+    "role": "patient",
+    "timestamp": 1750713432827
+  },
+  {
+    "question": "does anything make it better or worse",
+    "answer": "Nothing seems to help and it is getting worse, please help",
+    "role": "patient",
+    "timestamp": 1750713509435
+  },
+  {
+    "question": "can you describe your symptoms",
+    "answer": "It feels like my throat is closing shut",
+    "role": "patient",
+    "timestamp": 1750713518248
+  },
+  {
+    "question": "do your symptoms seem to spread anywhere or move anywhere",
+    "answer": "Yeah, the pain started in my chest, kind of like a tightness, and now it feels like it's moving into my left arm and up into my jaw. It's pretty uncomfortable and worrying.",
+    "role": "patient",
+    "timestamp": 1750713539990
+  },
+  {
+    "question": "does it feel like the swelling is getting worse",
+    "answer": "Yeah, it does feel like the swelling is getting worse. It's really uncomfortable.",
+    "role": "patient",
+    "timestamp": 1750713554752
+  },
+  {
+    "question": "what symptoms are you having",
+    "answer": "My tongue and throat are swelling and it's getting hard to breath.",
+    "role": "patient",
+    "timestamp": 1750713566264
+  },
+  {
+    "question": "are you allergic to anything",
+    "answer": "Yes, I am allergic to peanuts",
+    "role": "patient",
+    "timestamp": 1750713575035
+  },
+  {
+    "question": "have you eaten anything with peanuts in it",
+    "answer": "All I had was a cookie, I am not sure what was in it",
+    "role": "patient",
+    "timestamp": 1750713588148
+  },
+  {
+    "question": "do you have any other health problems",
+    "answer": "No, I am a healthy person but I do have a allgery to peanuts",
+    "role": "patient",
+    "timestamp": 1750713611255
+  },
+  {
+    "question": "what were you doing when this started",
+    "answer": "I was just sitting on the couch watching TV and eating cookies.",
+    "role": "patient",
+    "timestamp": 1750713621685
   }
 ]
+
