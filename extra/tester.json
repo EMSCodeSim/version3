@@ -1,0 +1,14 @@
+{
+  "scenarios": {
+    "chest_pain_002": {
+      "hardcodedResponses": [],
+      "vectorDb": [],
+      "config": {}
+    },
+    "allergic_reaction_001": {
+      "hardcodedResponses": [],
+      "vectorDb": [],
+      "config": {}
+    }
+  }
+}
