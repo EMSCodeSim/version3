@@ -1,13 +1,13 @@
 const { OpenAI } = require("openai");
 const admin = require("firebase-admin");
 
-// Initialize Firebase only once
+// Initialize Firebase Admin only once
 let firebaseApp;
 if (!admin.apps.length) {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON); // store JSON string in Netlify env var
+  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
   firebaseApp = admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    databaseURL: process.env.FIREBASE_DATABASE_URL // also set this as env var
+    databaseURL: process.env.FIREBASE_DATABASE_URL // Make sure this is set!
   });
 } else {
   firebaseApp = admin.app();
@@ -65,7 +65,7 @@ exports.handler = async function(event, context) {
         timestamp: Date.now(),
         role: role || "patient"
       };
-      // Use push for unique key, or set with question as key
+      // Use push for unique key
       await logRef.push(logEntry);
     } catch (fbErr) {
       console.error("Firebase logging error:", fbErr);
