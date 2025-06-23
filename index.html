@@ -40,7 +40,8 @@
       margin-bottom: 0;
     }
     #main-header button,
-    #main-header label {
+    #main-header label,
+    #main-header select {
       margin: 0 3px;
     }
     #main-header button {
@@ -212,6 +213,10 @@
       #simulatorPane {
         max-width: 100vw;
       }
+      #scenario-picker {
+        width: 100%;
+        max-width: 100vw;
+      }
     }
     #skillSheetPane h3 {
       font-size: 1.17rem;
@@ -263,6 +268,11 @@
     </svg>
   </div>
   <header id="main-header">
+    <select id="scenario-picker">
+      <option value="chest_pain_002">Chest Pain</option>
+      <option value="allergic_reaction_001">Allergic Reaction</option>
+      <!-- Add more scenarios here -->
+    </select>
     <button id="start-button">Start Scenario</button>
     <button id="handoff-button">Give Handoff Report</button>
     <label class="toggle-switch">
@@ -289,7 +299,7 @@
     <div id="skillSheetPane">
       <h3>NREMT Medical Assessment Skill Sheet</h3>
       <ul id="skillChecklist">
-        <!-- Checklist items dynamically populated -->
+        <!-- Checklist items dynamically populated by checklist.js -->
       </ul>
       <h4>Critical Failures</h4>
       <ul>
@@ -309,16 +319,7 @@
   <script type="module" src="scripts/app.js"></script>
   <script type="module" src="scripts/handoff_inline.js"></script>
   <script type="module" src="scripts/mic.js"></script>
-  
   <script>
-    window.appendChatBubble = window.appendChatBubble || function(role, html) {
-      var chat = document.getElementById("chat-box");
-      var div = document.createElement("div");
-      div.innerHTML = "<b>" + role + ":</b> " + html;
-      chat.appendChild(div);
-      chat.scrollTop = chat.scrollHeight;
-    };
-
     document.addEventListener("DOMContentLoaded", function () {
       const toggle = document.getElementById("learningModeToggle");
       const skillPane = document.getElementById("skillSheetPane");
@@ -344,57 +345,7 @@
         window.addEventListener("resize", updateSkillSheetVisibility);
         updateSkillSheetVisibility();
       }
-
-      // Button handlers
-      const startBtn = document.getElementById("start-button");
-      const handoffBtn = document.getElementById("handoff-button");
-      const sendBtn = document.getElementById("send-button");
-      const micBtn = document.getElementById("mic-button");
-      const inp = document.getElementById("user-input");
-      const spinner = document.getElementById("loading-spinner");
-
-      if (startBtn) startBtn.addEventListener("click", () => {
-        if (spinner) spinner.style.display = "block";
-        if (typeof window.startScenario === 'function') window.startScenario();
-      });
-
-      // --- GIVE HANDOFF REPORT BUTTON ---
-      if (handoffBtn) handoffBtn.addEventListener("click", () => {
-        if (typeof window.startHandoffInline === "function") {
-          window.startHandoffInline();
-        } else {
-          window.appendChatBubble("system", "Handoff module not loaded.");
-        }
-      });
-
-      // --- SEND BUTTON ---
-      if (sendBtn) sendBtn.addEventListener("click", () => {
-        if (!inp) return;
-        if (window.handoffActive && typeof window.handleHandoffSubmission === "function") {
-          window.handleHandoffSubmission(inp.value);
-          inp.value = "";
-          return;
-        }
-        if (typeof window.sendMessage === "function") window.sendMessage();
-      });
-
-      // --- MIC BUTTON ---
-      if (micBtn && typeof window.comboMic === "function") {
-        micBtn.addEventListener("click", async () => {
-          micBtn.classList.add("recording");
-          try {
-            await window.comboMic();
-          } finally {
-            micBtn.classList.remove("recording");
-          }
-        });
-      }
     });
-
-    window.hideLoadingSpinner = function () {
-      const spinner = document.getElementById("loading-spinner");
-      if (spinner) spinner.style.display = "none";
-    };
   </script>
 </body>
 </html>
