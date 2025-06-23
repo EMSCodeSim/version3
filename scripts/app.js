@@ -10,15 +10,11 @@ let patientContext = "";
 let gradingTemplate = {};
 window.scenarioStarted = false;
 
-let currentScenarioId = 'chest_pain_002';
+let currentScenarioId = 'chest_pain_002'; // Default scenario (update as needed)
+let currentScenarioPath = getCurrentScenarioPath();
 
 function getCurrentScenarioPath() {
   return `scenarios/${currentScenarioId}/`;
-}
-
-// ✨ NEW: Helper to get just the scenario ID for routing
-function getCurrentScenarioId() {
-  return currentScenarioId;
 }
 
 function showScenarioPicker(show) {
@@ -179,17 +175,18 @@ async function startScenario() {
   window.scenarioStarted = true;
   showScenarioPicker(false);
 
-  const scenarioPath = getCurrentScenarioPath();
+  currentScenarioPath = getCurrentScenarioPath();
+
   const spinner = document.getElementById('loading-spinner');
   try {
     if (spinner) spinner.style.display = "block";
 
-    // Load hardcoded and vector DB (using current scenario)
-    await loadHardcodedResponses(scenarioPath);
-    await loadVectorDb(scenarioPath);
+    // Load hardcoded and vector DB (using current scenario path)
+    await loadHardcodedResponses(currentScenarioPath);
+    await loadVectorDb(currentScenarioPath);
 
     // Load config
-    const configRes = await fetch(`${scenarioPath}config.json`);
+    const configRes = await fetch(`${currentScenarioPath}config.json`);
     if (!configRes.ok) throw new Error("Missing config.json");
     const config = await configRes.json();
 
@@ -218,7 +215,7 @@ async function startScenario() {
     if (chatBox) {
       chatBox.innerHTML = ""; // clear previous content
       const img = document.createElement("img");
-      img.src = `${scenarioPath}scene1.PNG`;
+      img.src = `${currentScenarioPath}scene1.PNG`;
       img.alt = "Scene Image";
       img.style.maxWidth = "100%";
       img.style.borderRadius = "10px";
@@ -269,10 +266,9 @@ async function processUserMessage(message) {
   if (!message) return;
 
   try {
-    // FIX: use scenarioId, not full scenarioPath!
-    const scenarioId = getCurrentScenarioId();
+    const scenarioPath = getCurrentScenarioPath();
     const { response, source, matchedEntry } = await routeUserInput(message, {
-      scenarioId,
+      scenarioId: scenarioPath, // <-- Full path, as expected by your router!
       role: "user"
     });
 
@@ -320,6 +316,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (picker) {
     picker.addEventListener('change', (e) => {
       currentScenarioId = e.target.value;
+      currentScenarioPath = getCurrentScenarioPath();
     });
   }
 
@@ -328,6 +325,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (startBtn) {
     startBtn.addEventListener('click', () => {
       currentScenarioId = picker.value;
+      currentScenarioPath = getCurrentScenarioPath();
       startScenario();
     });
   }
