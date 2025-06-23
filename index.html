@@ -21,18 +21,9 @@
     }
     .ems-logo-row {
       background: linear-gradient(90deg, #1976d2 0%, #20e3c2 100%);
+      padding: 0;
       margin: 0 0 12px 0;
       box-shadow: 0 6px 24px 0 rgba(25,118,210,0.10);
-    }
-    #scenario-select-container {
-      max-width: 700px;
-      margin: 18px auto 0 auto;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-    #scenario-select-container[hidden] {
-      display: none !important;
     }
     #main-header {
       display: flex;
@@ -44,8 +35,9 @@
       background: #fff;
       border-bottom: 2px solid #bae6fd;
       box-shadow: 0 3px 18px 0 rgba(32,227,194,0.05);
-      padding: 12px 0;
+      padding: 12px 0 12px 0;
       letter-spacing: 1.8px;
+      margin-bottom: 0;
     }
     #main-header button,
     #main-header label {
@@ -106,6 +98,7 @@
     .toggle-switch input[type="checkbox"]:checked::before {
       transform: translateX(16px);
     }
+
     #mainLayout {
       display: flex;
       flex-direction: row;
@@ -115,12 +108,11 @@
       width: 100%;
       margin: 0 auto;
       gap: 36px;
-      align-items: flex-start;
     }
     #simulatorPane {
       flex: 2;
-      min-width: 340px;
-      max-width: 720px;
+      min-width: 320px;
+      max-width: 700px;
       padding: 10px;
       background: #fff;
       border-radius: 18px;
@@ -128,30 +120,28 @@
       display: flex;
       flex-direction: column;
     }
-    #skillSheetPane,
-    #handoffInstructionsPane {
+    #skillSheetPane {
       flex: 1;
-      min-width: 255px;
-      max-width: 380px;
+      min-width: 230px;
+      max-width: 340px;
       padding: 20px 18px 20px 22px;
       border-radius: 18px;
       background: #f6fbff;
       box-shadow: 0 2px 10px 0 rgba(32,227,194,0.08);
       border-left: 2px solid #bae6fd;
       margin-left: 0;
+      display: block;
       transition: box-shadow .22s, opacity .18s;
       opacity: 1;
-      display: block;
-    }
-    #handoffInstructionsPane {
-      background: #fffbea;
-      border-left: 2px solid #fcd34d;
-      color: #92400e;
-      display: none;
     }
     .hide-skill-sheet {
       display: none !important;
       opacity: 0;
+    }
+    .status {
+      color: #14b88c;
+      font-weight: bold;
+      margin-left: 6px;
     }
     #chat-box {
       height: 380px;
@@ -216,7 +206,7 @@
         gap: 24px;
         padding: 3vw;
       }
-      #skillSheetPane, #handoffInstructionsPane {
+      #skillSheetPane {
         display: none !important;
       }
       #simulatorPane {
@@ -257,16 +247,6 @@
   </style>
 </head>
 <body>
-  <!-- SCENARIO PICKER (only visible before scenario starts) -->
-  <div id="scenario-select-container">
-    <label for="scenario-picker"><b>Choose Scenario:</b></label>
-    <select id="scenario-picker" style="font-size:1.1em;padding:4px 16px;border-radius:7px;">
-      <option value="chest_pain_002">Chest Pain - 55M</option>
-      <option value="allergic_reaction_001">Allergic Reaction - 24F</option>
-    </select>
-    <button id="start-scenario-btn">Start Scenario</button>
-  </div>
-
   <div class="ems-logo-row">
     <svg width="100%" height="100" viewBox="0 0 900 100" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -283,8 +263,8 @@
     </svg>
   </div>
   <header id="main-header">
+    <button id="start-button">Start Scenario</button>
     <button id="handoff-button">Give Handoff Report</button>
-    <button id="end-button">End Scenario</button>
     <label class="toggle-switch">
       <input type="checkbox" id="learningModeToggle">
       <span>Learning Mode</span>
@@ -307,30 +287,114 @@
       </div>
     </div>
     <div id="skillSheetPane">
-      <!-- ... skill sheet HTML as in your file ... -->
-    </div>
-    <div id="handoffInstructionsPane">
-      <!-- ... handoff instructions HTML as in your file ... -->
+      <h3>NREMT Medical Assessment Skill Sheet</h3>
+      <ul id="skillChecklist">
+        <!-- Checklist items dynamically populated -->
+      </ul>
+      <h4>Critical Failures</h4>
+      <ul>
+        <li>Failure to initiate or call for transport within 15 minutes</li>
+        <li>Failure to provide adequate oxygen therapy</li>
+        <li>Failure to verbalize or demonstrate BSI/PPE before patient contact</li>
+        <li>Failure to assess and treat life-threatening conditions first</li>
+        <li>Failure to manage the patient as a competent EMT</li>
+        <li>Exhibits unsafe behavior</li>
+        <li>Failure to perform all critical steps</li>
+      </ul>
     </div>
   </div>
-
-  <!-- Load app logic and modules -->
+  <!-- Load scripts in correct order -->
   <script type="module" src="scripts/grading.js"></script>
   <script type="module" src="scripts/checklist.js"></script>
   <script type="module" src="scripts/app.js"></script>
   <script type="module" src="scripts/handoff_inline.js"></script>
   <script type="module" src="scripts/mic.js"></script>
-
-  <!-- Picker show/hide utility for app.js -->
+  
   <script>
-    function showScenarioPicker(show) {
-      const picker = document.getElementById('scenario-select-container');
-      if (picker) picker.hidden = !show;
-    }
-    window.showScenarioPicker = showScenarioPicker;
-    document.addEventListener('DOMContentLoaded', function() {
-      showScenarioPicker(true);
+    window.appendChatBubble = window.appendChatBubble || function(role, html) {
+      var chat = document.getElementById("chat-box");
+      var div = document.createElement("div");
+      div.innerHTML = "<b>" + role + ":</b> " + html;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    };
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const toggle = document.getElementById("learningModeToggle");
+      const skillPane = document.getElementById("skillSheetPane");
+      // Hide skill sheet on mobile always
+      function updateSkillSheetVisibility() {
+        if (window.innerWidth < 900) {
+          skillPane.classList.add("hide-skill-sheet");
+        } else {
+          if (toggle.checked) {
+            skillPane.classList.remove("hide-skill-sheet");
+            skillPane.style.opacity = "1";
+          } else {
+            skillPane.classList.add("hide-skill-sheet");
+            skillPane.style.opacity = "0";
+          }
+        }
+        if (typeof window.updateSkillChecklistUI === "function") {
+          window.updateSkillChecklistUI();
+        }
+      }
+      if (toggle && skillPane) {
+        toggle.addEventListener("change", updateSkillSheetVisibility);
+        window.addEventListener("resize", updateSkillSheetVisibility);
+        updateSkillSheetVisibility();
+      }
+
+      // Button handlers
+      const startBtn = document.getElementById("start-button");
+      const handoffBtn = document.getElementById("handoff-button");
+      const sendBtn = document.getElementById("send-button");
+      const micBtn = document.getElementById("mic-button");
+      const inp = document.getElementById("user-input");
+      const spinner = document.getElementById("loading-spinner");
+
+      if (startBtn) startBtn.addEventListener("click", () => {
+        if (spinner) spinner.style.display = "block";
+        if (typeof window.startScenario === 'function') window.startScenario();
+      });
+
+      // --- GIVE HANDOFF REPORT BUTTON ---
+      if (handoffBtn) handoffBtn.addEventListener("click", () => {
+        if (typeof window.startHandoffInline === "function") {
+          window.startHandoffInline();
+        } else {
+          window.appendChatBubble("system", "Handoff module not loaded.");
+        }
+      });
+
+      // --- SEND BUTTON ---
+      if (sendBtn) sendBtn.addEventListener("click", () => {
+        if (!inp) return;
+        if (window.handoffActive && typeof window.handleHandoffSubmission === "function") {
+          window.handleHandoffSubmission(inp.value);
+          inp.value = "";
+          return;
+        }
+        if (typeof window.sendMessage === "function") window.sendMessage();
+      });
+
+      // --- MIC BUTTON ---
+      if (micBtn && typeof window.comboMic === "function") {
+        micBtn.addEventListener("click", async () => {
+          micBtn.classList.add("recording");
+          try {
+            await window.comboMic();
+          } finally {
+            micBtn.classList.remove("recording");
+          }
+        });
+      }
     });
+
+    window.hideLoadingSpinner = function () {
+      const spinner = document.getElementById("loading-spinner");
+      if (spinner) spinner.style.display = "none";
+    };
   </script>
 </body>
 </html>
