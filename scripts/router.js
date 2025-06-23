@@ -153,12 +153,6 @@ export async function routeUserInput(message, { scenarioId, role }) {
     console.error("Rephrase search failed:", err);
   }
 
-  // 4. Tag match
-  const tagMatch = matchByTags(message);
-  if (tagMatch && (tagMatch.response || tagMatch.answer)) {
-    return { response: tagMatch.response || tagMatch.answer, source: "tag-match", matchedEntry: tagMatch };
-  }
-
   // 5. GPT fallback
   try {
     const res = await fetch("/.netlify/functions/gpt4-turbo", {
