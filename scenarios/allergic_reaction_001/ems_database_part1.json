@@ -162,5 +162,198 @@
     "answer": "You continue to monitor her vitals and symptoms during transport.",
     "scoreCategory": "Ongoing Assessment",
     "tags": ["reassessment", "vitals", "monitoring", "transport"]
+  },
+
+  {
+    "question": "what were you eating",
+    "answer": "All I had was a cookie",
+    "role": "patient",
+    "timestamp": 1750708526620
+  },
+  {
+    "question": "scene safety",
+    "answer": "The scene is safe",
+    "role": "patient",
+    "timestamp": 1750710337524
+  },
+  {
+    "question": "how many patients",
+    "answer": "you have only one patient",
+    "role": "patient",
+    "timestamp": 1750710353788
+  },
+  {
+    "question": "bsi",
+    "answer": "Proper BSI is on",
+    "role": "patient",
+    "timestamp": 1750710370324
+  },
+  {
+    "question": "I will put on gloves",
+    "answer": "Proper BSI is on",
+    "role": "patient",
+    "timestamp": 1750710387539
+  },
+  {
+    "question": "Call for ALS",
+    "answer": "ALS is unable to respond at this time",
+    "role": "patient",
+    "timestamp": 1750710402756
+  },
+  {
+    "question": "I would consider ALS",
+    "answer": "ALS is unable to respond at this time",
+    "role": "patient",
+    "timestamp": 1750710416694
+  },
+  {
+    "question": "hello, what is going on today",
+    "answer": "Hi, um, well, I'm having really bad reaction to something I ate",
+    "role": "patient",
+    "timestamp": 1750710435749
+  },
+  {
+    "question": "what is your name",
+    "answer": "My name is Sarah Thompson.",
+    "role": "patient",
+    "timestamp": 1750710443158
+  },
+  {
+    "question": "how can I help you",
+    "answer": "I’m not feeling too well. I feel like my tongue is swelling up and it is getting hard to breath",
+    "role": "patient",
+    "timestamp": 1750710462957
+  },
+  {
+    "question": "are you having chest pain",
+    "answer": "No, I do not have any chest pain",
+    "role": "patient",
+    "timestamp": 1750710476739
+  },
+  {
+    "question": "do you have any SOB",
+    "answer": "Yeah, I'm feeling a bit short of breath right now. It's kind of hard to take a deep breath.",
+    "role": "patient",
+    "timestamp": 1750710493529
+  },
+  {
+    "question": "when did you eat last",
+    "answer": "I had a cookie about 15 minutes ago",
+    "role": "patient",
+    "timestamp": 1750710507267
+  },
+  {
+    "question": "what were you eating",
+    "answer": "I just had a cookie",
+    "role": "patient",
+    "timestamp": 1750710516907
+  },
+  {
+    "question": "what is your medical history",
+    "answer": "I have a history of allergic reactions to peanuts",
+    "role": "patient",
+    "timestamp": 1750710530751
+  },
+  {
+    "question": "do you have any allgeries",
+    "answer": "Yes, I'm allergic to peanuts",
+    "role": "patient",
+    "timestamp": 1750710548884
+  },
+  {
+    "question": "do you take any medications",
+    "answer": "Yes, I do have a EPI Pen but have never used it",
+    "role": "patient",
+    "timestamp": 1750710584693
+  },
+  {
+    "question": "check a blood pressure",
+    "answer": "The blood pressure is 110/70",
+    "role": "patient",
+    "timestamp": 1750710594410
+  },
+  {
+    "question": "check pulse",
+    "answer": "The pulse is 102 and regular",
+    "role": "patient",
+    "timestamp": 1750710601876
+  },
+  {
+    "question": "check SaO2",
+    "answer": "SaO2 is 91%",
+    "role": "patient",
+    "timestamp": 1750710613920
+  },
+  {
+    "question": "Give patient .3mg EPI",
+    "answer": "EPI has been given",
+    "role": "patient",
+    "timestamp": 1750710634206
+  },
+  {
+    "question": "what were you doing when it started",
+    "answer": "I was just sitting on the couch watching TV when I started.",
+    "role": "patient",
+    "timestamp": 1750710680196
+  },
+  {
+    "question": "how would you describe this feeling",
+    "answer": "It's hard to explain, but it feels like my tongue and throat are swelling, it's getting hard to breath.",
+    "role": "patient",
+    "timestamp": 1750710702937
+  },
+  {
+    "question": "do you have any pain",
+    "answer": "I would not really call it pain, just a odd feeling in my throat",
+    "role": "patient",
+    "timestamp": 1750710714803
+  },
+  {
+    "question": "what is your past medical history",
+    "answer": "I have no medical problems, but I am allergic to peanuts",
+    "role": "patient",
+    "timestamp": 1750710737790
+  },
+  {
+    "question": "transport emergent to hospital",
+    "answer": "You are now transporting emergent to the hospital",
+    "role": "patient",
+    "timestamp": 1750710760100
+  },
+  {
+    "question": "place patient on 15L O2 NRB",
+    "answer": "The patient is now on oxygen",
+    "role": "patient",
+    "timestamp": 1750710776686
+  },
+  {
+    "question": "recheck vitals every 5 minutes",
+    "answer": "copy, you will recheck vitals every 5 minutes.",
+    "role": "patient",
+    "timestamp": 1750710794503
+  },
+  {
+    "question": "check skin",
+    "answer": "skin looks hot and flushed with a rash on the chest",
+    "role": "patient",
+    "timestamp": 1750710808940
+  },
+  {
+    "question": "any nauses",
+    "answer": "Yeah, I do feel a bit nauseous, like I might throw up.",
+    "role": "patient",
+    "timestamp": 1750710842333
+  },
+  {
+    "question": "has this ever happened to you before",
+    "answer": "Yes, I had a reaction like this once when I was a Kid",
+    "role": "patient",
+    "timestamp": 1750710860229
+  },
+  {
+    "question": "I would consider c spine",
+    "answer": "copy, c-spine has been considered",
+    "role": "patient",
+    "timestamp": 1750710900342
   }
 ]
