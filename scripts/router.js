@@ -1,187 +1,152 @@
 // router.js
 
+import { getEmbeddings, cosineSimilarity } from './embed.js';
+
 let hardcodedResponses = [];
 let vectorDb = [];
-window.hardcodedResponsesArray = hardcodedResponses;
 
-// Load hardcoded responses for current scenario
 export async function loadHardcodedResponses(scenarioPath) {
-  // Use scenarioPath, e.g. 'scenarios/allergic_reaction_001/'
-  const files = [
-    `${scenarioPath}ems_database_part1.json`,
-    `${scenarioPath}ems_database_part2.json`,
-    `${scenarioPath}ems_database_part3.json`
-  ];
-  hardcodedResponses.length = 0;
-  for (const file of files) {
-    try {
-      const resp = await fetch(file);
-      if (!resp.ok) throw new Error(`Failed to load ${file}`);
-      const obj = await resp.json();
-      // Accept array or object style
-      if (Array.isArray(obj)) {
-        hardcodedResponses.push(...obj);
-      } else {
-        hardcodedResponses.push(...Object.values(obj));
+  try {
+    // Load all ems_database_part*.json files in the scenario folder
+    let i = 1;
+    let newData = [];
+    while (true) {
+      try {
+        const res = await fetch(`${scenarioPath}ems_database_part${i}.json`);
+        if (!res.ok) break;
+        const part = await res.json();
+        if (Array.isArray(part)) newData = newData.concat(part);
+        i++;
+      } catch (err) {
+        break;
       }
-    } catch (err) {
-      console.error(`Failed to load ${file}:`, err);
     }
+    hardcodedResponses = newData;
+  } catch (err) {
+    hardcodedResponses = [];
   }
-  window.hardcodedResponsesArray = hardcodedResponses;
 }
 
-// Load vector DB for current scenario
 export async function loadVectorDb(scenarioPath) {
-  const files = [
-    `${scenarioPath}vector-db-1.json`,
-    `${scenarioPath}vector-db-2.json`
-  ];
-  vectorDb.length = 0;
-  for (const file of files) {
-    try {
-      const resp = await fetch(file);
-      if (!resp.ok) throw new Error(`Failed to load ${file}`);
-      const arr = await resp.json();
-      vectorDb.push(...arr);
-    } catch (err) {
-      console.error(`Failed to load ${file}:`, err);
+  try {
+    let i = 1;
+    let newDb = [];
+    while (true) {
+      try {
+        const res = await fetch(`${scenarioPath}vector-db-${i}.json`);
+        if (!res.ok) break;
+        const part = await res.json();
+        if (Array.isArray(part)) newDb = newDb.concat(part);
+        i++;
+      } catch (err) {
+        break;
+      }
     }
+    vectorDb = newDb;
+  } catch (err) {
+    vectorDb = [];
   }
-  window.vectorDbArray = vectorDb;
 }
 
-// Normalize helper
-function normalize(str) {
-  return (str || "").trim().toLowerCase().replace(/[^\w\s]/g, "");
+async function matchHardcoded(userMessage, scenarioId) {
+  return (
+    hardcodedResponses.find(entry =>
+      entry.question &&
+      typeof entry.question === "string" &&
+      entry.question.trim().toLowerCase() === userMessage.trim().toLowerCase()
+    ) || null
+  );
 }
 
-// Cosine similarity helper
-function cosineSimilarity(a, b) {
-  let dot = 0, normA = 0, normB = 0;
-  for (let i = 0; i < a.length; ++i) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
+async function matchVector(userMessage, scenarioId) {
+  if (!vectorDb.length) return null;
+  try {
+    const userEmbedding = await getEmbeddings(userMessage);
+    let best = { score: -1, entry: null };
+    for (const entry of vectorDb) {
+      if (entry.embedding) {
+        const sim = cosineSimilarity(userEmbedding, entry.embedding);
+        if (sim > best.score) {
+          best = { score: sim, entry };
+        }
+      }
+    }
+    // Adjust threshold as desired
+    if (best.score >= 0.86) return best.entry;
+    return null;
+  } catch (err) {
+    return null;
   }
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
-// Rephrase match: call Netlify function to rephrase user input
-async function rephraseUserInput(input) {
+// Rephrase match (Netlify function)
+async function matchByRephrase(userMessage, scenarioId) {
   try {
     const res = await fetch('/.netlify/functions/gpt3_rephrase', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: input })
+      body: JSON.stringify({ question: userMessage, scenarioId })
     });
-    const data = await res.json();
-    if (res.ok && data.rephrased) {
-      return data.rephrased;
-    }
-    return null;
-  } catch (err) {
-    console.error("Rephrase failed:", err);
+    if (!res.ok) return null;
+    const { match } = await res.json();
+    return match || null;
+  } catch {
     return null;
   }
 }
 
-// Tag match (unchanged)
-function matchByTags(userInput) {
-  const norm = normalize(userInput);
-  for (const entry of hardcodedResponses) {
-    if (!entry.tags || !Array.isArray(entry.tags)) continue;
-    if (entry.tags.some(tag => norm.includes(tag.toLowerCase()))) {
-      return entry;
-    }
+// GPT fallback (Netlify function)
+async function getGPTResponse(userMessage, scenarioId, role = "patient") {
+  try {
+    const res = await fetch('/.netlify/functions/gpt4-turbo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: userMessage, role, scenarioId })
+    });
+    if (!res.ok) throw new Error("GPT call failed");
+    const { reply } = await res.json();
+    return reply || "I'm not sure how to answer that.";
+  } catch {
+    return "I'm not sure how to answer that.";
   }
-  return null;
 }
 
-// VECTOR MATCH (calls serverless function to get embedding)
-async function findVectorMatch(userInput, threshold = 0.40) {
-  const embedRes = await fetch('/.netlify/functions/embed', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ input: userInput })
-  });
-  const { embedding } = await embedRes.json();
-  if (!embedding) throw new Error('No embedding generated.');
-
-  let bestScore = -1, bestEntry = null;
-  for (const entry of vectorDb) {
-    if (!entry.embedding || entry.embedding.length === 0) continue;
-    const sim = cosineSimilarity(embedding, entry.embedding);
-    if (sim > bestScore) {
-      bestScore = sim;
-      bestEntry = entry;
-    }
-  }
-  if (bestScore >= threshold) return { entry: bestEntry, score: bestScore };
-  return null;
-}
-
-// === MATCH ORDER: hardcoded → vector → rephrase → tag → GPT ===
-export async function routeUserInput(message, { scenarioId, role }) {
-  const norm = normalize(message);
-
-  // 1. Exact match
-  const match = hardcodedResponses.find(entry =>
-    normalize(entry.question) === norm ||
-    normalize(entry.userQuestion) === norm
-  );
-  if (match && (match.response || match.answer)) {
-    return { response: match.response || match.answer, source: "hardcoded", matchedEntry: match };
+export async function routeUserInput(userMessage, { scenarioId, role = "patient" }) {
+  // 1. Hardcoded match
+  const hardcodedMatch = await matchHardcoded(userMessage, scenarioId);
+  if (hardcodedMatch) {
+    return {
+      response: hardcodedMatch.answer,
+      source: "hardcoded",
+      matchedEntry: hardcodedMatch
+    };
   }
 
   // 2. Vector match
-  try {
-    const vectorRes = await findVectorMatch(message, 0.80);
-    if (vectorRes && (vectorRes.entry.response || vectorRes.entry.answer)) {
-      return {
-        response: vectorRes.entry.response || vectorRes.entry.answer,
-        source: "vector",
-        matchedEntry: vectorRes.entry
-      };
-    }
-  } catch (err) {
-    console.error("Vector search failed:", err);
+  const vectorMatch = await matchVector(userMessage, scenarioId);
+  if (vectorMatch) {
+    return {
+      response: vectorMatch.answer,
+      source: "vector",
+      matchedEntry: vectorMatch
+    };
   }
 
-  // 3. Rephrase match (uses gpt3_rephrase)
-  try {
-    const rephrased = await rephraseUserInput(message);
-    if (rephrased) {
-      const rephraseMatch = hardcodedResponses.find(entry =>
-        normalize(entry.question) === normalize(rephrased) ||
-        normalize(entry.userQuestion) === normalize(rephrased)
-      );
-      if (rephraseMatch && (rephraseMatch.response || rephraseMatch.answer)) {
-        return { response: rephraseMatch.response || rephraseMatch.answer, source: "rephrase", matchedEntry: rephraseMatch };
-      }
-    }
-  } catch (err) {
-    console.error("Rephrase search failed:", err);
+  // 3. Rephrase match
+  const rephraseMatch = await matchByRephrase(userMessage, scenarioId);
+  if (rephraseMatch) {
+    return {
+      response: rephraseMatch.answer,
+      source: "rephrase",
+      matchedEntry: rephraseMatch
+    };
   }
 
-  // 4. Tag match
-  const tagMatch = matchByTags(message);
-  if (tagMatch && (tagMatch.response || tagMatch.answer)) {
-    return { response: tagMatch.response || tagMatch.answer, source: "tag-match", matchedEntry: tagMatch };
-  }
-
-  // 5. GPT fallback
-  try {
-    const res = await fetch("/.netlify/functions/gpt4-turbo", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: message })
-    });
-    const data = await res.json();
-    if (!res.ok || !data.reply) throw new Error(data.error || "GPT failed");
-    return { response: data.reply, source: "gpt", matchedEntry: null };
-  } catch (err) {
-    console.error("GPT fallback failed:", err.message);
-    return { response: "❌ No response from AI.", source: "gpt", matchedEntry: null };
-  }
+  // 4. Fallback to GPT (and log)
+  const gptResponse = await getGPTResponse(userMessage, scenarioId, role);
+  return {
+    response: gptResponse,
+    source: "gpt4-turbo",
+    matchedEntry: null
+  };
 }
