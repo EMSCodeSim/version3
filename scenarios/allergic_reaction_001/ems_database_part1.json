@@ -1,469 +1,625 @@
-[
-  {
+{
+  "0": {
     "question": "Is the scene safe?",
     "answer": "The scene is safe. There are no hazards present.",
     "scoreCategory": "Scene Size-up",
-    "tags": ["scene safety", "bsi", "hazards", "ppe"]
+    "tags": [
+      "scene safety",
+      "bsi",
+      "hazards",
+      "ppe"
+    ],
+    "skillSheetID": "sceneSafety"
   },
-  {
+  "1": {
     "question": "Do I need additional resources?",
     "answer": "You have your partner, and ALS backup is en route if needed.",
     "scoreCategory": "Scene Size-up",
-    "tags": ["additional resources", "als", "scene size-up"]
+    "tags": [
+      "additional resources",
+      "als",
+      "scene size-up"
+    ],
+    "skillSheetID": "requestsAdditionalResources"
   },
-  {
+  "2": {
     "question": "What do I see?",
     "answer": "You see a 24-year-old female sitting on the couch, anxious and scratching at red, raised hives on her neck and arms. She is pale and appears short of breath.",
     "scoreCategory": "Initial Impression",
-    "tags": ["general impression", "appearance", "hives", "patient look", "scene"],
-    "trigger": "patient_with_hives.jpg"
+    "tags": [
+      "general impression",
+      "appearance",
+      "hives",
+      "patient look",
+      "scene"
+    ],
+    "trigger": "patient_with_hives.jpg",
+    "skillSheetID": "generalImpression"
   },
-  {
+  "3": {
     "question": "Is there any life threat?",
     "answer": "The patient has difficulty breathing, wheezing, and swelling of her lips and tongue—these are immediate life threats.",
     "scoreCategory": "Primary Assessment",
-    "tags": ["life threats", "anaphylaxis", "airway swelling", "scene size-up"]
+    "tags": [
+      "life threats",
+      "anaphylaxis",
+      "airway swelling",
+      "scene size-up"
+    ],
+    "skillSheetID": "generalImpression"
   },
-  {
+  "4": {
     "question": "What is her airway status?",
     "answer": "Her airway is open, but you note mild swelling of her lips and tongue.",
     "scoreCategory": "Airway",
-    "tags": ["airway", "assessment", "swelling", "primary"]
+    "tags": [
+      "airway",
+      "assessment",
+      "swelling",
+      "primary"
+    ],
+    "skillSheetID": "airway"
   },
-  {
+  "5": {
     "question": "How is her breathing?",
     "answer": "She is breathing rapidly, and you hear diffuse wheezing throughout both lung fields.",
     "scoreCategory": "Breathing",
-    "tags": ["breathing", "respiratory", "wheezing", "primary assessment"]
+    "tags": [
+      "breathing",
+      "respiratory",
+      "wheezing",
+      "primary assessment"
+    ],
+    "skillSheetID": "airway"
   },
-  {
+  "6": {
     "question": "How is her circulation?",
     "answer": "She is pale, cool, diaphoretic with a rapid pulse. Capillary refill is about 2 seconds.",
     "scoreCategory": "Circulation",
-    "tags": ["circulation", "shock", "cap refill", "skin", "primary"]
+    "tags": [
+      "circulation",
+      "shock",
+      "cap refill",
+      "skin",
+      "primary"
+    ],
+    "skillSheetID": "circulation"
   },
-  {
+  "7": {
     "question": "What are her vitals?",
     "answer": "BP 98/56, HR 124, RR 28, SpO2 91%, Temp 98.6°F.",
     "scoreCategory": "Vital Signs",
-    "tags": ["vital signs", "assessment", "primary", "bp", "hr", "spo2"]
+    "tags": [
+      "vital signs",
+      "assessment",
+      "primary",
+      "bp",
+      "hr",
+      "spo2"
+    ],
+    "skillSheetID": "obtainsBaselineVitalsBP"
   },
-  {
+  "8": {
     "question": "Describe her skin signs.",
     "answer": "Her skin is pale, cool, and clammy. She has raised hives on her neck and arms.",
     "scoreCategory": "Skin Signs",
-    "tags": ["skin signs", "hives", "assessment", "primary"]
+    "tags": [
+      "skin signs",
+      "hives",
+      "assessment",
+      "primary"
+    ],
+    "skillSheetID": "sampleSigns"
   },
-  {
+  "9": {
     "question": "Is she alert?",
     "answer": "She is alert but anxious, speaking in short sentences.",
     "scoreCategory": "Level of Consciousness",
-    "tags": ["loc", "avpu", "mental status", "primary assessment"]
+    "tags": [
+      "loc",
+      "avpu",
+      "mental status",
+      "primary assessment"
+    ],
+    "skillSheetID": "determinesResponsiveness"
   },
-  {
+  "10": {
     "question": "What is the chief complaint?",
     "answer": "My throat feels tight and it’s hard to breathe. I’m very itchy.",
     "scoreCategory": "Chief Complaint",
-    "tags": ["chief complaint", "cc", "history", "sample"]
+    "tags": [
+      "chief complaint",
+      "cc",
+      "history",
+      "sample"
+    ],
+    "skillSheetID": "chiefComplaint"
   },
-  {
+  "11": {
     "question": "Can you tell me what happened?",
     "answer": "I ate some cookies at work. About 15 minutes later, I started itching and my throat felt tight.",
     "scoreCategory": "History of Present Illness",
-    "tags": ["history of present illness", "hpi", "onset", "sample"]
+    "tags": [
+      "history of present illness",
+      "hpi",
+      "onset",
+      "sample"
+    ],
+    "skillSheetID": "chiefComplaint"
   },
-  {
+  "12": {
     "question": "Do you have any allergies?",
     "answer": "Yes, I’m severely allergic to peanuts.",
     "scoreCategory": "SAMPLE History",
-    "tags": ["allergies", "sample", "history", "food allergy"]
+    "tags": [
+      "allergies",
+      "sample",
+      "history",
+      "food allergy"
+    ],
+    "skillSheetID": "sampleAllergies",
+    "response": "Yes, I’m severely allergic to peanuts.",
+    "points": 0,
+    "criticalFail": false,
+    "role": "patient",
+    "trigger": ""
   },
-  {
+  "13": {
     "question": "Are you taking any medications?",
     "answer": "I don’t take any medications regularly.",
     "scoreCategory": "SAMPLE History",
-    "tags": ["medications", "sample", "history"]
+    "tags": [
+      "medications",
+      "sample",
+      "history"
+    ],
+    "skillSheetID": "sampleMedications",
+    "response": "I don’t take any medications regularly, I do have a Epi pen but have never used it",
+    "points": 0,
+    "criticalFail": false,
+    "role": "patient",
+    "trigger": ""
   },
-  {
+  "14": {
     "question": "Do you have an EpiPen?",
     "answer": "Yes, I have one in my purse, but I haven’t used it yet.",
     "scoreCategory": "SAMPLE History",
-    "tags": ["epipen", "medications", "sample", "history", "interventions"]
+    "tags": [
+      "epipen",
+      "medications",
+      "sample",
+      "history",
+      "interventions"
+    ],
+    "skillSheetID": "sampleMedications",
+    "response": "Yes, I have one in my purse, but I haven’t used it yet.",
+    "points": 0,
+    "criticalFail": false,
+    "role": "patient",
+    "trigger": ""
   },
-  {
+  "15": {
     "question": "Have you ever had this before?",
     "answer": "Yes, I had a reaction as a child, but it was not this bad.",
     "scoreCategory": "Past Medical History",
-    "tags": ["past medical history", "pmh", "sample", "history"]
+    "tags": [
+      "past medical history",
+      "pmh",
+      "sample",
+      "history"
+    ],
+    "skillSheetID": "samplePastHistory"
   },
-  {
+  "16": {
     "question": "When did this start?",
     "answer": "It started about 15 minutes ago after eating the cookies.",
     "scoreCategory": "Onset",
-    "tags": ["onset", "sample", "timing", "history"]
+    "tags": [
+      "onset",
+      "sample",
+      "timing",
+      "history"
+    ],
+    "skillSheetID": "opqrstOnset"
   },
-  {
+  "17": {
     "question": "When did you last eat or drink?",
     "answer": "I had lunch at work and then cookies. I think the cookies had peanuts.",
     "scoreCategory": "Last Oral Intake",
-    "tags": ["last oral intake", "sample", "history", "food"]
+    "tags": [
+      "last oral intake",
+      "sample",
+      "history",
+      "food"
+    ],
+    "skillSheetID": "sampleLastIntake"
   },
-  {
+  "18": {
     "question": "What do her lungs sound like?",
     "answer": "You hear diffuse wheezing in both lungs.",
     "scoreCategory": "Physical Exam",
-    "tags": ["lung sounds", "assessment", "wheezing", "secondary"]
+    "tags": [
+      "lung sounds",
+      "assessment",
+      "wheezing",
+      "secondary"
+    ],
+    "skillSheetID": "assessesAffectedBodyPart",
+    "response": "You hear diffuse wheezing in both lungs.",
+    "points": 0,
+    "criticalFail": false,
+    "role": "proctor",
+    "trigger": ""
   },
-  {
+  "19": {
     "question": "Is there swelling anywhere?",
     "answer": "There is mild swelling of her lips and tongue. Hives are present on her neck and arms.",
     "scoreCategory": "Physical Exam",
-    "tags": ["swelling", "angioedema", "assessment", "secondary"]
+    "tags": [
+      "swelling",
+      "angioedema",
+      "assessment",
+      "secondary"
+    ],
+    "skillSheetID": "assessesAffectedBodyPart",
+    "response": "There is mild swelling of her lips and tongue. Hives are present on her neck and arms.",
+    "points": 0,
+    "criticalFail": false,
+    "role": "proctor",
+    "trigger": ""
   },
-  {
+  "20": {
     "question": "Can I check her pupils?",
     "answer": "Her pupils are equal and reactive to light.",
     "scoreCategory": "Physical Exam",
-    "tags": ["pupils", "assessment", "secondary", "neuro"]
+    "tags": [
+      "pupils",
+      "assessment",
+      "secondary",
+      "neuro"
+    ],
+    "skillSheetID": "assessesAffectedBodyPart",
+    "response": "Her pupils are equal and reactive to light.",
+    "points": 0,
+    "criticalFail": false,
+    "role": "proctor",
+    "trigger": ""
   },
-  {
+  "21": {
     "question": "I am giving her the EpiPen.",
     "answer": "You administer the EpiPen. Within two minutes, her breathing improves and her hives begin to fade. Vitals are now BP 110/70, HR 102, RR 20, SpO2 96%.",
     "scoreCategory": "Medication Administration",
-    "tags": ["epipen", "epinephrine", "med admin", "intervention", "treatment"],
-    "trigger": "updateVitals"
+    "tags": [
+      "epipen",
+      "epinephrine",
+      "med admin",
+      "intervention",
+      "treatment"
+    ],
+    "trigger": "updateVitals",
+    "skillSheetID": "",
+    "response": "You administer the EpiPen. Within two minutes, her breathing improves and her hives begin to fade. Vitals are now BP 110/70, HR 102, RR 20, SpO2 96%.",
+    "points": 0,
+    "criticalFail": false,
+    "role": "proctor"
   },
-  {
+  "22": {
     "question": "I’m giving high-flow oxygen.",
     "answer": "You place her on high-flow oxygen. Her oxygen saturation begins to improve.",
     "scoreCategory": "Oxygen Administration",
-    "tags": ["oxygen", "airway", "intervention", "treatment"]
+    "tags": [
+      "oxygen",
+      "airway",
+      "intervention",
+      "treatment"
+    ],
+    "skillSheetID": "oxygenTherapy",
+    "response": "You place her on high-flow oxygen. Her oxygen saturation begins to improve.",
+    "points": 0,
+    "criticalFail": false,
+    "role": "proctor",
+    "trigger": ""
   },
-  {
+  "23": {
     "question": "I am calling for ALS backup.",
     "answer": "ALS is en route and will arrive shortly.",
     "scoreCategory": "Team Leadership",
-    "tags": ["als", "team lead", "additional resources", "command"]
+    "tags": [
+      "als",
+      "team lead",
+      "additional resources",
+      "command"
+    ],
+    "skillSheetID": "requestsAdditionalResources",
+    "response": "ALS is unable to respond",
+    "points": 0,
+    "criticalFail": false,
+    "role": "proctor",
+    "trigger": ""
   },
-  {
+  "24": {
     "question": "How does the patient look after treatment?",
     "answer": "She is less anxious, her hives are fading, and her breathing is less labored. Vitals are improving.",
     "scoreCategory": "Reassessment",
-    "tags": ["reassessment", "response to treatment", "monitor"]
+    "tags": [
+      "reassessment",
+      "response to treatment",
+      "monitor"
+    ],
+    "skillSheetID": "generalImpression",
+    "response": "She is less anxious, her hives are fading, and her breathing is less labored. Vitals are improving.",
+    "points": 0,
+    "criticalFail": false,
+    "role": "proctor",
+    "trigger": ""
   },
-  {
+  "25": {
     "question": "I am preparing for immediate transport.",
     "answer": "Excellent. This patient requires rapid transport to the hospital.",
     "scoreCategory": "Transport Decision",
-    "tags": ["transport", "decision", "priority", "load and go"]
+    "tags": [
+      "transport",
+      "decision",
+      "priority",
+      "load and go"
+    ],
+    "skillSheetID": "patientPriority",
+    "response": "Excellent. This patient requires rapid transport to the hospital.",
+    "points": 0,
+    "criticalFail": false,
+    "role": "proctor",
+    "trigger": ""
   },
-  {
+  "26": {
     "question": "I will reassess vitals every five minutes.",
     "answer": "You continue to monitor her vitals and symptoms during transport.",
     "scoreCategory": "Ongoing Assessment",
-    "tags": ["reassessment", "vitals", "monitoring", "transport"]
+    "tags": [
+      "reassessment",
+      "vitals",
+      "monitoring",
+      "transport"
+    ],
+    "skillSheetID": "verbalizesReassessment",
+    "response": "You continue to monitor her vitals and symptoms during transport.",
+    "points": 0,
+    "criticalFail": false,
+    "role": "proctor",
+    "trigger": ""
   },
-
-  {
+  "27": {
     "question": "what were you eating",
     "answer": "All I had was a cookie",
     "role": "patient",
-    "timestamp": 1750708526620
+    "timestamp": 1750708526620,
+    "skillSheetID": "sampleLastIntake",
+    "response": "All I had was a cookie",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "tags": [],
+    "trigger": ""
   },
-  {
+  "28": {
     "question": "scene safety",
     "answer": "The scene is safe",
     "role": "patient",
-    "timestamp": 1750710337524
+    "timestamp": 1750710337524,
+    "skillSheetID": "sceneSafety",
+    "response": "The scene is safe",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "tags": [],
+    "trigger": ""
   },
-  {
+  "29": {
     "question": "how many patients",
     "answer": "you have only one patient",
     "role": "patient",
-    "timestamp": 1750710353788
+    "timestamp": 1750710353788,
+    "skillSheetID": "determinesNumberOfPatients"
   },
-  {
+  "30": {
     "question": "bsi",
     "answer": "Proper BSI is on",
     "role": "patient",
-    "timestamp": 1750710370324
+    "timestamp": 1750710370324,
+    "skillSheetID": "ppeBsi"
   },
-  {
+  "31": {
     "question": "I will put on gloves",
     "answer": "Proper BSI is on",
     "role": "patient",
-    "timestamp": 1750710387539
+    "timestamp": 1750710387539,
+    "skillSheetID": "ppeBsi"
   },
-  {
+  "32": {
     "question": "Call for ALS",
     "answer": "ALS is unable to respond at this time",
     "role": "patient",
-    "timestamp": 1750710402756
+    "timestamp": 1750710402756,
+    "skillSheetID": "requestsAdditionalResources"
   },
-  {
+  "33": {
     "question": "I would consider ALS",
     "answer": "ALS is unable to respond at this time",
     "role": "patient",
-    "timestamp": 1750710416694
+    "timestamp": 1750710416694,
+    "skillSheetID": "fieldImpression"
   },
-  {
+  "34": {
     "question": "hello, what is going on today",
     "answer": "Hi, um, well, I'm having really bad reaction to something I ate",
     "role": "patient",
-    "timestamp": 1750710435749
+    "timestamp": 1750710435749,
+    "skillSheetID": "chiefComplaint"
   },
-  {
+  "35": {
     "question": "what is your name",
     "answer": "My name is Sarah Thompson.",
     "role": "patient",
-    "timestamp": 1750710443158
+    "timestamp": 1750710443158,
+    "skillSheetID": "chiefComplaint"
   },
-  {
+  "36": {
     "question": "how can I help you",
     "answer": "I’m not feeling too well. I feel like my tongue is swelling up and it is getting hard to breath",
     "role": "patient",
-    "timestamp": 1750710462957
+    "timestamp": 1750710462957,
+    "skillSheetID": "chiefComplaint"
   },
-  {
+  "37": {
     "question": "are you having chest pain",
     "answer": "No, I do not have any chest pain",
     "role": "patient",
-    "timestamp": 1750710476739
+    "timestamp": 1750710476739,
+    "skillSheetID": "chiefComplaint"
   },
-  {
+  "38": {
     "question": "do you have any SOB",
     "answer": "Yeah, I'm feeling a bit short of breath right now. It's kind of hard to take a deep breath.",
     "role": "patient",
-    "timestamp": 1750710493529
+    "timestamp": 1750710493529,
+    "skillSheetID": "chiefComplaint"
   },
-  {
+  "39": {
     "question": "when did you eat last",
     "answer": "I had a cookie about 15 minutes ago",
     "role": "patient",
-    "timestamp": 1750710507267
+    "timestamp": 1750710507267,
+    "skillSheetID": "sampleLastIntake"
   },
-  {
-    "question": "what were you eating",
-    "answer": "I just had a cookie",
-    "role": "patient",
-    "timestamp": 1750710516907
-  },
-  {
+  "41": {
     "question": "what is your medical history",
     "answer": "I have a history of allergic reactions to peanuts",
     "role": "patient",
-    "timestamp": 1750710530751
+    "timestamp": 1750710530751,
+    "skillSheetID": "samplePastHistory"
   },
-  {
+  "42": {
     "question": "do you have any allgeries",
     "answer": "Yes, I'm allergic to peanuts",
     "role": "patient",
-    "timestamp": 1750710548884
+    "timestamp": 1750710548884,
+    "skillSheetID": "sampleAllergies"
   },
-  {
+  "43": {
     "question": "do you take any medications",
     "answer": "Yes, I do have a EPI Pen but have never used it",
     "role": "patient",
-    "timestamp": 1750710584693
+    "timestamp": 1750710584693,
+    "skillSheetID": "sampleMedications"
   },
-  {
+  "44": {
     "question": "check a blood pressure",
     "answer": "The blood pressure is 110/70",
     "role": "patient",
-    "timestamp": 1750710594410
+    "timestamp": 1750710594410,
+    "skillSheetID": "obtainsBaselineVitalsBP"
   },
-  {
+  "45": {
     "question": "check pulse",
     "answer": "The pulse is 102 and regular",
     "role": "patient",
-    "timestamp": 1750710601876
+    "timestamp": 1750710601876,
+    "skillSheetID": "circulation"
   },
-  {
+  "46": {
     "question": "check SaO2",
     "answer": "SaO2 is 91%",
     "role": "patient",
-    "timestamp": 1750710613920
+    "timestamp": 1750710613920,
+    "skillSheetID": "oxygenTherapy"
   },
-  {
+  "47": {
     "question": "Give patient .3mg EPI",
     "answer": "EPI has been given",
     "role": "patient",
-    "timestamp": 1750710634206
+    "timestamp": 1750710634206,
+    "skillSheetID": "oxygenTherapy"
   },
-  {
+  "48": {
     "question": "what were you doing when it started",
     "answer": "I was just sitting on the couch watching TV when I started.",
     "role": "patient",
-    "timestamp": 1750710680196
+    "timestamp": 1750710680196,
+    "skillSheetID": "opqrstOnset"
   },
-  {
+  "49": {
     "question": "how would you describe this feeling",
     "answer": "It's hard to explain, but it feels like my tongue and throat are swelling, it's getting hard to breath.",
     "role": "patient",
-    "timestamp": 1750710702937
+    "timestamp": 1750710702937,
+    "skillSheetID": "opqrstQuality"
   },
-  {
+  "50": {
     "question": "do you have any pain",
     "answer": "I would not really call it pain, just a odd feeling in my throat",
     "role": "patient",
-    "timestamp": 1750710714803
+    "timestamp": 1750710714803,
+    "skillSheetID": "chiefComplaint"
   },
-  {
+  "51": {
     "question": "what is your past medical history",
     "answer": "I have no medical problems, but I am allergic to peanuts",
     "role": "patient",
-    "timestamp": 1750710737790
+    "timestamp": 1750710737790,
+    "skillSheetID": "samplePastHistory"
   },
-  {
+  "52": {
     "question": "transport emergent to hospital",
     "answer": "You are now transporting emergent to the hospital",
     "role": "patient",
-    "timestamp": 1750710760100
+    "timestamp": 1750710760100,
+    "skillSheetID": "patientPriority"
   },
-  {
+  "53": {
     "question": "place patient on 15L O2 NRB",
     "answer": "The patient is now on oxygen",
     "role": "patient",
-    "timestamp": 1750710776686
+    "timestamp": 1750710776686,
+    "skillSheetID": "oxygenTherapy"
   },
-  {
+  "54": {
     "question": "recheck vitals every 5 minutes",
     "answer": "copy, you will recheck vitals every 5 minutes.",
     "role": "patient",
-    "timestamp": 1750710794503
+    "timestamp": 1750710794503,
+    "skillSheetID": "verbalizesReassessment"
   },
-  {
+  "55": {
     "question": "check skin",
     "answer": "skin looks hot and flushed with a rash on the chest",
     "role": "patient",
-    "timestamp": 1750710808940
+    "timestamp": 1750710808940,
+    "skillSheetID": "circulation"
   },
-  {
+  "56": {
     "question": "any nauses",
     "answer": "Yeah, I do feel a bit nauseous, like I might throw up.",
     "role": "patient",
-    "timestamp": 1750710842333
+    "timestamp": 1750710842333,
+    "skillSheetID": "chiefComplaint"
   },
-  {
+  "57": {
     "question": "has this ever happened to you before",
     "answer": "Yes, I had a reaction like this once when I was a Kid",
     "role": "patient",
-    "timestamp": 1750710860229
+    "timestamp": 1750710860229,
+    "skillSheetID": "samplePastHistory"
   },
-  {
+  "58": {
     "question": "I would consider c spine",
     "answer": "copy, c-spine has been considered",
-    "role": "patient",
-    "timestamp": 1750710900342
-  },
-  
-  {
-    "question": "what were you eating",
-    "answer": "All I had was a cookie",
-    "role": "patient",
-    "timestamp": 1750708526620
-  },
-  {
-    "question": "check blood pressure",
-    "answer": "Blood pressure is 106/70",
-    "role": "patient",
-    "timestamp": 1750713258010
-  },
-  {
-    "question": "what is the blood pressure",
-    "answer": "Blood pressure is 104/66",
-    "role": "patient",
-    "timestamp": 1750713269625
-  },
-  {
-    "question": "check respirations",
-    "answer": "Respirations are 22/minute",
-    "role": "patient",
-    "timestamp": 1750713283123
-  },
-  {
-    "question": "check breath sounds",
-    "answer": "Some wheezes are present in all lobes",
-    "role": "patient",
-    "timestamp": 1750713292991
-  },
-  {
-    "question": "check Airway",
-    "answer": "Stridor is present",
-    "role": "patient",
-    "timestamp": 1750713320098
-  },
-  {
-    "question": "do you have a EpiPen",
-    "answer": "Yes, I have an EpiPen but have never used it.",
-    "role": "patient",
-    "timestamp": 1750713405483
-  },
-  {
-    "question": "have you used your EpiPen",
-    "answer": "No, I am not quite sure how to use it.",
-    "role": "patient",
-    "timestamp": 1750713418923
-  },
-  {
-    "question": "on a scale of 1 to 10 how much pain do you have",
-    "answer": "It's not really pain, it's just hard to breath",
-    "role": "patient",
-    "timestamp": 1750713432827
-  },
-  {
-    "question": "does anything make it better or worse",
-    "answer": "Nothing seems to help and it is getting worse, please help",
-    "role": "patient",
-    "timestamp": 1750713509435
-  },
-  {
-    "question": "can you describe your symptoms",
-    "answer": "It feels like my throat is closing shut",
-    "role": "patient",
-    "timestamp": 1750713518248
-  },
-  {
-    "question": "do your symptoms seem to spread anywhere or move anywhere",
-    "answer": "Yeah, the pain started in my chest, kind of like a tightness, and now it feels like it's moving into my left arm and up into my jaw. It's pretty uncomfortable and worrying.",
-    "role": "patient",
-    "timestamp": 1750713539990
-  },
-  {
-    "question": "does it feel like the swelling is getting worse",
-    "answer": "Yeah, it does feel like the swelling is getting worse. It's really uncomfortable.",
-    "role": "patient",
-    "timestamp": 1750713554752
-  },
-  {
-    "question": "what symptoms are you having",
-    "answer": "My tongue and throat are swelling and it's getting hard to breath.",
-    "role": "patient",
-    "timestamp": 1750713566264
-  },
-  {
-    "question": "are you allergic to anything",
-    "answer": "Yes, I am allergic to peanuts",
-    "role": "patient",
-    "timestamp": 1750713575035
-  },
-  {
-    "question": "have you eaten anything with peanuts in it",
-    "answer": "All I had was a cookie, I am not sure what was in it",
-    "role": "patient",
-    "timestamp": 1750713588148
-  },
-  {
-    "question": "do you have any other health problems",
-    "answer": "No, I am a healthy person but I do have a allgery to peanuts",
-    "role": "patient",
-    "timestamp": 1750713611255
-  },
-  {
-    "question": "what were you doing when this started",
-    "answer": "I was just sitting on the couch watching TV and eating cookies.",
-    "role": "patient",
-    "timestamp": 1750713621685
+    "role": "proctor",
+    "timestamp": 1750710900342,
+    "skillSheetID": "considersCSpine",
+    "response": "copy, c-spine has been considered",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "tags": [],
+    "trigger": ""
   }
-]
-
+}
