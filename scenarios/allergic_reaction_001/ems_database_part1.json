@@ -1122,5 +1122,146 @@
     "answer": "Albuterol has been given",
     "role": "patient",
     "timestamp": 1750784662933
+  },
+  "141":
+
+  {
+    "question": "I'm going to put on my BSI",
+    "answer": "BSI is on",
+    "role": "patient",
+    "timestamp": 1750786599507
+  },
+  "142":
+  {
+    "question": "my nature of illness is allergic reaction",
+    "answer": "copy nature of illness",
+    "role": "patient",
+    "timestamp": 1750786724861
+  },
+  "143":
+  {
+    "question": "what's going on today",
+    "answer": "I don't know, it's getting hard to breath and my throat is swelling",
+    "role": "patient",
+    "timestamp": 1750786753458
+  },
+  "144":
+  {
+    "question": "my general impression is allergic reaction",
+    "answer": "copy general impression",
+    "role": "patient",
+    "timestamp": 1750786805229
+  },
+  "145":
+  {
+    "question": "what's the patient's skin color",
+    "answer": "The patient's skin if flushed and a rash is present on her chest",
+    "role": "patient",
+    "timestamp": 1750786837956
+  },
+  "146":
+  {
+    "question": "is it getting better or worse",
+    "answer": "I think it's getting worse. ",
+    "role": "patient",
+    "timestamp": 1750786886259
+  },
+  "147":
+  {
+    "question": "listen to breast sounds",
+    "answer": "You hear wheezing in all lobes",
+    "role": "patient",
+    "timestamp": 1750786909918
+  },
+  "148":
+  {
+    "question": "what's the blood pressure",
+    "answer": "Blood pressure is 98/50",
+    "role": "patient",
+    "timestamp": 1750786929124
+  },
+  "149":
+  {
+    "question": "what's the pulse rate",
+    "answer": "Pulse is 110/minute",
+    "role": "patient",
+    "timestamp": 1750786940089
+  },
+  "150":
+  {
+    "question": "check CAP refill",
+    "answer": "Car refill is 3 seconds",
+    "role": "patient",
+    "timestamp": 1750786959718
+  },
+  "151":
+  {
+    "question": "what is the patient's pulse ox",
+    "answer": "The pulse ox is 90%",
+    "role": "patient",
+    "timestamp": 1750786973166
+  },
+  "152":
+  {
+    "question": "what day is it",
+    "answer": "I think it's Friday",
+    "role": "patient",
+    "timestamp": 1750787008731
+  },
+  "153":
+  {
+    "question": "what did you eat last",
+    "answer": "I had a turkey sandwich for lunch and some cookies",
+    "role": "patient",
+    "timestamp": 1750787036808
+  },
+  "154":
+  {
+    "question": "recheck pulse",
+    "answer": "pulse is 100/minute",
+    "role": "patient",
+    "timestamp": 1750787092703
+  },
+  "155":
+  {
+    "question": "do you want to go to the hospital",
+    "answer": "Yes, take me to the hospital",
+    "role": "patient",
+    "timestamp": 1750787117448
+  },
+  "156":
+  {
+    "question": "any drugs or alcohol today",
+    "answer": "No, I haven't had any drugs or alcohol today.",
+    "role": "patient",
+    "timestamp": 1750788529220
+  },
+  "157":
+  {
+    "question": "check eyes",
+    "answer": "Eyes are 3mm and PERL",
+    "role": "patient",
+    "timestamp": 1750788550101
+  },
+  "158":
+  {
+    "question": "any jvd",
+    "answer": "No JVD noted",
+    "role": "patient",
+    "timestamp": 1750788561628
+  },
+  "159":
+  {
+    "question": "any pedal edema",
+    "answer": "No pedal edema noted",
+    "role": "patient",
+    "timestamp": 1750788575414
+  },
+  "160":
+  {
+    "question": "do I see any bee stings",
+    "answer": "No bee stings noted",
+    "role": "patient",
+    "timestamp": 1750788637190
   }
 }
