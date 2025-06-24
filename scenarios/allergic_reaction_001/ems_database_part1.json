@@ -1636,5 +1636,272 @@
     "points": 0,
     "criticalFail": false,
     "trigger": ""
+  },
+  "161":
+
+  {
+    "question": "check pulse",
+    "answer": "The pulse is 110",
+    "role": "patient",
+    "timestamp": 1750792413312
+  },
+  "162":
+  {
+    "question": "I would consider C spine",
+    "answer": "C-spine is not needed at this time",
+    "role": "patient",
+    "timestamp": 1750796536451
+  },
+  "163":
+  {
+    "question": "does the patient have a pulse",
+    "answer": "A pulse is present",
+    "role": "patient",
+    "timestamp": 1750796574922
+  },
+  "164":
+  {
+    "question": "can you tell me your name",
+    "answer": "My name is lisa",
+    "role": "patient",
+    "timestamp": 1750796642009
+  },
+  "165":
+  {
+    "question": "Play Station on a non-rebreather mask",
+    "answer": "Oxygen is being given",
+    "role": "patient",
+    "timestamp": 1750796677527
+  },
+  "166":
+  {
+    "question": "my nature of illness is shortness of breath",
+    "answer": "nature of illness shortness of breath",
+    "role": "patient",
+    "timestamp": 1750796715341
+  },
+  "167":
+  {
+    "question": "check pulse",
+    "answer": "You have a strong regular pulse of 110",
+    "role": "patient",
+    "timestamp": 1750796744739
+  },
+  "168":
+  {
+    "question": "take a pulse",
+    "answer": "You have a strong regular pulse of 110",
+    "role": "patient",
+    "timestamp": 1750796759436
+  },
+  "169":
+  {
+    "question": "can you describe how you're feeling right now",
+    "answer": "It feels like my throat is closing",
+    "role": "patient",
+    "timestamp": 1750796861010
+  },
+  "170":
+  {
+    "question": "does this feeling go anywhere",
+    "answer": "It is mostly in my throat and tongue",
+    "role": "patient",
+    "timestamp": 1750796871273
+  },
+  "171":
+  {
+    "question": "how bad is it today",
+    "answer": "It's pretty bad, I am having a hard time breathing",
+    "role": "patient",
+    "timestamp": 1750796885734
+  },
+  "172":
+  {
+    "question": "have you eaten any peanuts",
+    "answer": "No, I haven't eaten any peanuts. I actually avoid them because I'm allergic. Why do you ask?",
+    "role": "patient",
+    "timestamp": 1750796942360
+  },
+  "173":
+  {
+    "question": "examine throat",
+    "answer": "The throat is red and swallen",
+    "role": "patient",
+    "timestamp": 1750796972709
+  },
+  "174":
+  {
+    "question": "examine tongue",
+    "answer": "The tongue is swallen ",
+    "role": "patient",
+    "timestamp": 1750796980999
+  },
+  "175":
+  {
+    "question": "what is the patient's heart rate",
+    "answer": "Heart rate of 110",
+    "role": "patient",
+    "timestamp": 1750796994558
+  },
+  "176":
+  {
+    "question": "PSI",
+    "answer": "BSI is on",
+    "role": "patient",
+    "timestamp": 1750797049040
+  },
+  "177":
+  {
+    "question": "scene safe",
+    "answer": "The scene is safe",
+    "role": "patient",
+    "timestamp": 1750797058732
+  },
+  "178":
+  {
+    "question": "request additional EMS",
+    "answer": "No one is able to respond at this time",
+    "role": "patient",
+    "timestamp": 1750797097485
+  },
+  "179"
+  {
+    "question": "consider C spine",
+    "answer": "C-spine is not required at this time",
+    "role": "patient",
+    "timestamp": 1750797106317
+  },
+  "180":
+  {
+    "question": "general impression",
+    "answer": "General impression is allergic reaction",
+    "role": "patient",
+    "timestamp": 1750797113858
+  },
+  "181":
+  {
+    "question": "responsiveness",
+    "answer": "The patient is responsive",
+    "role": "patient",
+    "timestamp": 1750797120799
+  },
+  "182":
+  {
+    "question": "Chief complaint",
+    "answer": "chief complaint is allgeric reaction",
+    "role": "patient",
+    "timestamp": 1750797127532
+  },
+  "183":
+  {
+    "question": "assess breathing",
+    "answer": "The patient is breathing 22/minute labored",
+    "role": "patient",
+    "timestamp": 1750797141675
+  },
+  "184":
+  {
+    "question": "initiate oxygen",
+    "answer": "The patient has been placed on oxygen",
+    "role": "patient",
+    "timestamp": 1750797151782
+  },
+  "185":
+  {
+    "question": "assess circulation",
+    "answer": "The patient's skin is flushed ",
+    "role": "patient",
+    "timestamp": 1750797165438
+  },
+  "186":
+  {
+    "question": "transport",
+    "answer": "You are now transporting to the hospital",
+    "role": "patient",
+    "timestamp": 1750797172039
+  },
+  "187":
+  {
+    "question": "onset",
+    "answer": "It started about 15 minutes ago, just after eating",
+    "role": "patient",
+    "timestamp": 1750797180283
+  },
+  "188":
+  {
+    "question": "provocation",
+    "answer": "Nothing seems to make it better",
+    "role": "patient",
+    "timestamp": 1750797203549
+  },
+  "189":
+  {
+    "question": "quality",
+    "answer": "It's just a tight feeling in my throat, please help",
+    "role": "patient",
+    "timestamp": 1750797211336
+  },
+  "190":
+  {
+    "question": "radiation",
+    "answer": "It's only in my throat",
+    "role": "patient",
+    "timestamp": 1750797219683
+  },
+  "191":
+  {
+    "question": "severity",
+    "answer": "I can't give you a number, but its bad",
+    "role": "patient",
+    "timestamp": 1750797232879
+  },
+  "192":
+  {
+    "question": "time",
+    "answer": "It started about 15 minutes ago",
+    "role": "patient",
+    "timestamp": 1750797241813
+  },
+  "193":
+  {
+    "question": "events leading",
+    "answer": "I had just finished eating",
+    "role": "patient",
+    "timestamp": 1750797261039
+  },
+  "194":
+  {
+    "question": "heart rate",
+    "answer": "heart rate is 110",
+    "role": "patient",
+    "timestamp": 1750797284617
+  },
+  "195":
+  {
+    "question": "field impression",
+    "answer": "Field impression is allgeric reaction",
+    "role": "patient",
+    "timestamp": 1750797300449
+  },
+  "196":
+  {
+    "question": "interventions",
+    "answer": "copy intervention",
+    "role": "patient",
+    "timestamp": 1750797305993
+  },
+  "197":
+  {
+    "question": "is stridor present",
+    "answer": "Yes, stridor is present",
+    "role": "patient",
+    "timestamp": 1750798596439
+  },
+  "198":
+  {
+    "question": "stridor",
+    "answer": "Stridor is present",
+    "role": "patient",
+    "timestamp": 1750798610603
   }
 }
