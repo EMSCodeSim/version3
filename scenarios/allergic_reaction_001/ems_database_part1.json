@@ -6,9 +6,9 @@
     "timestamp": 1750708526620,
     "skillSheetID": "sampleLastIntake",
     "tags": [
-      "sample",
-      "history-taking",
-      "patient-assessment"
+      "patient history",
+      "assessment",
+      "intake"
     ]
   },
   "1": {
@@ -20,7 +20,12 @@
       "resource_management",
       "decision_making"
     ],
-    "skillSheetID": "requestsAdditionalResources"
+    "skillSheetID": "requestsAdditionalResources",
+    "response": "You have your partner, and ALS is unable to respond",
+    "points": 0,
+    "criticalFail": false,
+    "role": "proctor",
+    "trigger": ""
   },
   "2": {
     "question": "check Airway",
@@ -35,9 +40,8 @@
     "tags": [
       "airway",
       "breathing",
-      "ems",
       "patient assessment",
-      "respiratory"
+      "ems training"
     ],
     "trigger": ""
   },
@@ -69,9 +73,9 @@
     "points": 0,
     "criticalFail": false,
     "tags": [
-      "respiratory",
-      "assessment",
-      "auscultation"
+      "airway",
+      "breath sounds",
+      "assessment"
     ],
     "trigger": ""
   },
@@ -87,8 +91,8 @@
     "criticalFail": false,
     "tags": [
       "patient-history",
-      "medical-history",
-      "assessment"
+      "medical-assessment",
+      "sample"
     ],
     "trigger": ""
   },
@@ -103,9 +107,10 @@
     "points": 0,
     "criticalFail": false,
     "tags": [
+      "patient-history",
       "allergies",
-      "patient history",
-      "sample"
+      "sample",
+      "interview"
     ],
     "trigger": ""
   },
@@ -127,7 +132,8 @@
     "tags": [
       "assessment",
       "skin",
-      "signs"
+      "signs",
+      "patient evaluation"
     ],
     "skillSheetID": "sampleSigns"
   },
@@ -238,10 +244,9 @@
     "points": 0,
     "criticalFail": false,
     "tags": [
-      "opqrst",
-      "onset",
       "pain assessment",
-      "history taking"
+      "onset",
+      "opqrst"
     ],
     "trigger": ""
   },
@@ -256,9 +261,10 @@
     "points": 0,
     "criticalFail": false,
     "tags": [
-      "assessment",
-      "pain management",
-      "patient interview"
+      "pain assessment",
+      "provocation",
+      "opqrst",
+      "symptom evaluation"
     ],
     "trigger": ""
   },
@@ -286,7 +292,7 @@
     "tags": [
       "lung sounds",
       "assessment",
-      "auscultation"
+      "respiratory"
     ],
     "skillSheetID": "assessesAffectedBodyPart",
     "response": "You hear diffuse wheezing in both lungs.",
@@ -334,12 +340,12 @@
     "answer": "You administer the EpiPen. Within two minutes, her breathing improves and her hives begin to fade. Vitals are now BP 110/70, HR 102, RR 20, SpO2 96%.",
     "scoreCategory": "Medication Administration",
     "tags": [
-      "medication administration",
-      "allergic reaction",
-      "epinephrine"
+      "medication",
+      "epipen",
+      "administration"
     ],
     "trigger": "updateVitals",
-    "skillSheetID": "oxygenTherapy",
+    "skillSheetID": "sampleMedications",
     "response": "You administer the EpiPen. Within two minutes, her breathing improves and her hives begin to fade. Vitals are now BP 110/70, HR 102, RR 20, SpO2 96%.",
     "points": 0,
     "criticalFail": false,
@@ -357,7 +363,7 @@
     "criticalFail": false,
     "tags": [
       "chief complaint",
-      "allergy",
+      "allergic reaction",
       "patient assessment"
     ],
     "trigger": ""
@@ -369,8 +375,8 @@
     "timestamp": 1750720176790,
     "skillSheetID": "opqrstSeverity",
     "tags": [
+      "allergy",
       "severity",
-      "allergic reaction",
       "assessment"
     ]
   },
@@ -382,7 +388,7 @@
     "skillSheetID": "opqrstOnset",
     "tags": [
       "sample",
-      "history",
+      "history taking",
       "patient assessment"
     ]
   },
@@ -396,7 +402,12 @@
       "opqrst",
       "pain assessment",
       "time evaluation"
-    ]
+    ],
+    "response": "It started around 2 o'clock this afternoon, I had just finished lunch",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
   "26": {
     "question": "how severe is this reaction",
@@ -405,9 +416,9 @@
     "timestamp": 1750720217512,
     "skillSheetID": "opqrstSeverity",
     "tags": [
-      "assessment",
       "severity",
-      "patient_evaluation"
+      "assessment",
+      "reaction"
     ]
   },
   "27": {
@@ -464,14 +475,19 @@
   "30": {
     "question": "bsi",
     "answer": "Proper BSI is on",
-    "role": "patient",
+    "role": "proctor",
     "timestamp": 1750710370324,
     "skillSheetID": "ppeBsi",
     "tags": [
       "safety",
       "infection control",
       "personal protective equipment"
-    ]
+    ],
+    "response": "Proper BSI is on",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
   "31": {
     "question": "administer the patient's EpiPen",
@@ -484,9 +500,9 @@
     "points": 0,
     "criticalFail": false,
     "tags": [
+      "medication",
       "epipen",
-      "medication administration",
-      "allergic reaction"
+      "anaphylaxis"
     ],
     "trigger": ""
   },
@@ -501,9 +517,9 @@
     "points": 0,
     "criticalFail": false,
     "tags": [
-      "medication",
+      "medication-administration",
       "epinephrine",
-      "dosage"
+      "dosage-management"
     ],
     "trigger": ""
   },
@@ -519,8 +535,8 @@
     "criticalFail": false,
     "tags": [
       "advancedlifesupport",
-      "resource-management",
-      "communication"
+      "als",
+      "resource-management"
     ],
     "trigger": ""
   },
@@ -535,9 +551,9 @@
     "points": 0,
     "criticalFail": false,
     "tags": [
+      "airway",
       "breathing",
-      "respiratory",
-      "assessment"
+      "patient assessment"
     ],
     "trigger": ""
   },
@@ -554,7 +570,7 @@
     "tags": [
       "patient-assessment",
       "communication",
-      "history-taking"
+      "interview"
     ],
     "trigger": ""
   },
@@ -599,7 +615,7 @@
     "criticalFail": false,
     "tags": [
       "respiratory rate",
-      "vital signs",
+      "vitals",
       "assessment"
     ],
     "trigger": ""
@@ -663,9 +679,8 @@
     "tags": [
       "patient-assessment",
       "history-taking",
-      "onset",
       "opqrst",
-      "interview"
+      "onset"
     ],
     "trigger": ""
   },
@@ -676,9 +691,9 @@
     "timestamp": 1750710584693,
     "skillSheetID": "sampleMedications",
     "tags": [
-      "patient-history",
-      "medications",
-      "sample"
+      "patient-assessment",
+      "sample-history",
+      "medications"
     ]
   },
   "44": {
@@ -694,8 +709,7 @@
     "tags": [
       "airway",
       "swelling",
-      "assessment",
-      "throat"
+      "assessment"
     ],
     "trigger": ""
   },
@@ -724,7 +738,8 @@
     "skillSheetID": "sceneSafety",
     "tags": [
       "safety",
-      "scene assessment"
+      "scene assessment",
+      "ems safety"
     ],
     "response": "Yes, the scene is safe.",
     "scoreCategory": "",
@@ -739,7 +754,9 @@
     "timestamp": 1750725644326,
     "skillSheetID": "determinesNumberOfPatients",
     "tags": [
-      "patient count"
+      "scene assessment",
+      "patient count",
+      "emergency response"
     ],
     "response": "You have only one patient.",
     "scoreCategory": "",
@@ -771,6 +788,8 @@
     "timestamp": 1750725763730,
     "skillSheetID": "chiefComplaint",
     "tags": [
+      "patient-assessment",
+      "symptoms",
       "nausea"
     ],
     "response": "Yes, I do feel a bit nauseous.",
@@ -803,8 +822,10 @@
     "timestamp": 1750725878249,
     "skillSheetID": "opqrstOnset",
     "tags": [
-      "onset",
-      "history-taking"
+      "patient-assessment",
+      "history-taking",
+      "opqrst",
+      "onset"
     ],
     "response": "It started about 15 minutes ago.",
     "scoreCategory": "",
@@ -819,6 +840,7 @@
     "timestamp": 1750725886449,
     "skillSheetID": "opqrstProvocation",
     "tags": [
+      "pain assessment",
       "provocation",
       "patient interview"
     ],
@@ -835,7 +857,9 @@
     "timestamp": 1750725943211,
     "skillSheetID": "oxygenTherapy",
     "tags": [
-      "epinephrine"
+      "medication",
+      "epinephrine",
+      "dosage"
     ],
     "response": "EPI has been given.",
     "scoreCategory": "",
@@ -850,8 +874,8 @@
     "timestamp": 1750726051004,
     "skillSheetID": "sampleLastIntake",
     "tags": [
-      "patient-history",
-      "assessment",
+      "patient history",
+      "sample",
       "intake"
     ],
     "response": "I had a sandwich for lunch, just a simple turkey and cheese on whole wheat bread and some cookies.",
@@ -885,8 +909,8 @@
     "skillSheetID": "chiefComplaint",
     "tags": [
       "patient-assessment",
-      "chest-pain",
-      "symptom-evaluation"
+      "communication",
+      "symptom-inquiry"
     ],
     "response": "No but it is getting harder to breath",
     "scoreCategory": "",
@@ -902,7 +926,7 @@
     "skillSheetID": "chiefComplaint",
     "tags": [
       "patient-assessment",
-      "respiratory",
+      "respiratory-complaint",
       "communication"
     ]
   },
@@ -930,9 +954,9 @@
     "timestamp": 1750774006320,
     "skillSheetID": "determinesResponsiveness",
     "tags": [
+      "patient-assessment",
       "responsiveness",
-      "alertness",
-      "patient-assessment"
+      "alertness"
     ]
   },
   "116": {
@@ -951,317 +975,666 @@
     "points": 0,
     "criticalFail": false,
     "trigger": ""
-    
   },
-  "117":
-
-
-  {
+  "117": {
     "question": "consider c-cpine",
     "answer": "you have considered c-cpine",
-    "role": "patient",
-    "timestamp": 1750777745851
+    "role": "proctor",
+    "timestamp": 1750777745851,
+    "skillSheetID": "considersCSpine",
+    "tags": [
+      "c-spine",
+      "spinal precautions",
+      "scene safety"
+    ],
+    "response": "you have considered c-cpine",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "118":
-  {
+  "118": {
     "question": "how many patients do I have",
     "answer": "You have only one patient.",
-    "role": "patient",
-    "timestamp": 1750784023353
+    "role": "proctor",
+    "timestamp": 1750784023353,
+    "skillSheetID": "determinesNumberOfPatients",
+    "tags": [
+      "scene assessment",
+      "patient count",
+      "initial evaluation"
+    ],
+    "response": "You have only one patient.",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "119":
-  {
+  "119": {
     "question": "do I have only the one patient",
     "answer": "You have only one patient",
-    "role": "patient",
-    "timestamp": 1750784059286
+    "role": "proctor",
+    "timestamp": 1750784059286,
+    "skillSheetID": "determinesNumberOfPatients",
+    "tags": [
+      "scene assessment",
+      "patient count",
+      "safety"
+    ],
+    "response": "You have only one patient",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "120":
-  {
+  "120": {
     "question": "is the patient looking at me as I walk up",
     "answer": "The patient is alert and tracking you",
-    "role": "patient",
-    "timestamp": 1750784099218
+    "role": "proctor",
+    "timestamp": 1750784099218,
+    "skillSheetID": "determinesResponsiveness",
+    "tags": [
+      "patient-assessment",
+      "responsiveness",
+      "initial-approach"
+    ],
+    "response": "The patient is alert and tracking you",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "121":
-  {
+  "121": {
     "question": "what is the patient's skin look like",
     "answer": "The patient's skin is dry and flushed.  You notice a rash to her chest.",
-    "role": "patient",
-    "timestamp": 1750784161258
+    "role": "proctor",
+    "timestamp": 1750784161258,
+    "skillSheetID": "sampleSigns",
+    "tags": [
+      "patientassessment",
+      "skinassessment",
+      "generalimpression"
+    ],
+    "response": "The patient's skin is dry and flushed.  You notice a rash to her chest.",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "122":
-  {
+  "122": {
     "question": "is the patient responsive to pain",
     "answer": "The patient is responsive to pain.",
-    "role": "patient",
-    "timestamp": 1750784175943
+    "role": "proctor",
+    "timestamp": 1750784175943,
+    "skillSheetID": "determinesResponsiveness",
+    "tags": [
+      "responsiveness",
+      "pain",
+      "assessment"
+    ],
+    "response": "The patient is responsive to pain.",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "123":
-  {
+  "123": {
     "question": "is the patient unresponsive",
     "answer": "No, I'm awake. What happened? Why are you asking if I'm unresponsive?",
     "role": "patient",
-    "timestamp": 1750784183961
+    "timestamp": 1750784183961,
+    "skillSheetID": "determinesResponsiveness",
+    "tags": [
+      "responsiveness",
+      "patient assessment",
+      "ems training"
+    ]
   },
-  "124":
-  {
+  "124": {
     "question": "what is your name",
     "answer": "My name is Emily Johnson.",
     "role": "patient",
-    "timestamp": 1750784200371
+    "timestamp": 1750784200371,
+    "skillSheetID": "determinesResponsiveness",
+    "tags": [
+      "patient assessment",
+      "communication",
+      "responsiveness"
+    ]
   },
-  "125":
-  {
+  "125": {
     "question": "how old are you",
     "answer": "I'm 45 years old.",
     "role": "patient",
-    "timestamp": 1750784209643
+    "timestamp": 1750784209643,
+    "skillSheetID": "samplePastHistory",
+    "tags": [
+      "patient-assessment",
+      "history-taking",
+      "communication",
+      "sample"
+    ],
+    "response": "I'm 24 years old.",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "126":
-  {
+  "126": {
     "question": "what is your date of birth",
     "answer": "It's February 14, 1980.",
     "role": "patient",
-    "timestamp": 1750784217953
+    "timestamp": 1750784217953,
+    "skillSheetID": "samplePastHistory",
+    "tags": [
+      "patient-history",
+      "communication",
+      "assessment"
+    ],
+    "response": "It's February 14, 2020.",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "127":
-  {
+  "127": {
     "question": "do you know where you are right now",
     "answer": "Yeah, I'm at home. I was just sitting on the couch when I started feeling weird.",
     "role": "patient",
-    "timestamp": 1750784230385
+    "timestamp": 1750784230385,
+    "skillSheetID": "determinesResponsiveness",
+    "tags": [
+      "responsiveness",
+      "orientation",
+      "patient_assessment"
+    ]
   },
-  "128":
-  {
+  "128": {
     "question": "do you know what time it is",
     "answer": "I do not know the exact time, but it is shortly after lunch.",
     "role": "patient",
-    "timestamp": 1750784245627
+    "timestamp": 1750784245627,
+    "skillSheetID": "opqrstTime",
+    "tags": [
+      "patient_assessment",
+      "opqrst",
+      "time_awareness"
+    ]
   },
-  "129":
-  {
+  "129": {
     "question": "what is the date",
     "answer": "Today is Friday",
     "role": "patient",
-    "timestamp": 1750784253823
+    "timestamp": 1750784253823,
+    "skillSheetID": "determinesResponsiveness",
+    "tags": [
+      "sample",
+      "history",
+      "intake"
+    ]
   },
-  "130":
-  {
+  "130": {
     "question": "do you know what's going on right now",
     "answer": "I am feeling really short of breath and feel like my throat is swelling shut.",
     "role": "patient",
-    "timestamp": 1750784261032
+    "timestamp": 1750784261032,
+    "skillSheetID": "determinesResponsiveness",
+    "tags": [
+      "patient-assessment",
+      "responsiveness",
+      "communication",
+      "ems-training"
+    ]
   },
-  "131":
-  {
+  "131": {
     "question": "Play Station on oxygen",
     "answer": "The patient is now on Oxygen",
-    "role": "patient",
-    "timestamp": 1750784269597
+    "role": "proctor",
+    "timestamp": 1750784269597,
+    "skillSheetID": "oxygenTherapy",
+    "tags": [
+      "oxygen",
+      "therapy",
+      "respiratory care"
+    ],
+    "response": "The patient is now on Oxygen",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "132":
-  {
+  "132": {
     "question": "do I see any bleeding",
     "answer": "You see no bleeding",
-    "role": "patient",
-    "timestamp": 1750784309918
+    "role": "proctor",
+    "timestamp": 1750784309918,
+    "skillSheetID": "circulation",
+    "tags": [
+      "bleeding",
+      "assessment",
+      "circulation"
+    ],
+    "response": "You see no bleeding",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "133":
-  {
+  "133": {
     "question": "does this seem to go anywhere",
     "answer": "I’m sorry, I’m not sure what you mean by that. Could you clarify?",
     "role": "patient",
-    "timestamp": 1750784376751
+    "timestamp": 1750784376751,
+    "skillSheetID": "chiefComplaint",
+    "tags": [
+      "patient-assessment",
+      "communication",
+      "initial-evaluation"
+    ],
+    "response": "It's just in my throat and tongue",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "134":
-  {
+  "134": {
     "question": "have you ever had a allergic reaction this bad",
     "answer": "Once as a kid, I had to spend several days in the hospital after that.",
     "role": "patient",
-    "timestamp": 1750784394643
+    "timestamp": 1750784394643,
+    "skillSheetID": "sampleAllergies",
+    "tags": [
+      "allergies",
+      "patient history",
+      "sample"
+    ]
   },
-  "135":
-  {
+  "135": {
     "question": "on a scale of 1 to 10 how bad is this reaction",
     "answer": "Uh, I'd say it's about a 7. My skin feels really itchy and it's getting hard to breathe. I'm pretty uncomfortable.",
     "role": "patient",
-    "timestamp": 1750784405160
+    "timestamp": 1750784405160,
+    "skillSheetID": "opqrstSeverity",
+    "tags": [
+      "pain assessment",
+      "severity scale",
+      "patient communication"
+    ]
   },
-  "136":
-  {
+  "136": {
     "question": "when did you eat last",
     "answer": "I had lunch about 15 minutes ago",
     "role": "patient",
-    "timestamp": 1750784451829
+    "timestamp": 1750784451829,
+    "skillSheetID": "sampleLastIntake",
+    "tags": [
+      "patient-history",
+      "assessment",
+      "sample"
+    ]
   },
-  "137":
-  {
+  "137": {
     "question": "stick out your tongue",
     "answer": "Uh, okay. *Sticks out tongue.* What are you looking for?",
     "role": "patient",
-    "timestamp": 1750784487433
+    "timestamp": 1750784487433,
+    "skillSheetID": "airway",
+    "tags": [
+      "airway",
+      "assessment",
+      "communication",
+      "patient interaction"
+    ]
   },
-  "138":
-  {
+  "138": {
     "question": "any Falls or trauma",
     "answer": "No, I haven't had any falls or trauma recently. I've been pretty careful.",
     "role": "patient",
-    "timestamp": 1750784561840
+    "timestamp": 1750784561840,
+    "skillSheetID": "determinesMOIorNOI",
+    "tags": [
+      "trauma",
+      "assessment",
+      "moi"
+    ]
   },
-  "139":
-  {
+  "139": {
     "question": "give oxygen",
     "answer": "Why do I need oxygen? Am I okay? What's going on?",
-    "role": "patient",
-    "timestamp": 1750784602851
+    "role": "proctor",
+    "timestamp": 1750784602851,
+    "skillSheetID": "oxygenTherapy",
+    "tags": [
+      "The patient is now on oxygen"
+    ],
+    "response": "Why do I need oxygen? Am I okay? What's going on?",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "140":
-  {
+  "140": {
     "question": "give albuterol",
     "answer": "Albuterol has been given",
     "role": "patient",
-    "timestamp": 1750784662933
+    "timestamp": 1750784662933,
+    "skillSheetID": "oxygenTherapy",
+    "tags": [
+      "medication",
+      "respiratory",
+      "treatment"
+    ]
   },
-  "141":
-
-  {
+  "141": {
     "question": "I'm going to put on my BSI",
     "answer": "BSI is on",
-    "role": "patient",
-    "timestamp": 1750786599507
+    "role": "proctor",
+    "timestamp": 1750786599507,
+    "skillSheetID": "ppeBsi",
+    "tags": [
+      "safety",
+      "personal protective equipment",
+      "infection control"
+    ],
+    "response": "BSI is on",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "142":
-  {
+  "142": {
     "question": "my nature of illness is allergic reaction",
     "answer": "copy nature of illness",
-    "role": "patient",
-    "timestamp": 1750786724861
+    "role": "proctor",
+    "timestamp": 1750786724861,
+    "skillSheetID": "chiefComplaint",
+    "tags": [
+      "noi",
+      "allergies",
+      "patientassessment"
+    ],
+    "response": "copy nature of illness",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "143":
-  {
+  "143": {
     "question": "what's going on today",
     "answer": "I don't know, it's getting hard to breath and my throat is swelling",
     "role": "patient",
-    "timestamp": 1750786753458
+    "timestamp": 1750786753458,
+    "skillSheetID": "chiefComplaint",
+    "tags": [
+      "patient-assessment",
+      "communication",
+      "initial-contact"
+    ]
   },
-  "144":
-  {
+  "144": {
     "question": "my general impression is allergic reaction",
     "answer": "copy general impression",
-    "role": "patient",
-    "timestamp": 1750786805229
+    "role": "proctor",
+    "timestamp": 1750786805229,
+    "skillSheetID": "generalImpression",
+    "tags": [
+      "general impression",
+      "allergic reaction",
+      "patient assessment"
+    ],
+    "response": "copy general impression",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "145":
-  {
+  "145": {
     "question": "what's the patient's skin color",
     "answer": "The patient's skin if flushed and a rash is present on her chest",
-    "role": "patient",
-    "timestamp": 1750786837956
+    "role": "proctor",
+    "timestamp": 1750786837956,
+    "skillSheetID": "sampleSigns",
+    "tags": [
+      "patientassessment",
+      "skinassessment",
+      "generalimpression"
+    ],
+    "response": "The patient's skin if flushed and a rash is present on her chest",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "146":
-  {
+  "146": {
     "question": "is it getting better or worse",
     "answer": "I think it's getting worse. ",
     "role": "patient",
-    "timestamp": 1750786886259
+    "timestamp": 1750786886259,
+    "skillSheetID": "opqrstSeverity",
+    "tags": [
+      "pain assessment",
+      "severity evaluation",
+      "patient monitoring"
+    ]
   },
-  "147":
-  {
+  "147": {
     "question": "listen to breast sounds",
     "answer": "You hear wheezing in all lobes",
-    "role": "patient",
-    "timestamp": 1750786909918
+    "role": "proctor",
+    "timestamp": 1750786909918,
+    "skillSheetID": "airway",
+    "tags": [
+      "lung assessment",
+      "auscultation",
+      "respiratory system"
+    ],
+    "response": "You hear wheezing in all lobes",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "148":
-  {
+  "148": {
     "question": "what's the blood pressure",
     "answer": "Blood pressure is 98/50",
-    "role": "patient",
-    "timestamp": 1750786929124
+    "role": "proctor",
+    "timestamp": 1750786929124,
+    "skillSheetID": "obtainsBaselineVitalsBP",
+    "tags": [
+      "blood pressure",
+      "vitals",
+      "assessment"
+    ],
+    "response": "Blood pressure is 98/50",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "149":
-  {
+  "149": {
     "question": "what's the pulse rate",
     "answer": "Pulse is 110/minute",
-    "role": "patient",
-    "timestamp": 1750786940089
+    "role": "proctor",
+    "timestamp": 1750786940089,
+    "skillSheetID": "obtainsBaselineVitalsHR",
+    "tags": [
+      "vitals",
+      "pulse",
+      "heart rate"
+    ],
+    "response": "Pulse is 110/minute",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "150":
-  {
+  "150": {
     "question": "check CAP refill",
     "answer": "Car refill is 3 seconds",
-    "role": "patient",
-    "timestamp": 1750786959718
+    "role": "proctor",
+    "timestamp": 1750786959718,
+    "skillSheetID": "circulation",
+    "tags": [
+      "capillary refill",
+      "circulation",
+      "patient assessment"
+    ],
+    "response": "Car refill is 3 seconds",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "151":
-  {
+  "151": {
     "question": "what is the patient's pulse ox",
     "answer": "The pulse ox is 90%",
-    "role": "patient",
-    "timestamp": 1750786973166
+    "role": "proctor",
+    "timestamp": 1750786973166,
+    "skillSheetID": "obtainsBaselineVitalsRR",
+    "tags": [
+      "vitals",
+      "pulse oximetry",
+      "oxygen saturation"
+    ],
+    "response": "The pulse ox is 90%",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "152":
-  {
+  "152": {
     "question": "what day is it",
     "answer": "I think it's Friday",
     "role": "patient",
-    "timestamp": 1750787008731
+    "timestamp": 1750787008731,
+    "skillSheetID": "determinesResponsiveness",
+    "tags": [
+      "patient assessment",
+      "mental status",
+      "responsiveness",
+      "orientation"
+    ]
   },
-  "153":
-  {
+  "153": {
     "question": "what did you eat last",
     "answer": "I had a turkey sandwich for lunch and some cookies",
     "role": "patient",
-    "timestamp": 1750787036808
+    "timestamp": 1750787036808,
+    "skillSheetID": "sampleLastIntake",
+    "tags": [
+      "sample",
+      "history-taking",
+      "patient-assessment"
+    ]
   },
-  "154":
-  {
+  "154": {
     "question": "recheck pulse",
     "answer": "pulse is 100/minute",
-    "role": "patient",
-    "timestamp": 1750787092703
+    "role": "proctor",
+    "timestamp": 1750787092703,
+    "skillSheetID": "verbalizesReassessment",
+    "tags": [
+      "circulation",
+      "reassessment",
+      "pulse",
+      "vital signs"
+    ],
+    "response": "pulse is 100/minute",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "155":
-  {
+  "155": {
     "question": "do you want to go to the hospital",
     "answer": "Yes, take me to the hospital",
     "role": "patient",
-    "timestamp": 1750787117448
+    "timestamp": 1750787117448,
+    "skillSheetID": "chiefComplaint",
+    "tags": [
+      "patient-interaction",
+      "communication",
+      "assessment"
+    ]
   },
-  "156":
-  {
+  "156": {
     "question": "any drugs or alcohol today",
     "answer": "No, I haven't had any drugs or alcohol today.",
     "role": "patient",
-    "timestamp": 1750788529220
+    "timestamp": 1750788529220,
+    "skillSheetID": "sampleLastIntake",
+    "tags": [
+      "patient-history",
+      "intoxicants",
+      "assessment"
+    ]
   },
-  "157":
-  {
+  "157": {
     "question": "check eyes",
     "answer": "Eyes are 3mm and PERL",
-    "role": "patient",
-    "timestamp": 1750788550101
+    "role": "proctor",
+    "timestamp": 1750788550101,
+    "skillSheetID": "assessesAffectedBodyPart",
+    "tags": [
+      "eye assessment",
+      "visual check",
+      "patient examination"
+    ],
+    "response": "Eyes are 3mm and PERL",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "158":
-  {
+  "158": {
     "question": "any jvd",
     "answer": "No JVD noted",
-    "role": "patient",
-    "timestamp": 1750788561628
+    "role": "proctor",
+    "timestamp": 1750788561628,
+    "skillSheetID": "sampleSigns",
+    "tags": [
+      "jugular vein distention",
+      "assessment",
+      "signs"
+    ],
+    "response": "No JVD noted",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "159":
-  {
+  "159": {
     "question": "any pedal edema",
     "answer": "No pedal edema noted",
-    "role": "patient",
-    "timestamp": 1750788575414
+    "role": "proctor",
+    "timestamp": 1750788575414,
+    "skillSheetID": "assessesAffectedBodyPart",
+    "tags": [
+      "edema",
+      "assessment",
+      "extremities"
+    ],
+    "response": "No pedal edema noted",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "160":
-  {
+  "160": {
     "question": "do I see any bee stings",
     "answer": "No bee stings noted",
-    "role": "patient",
-    "timestamp": 1750788637190
+    "role": "proctor",
+    "timestamp": 1750788637190,
+    "skillSheetID": "assessesAffectedBodyPart",
+    "tags": [
+      "patient-assessment",
+      "signs-and-symptoms",
+      "allergic-reactions"
+    ],
+    "response": "No bee stings noted",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   }
 }
