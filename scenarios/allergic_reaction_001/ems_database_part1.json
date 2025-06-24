@@ -1020,5 +1020,449 @@
     "criticalFail": false,
     "tags": [],
     "trigger": ""
+  },
+  {
+    "question": "what were you eating",
+    "answer": "All I had was a cookie",
+    "role": "patient",
+    "timestamp": 1750708526620
+  },
+  {
+    "question": "check Airway",
+    "answer": "*You see the EMS provider checking your airway, but you are feeling anxious and a bit short of breath.*\n\n*Coughs weakly* \"I... I can breathe, but it's kind of hard. My throat feels a bit tight.\"",
+    "role": "patient",
+    "timestamp": 1750718455934
+  },
+  {
+    "question": "check blood pressure",
+    "answer": "I don't have a blood pressure cuff, but I can tell you how I'm feeling. I've been a bit dizzy and lightheaded lately. Do you think that might be related to my blood pressure?",
+    "role": "patient",
+    "timestamp": 1750718469917
+  },
+  {
+    "question": "listen to breath sounds",
+    "answer": "I'm not sure what you're listening for, but I can tell you that I feel a bit short of breath. It's like I'm trying to take a deep breath, but I can't quite get there. Is there something you're worried about with my breathing?",
+    "role": "patient",
+    "timestamp": 1750718489985
+  },
+  {
+    "question": "do you have any medical problems",
+    "answer": "No, I don't have any major medical problems that I'm aware of. I mean, I have the usual stuff like occasional headaches or a cold, but nothing chronic or serious. Why do you ask?",
+    "role": "patient",
+    "timestamp": 1750718821684
+  },
+  {
+    "question": "have you ever had a reaction like this",
+    "answer": "No, I've never felt like this before. It's all new to me, and it's kind of scary.",
+    "role": "patient",
+    "timestamp": 1750718835843
+  },
+  {
+    "question": "check patients Airway",
+    "answer": "*You hear the patient breathing but notice a slight wheeze. The patient is able to speak, but their voice is a bit strained.*\n\n\"Yeah, I can breathe okay... it just feels a little tight in my chest.\"",
+    "role": "patient",
+    "timestamp": 1750719874978
+  },
+  {
+    "question": "put on gloves",
+    "answer": "Why are you putting on gloves? Is something wrong with me?",
+    "role": "patient",
+    "timestamp": 1750719897958
+  },
+  {
+    "question": "check blood pressure",
+    "answer": "Oh, I'm not sure what my blood pressure is right now. I don't have a monitor with me. Do you have one to check it?",
+    "role": "patient",
+    "timestamp": 1750719915852
+  },
+  {
+    "question": "PlayStation on oxygen",
+    "answer": "I think you might be misunderstanding something. I'm not sure what you mean by \"PlayStation on oxygen.\" Are you asking if I play video games while on oxygen therapy?",
+    "role": "patient",
+    "timestamp": 1750719935066
+  },
+  {
+    "question": "play the patient on oxygen",
+    "answer": "*The patient is a 68-year-old man sitting on a stretcher with a nasal cannula supplying oxygen. He appears slightly short of breath but is calm and responsive.*\n\n\"Hi, I'm feeling a bit better with this oxygen. I was really struggling to catch my breath before you came. This has happened a few times before, but today it felt worse. Can you tell me what's going on?\"",
+    "role": "patient",
+    "timestamp": 1750719945151
+  },
+  {
+    "question": "have you used your EpiPen",
+    "answer": "No, I haven't used my EpiPen today. I'm just feeling a bit off, but I don't think it's an allergic reaction.",
+    "role": "patient",
+    "timestamp": 1750719979629
+  },
+  {
+    "question": "when did it start",
+    "answer": "It started about an hour ago. I was just sitting on the couch, and suddenly I felt this sharp pain in my chest. It hasn't really gone away since then.",
+    "role": "patient",
+    "timestamp": 1750720002590
+  },
+  {
+    "question": "does 18 make it better or worse",
+    "answer": "I'm sorry, I'm not quite sure what you mean by \"18.\" Could you clarify? I'm not feeling too well, so any more context would help.",
+    "role": "patient",
+    "timestamp": 1750720011189
+  },
+  {
+    "question": "what is my general impression of the patient",
+    "answer": "I'm not sure how to answer that. I'm just feeling really dizzy and my chest feels tight. Can you help me figure out what's going on?",
+    "role": "patient",
+    "timestamp": 1750720041234
+  },
+  {
+    "question": "DSi",
+    "answer": "I'm sorry, I don't know what \"DSi\" means. Could you explain or ask me something else?",
+    "role": "patient",
+    "timestamp": 1750720052943
+  },
+  {
+    "question": "what is the nature of illness",
+    "answer": "I've been having this really sharp pain in my chest for the past hour or so. It started suddenly while I was just sitting and watching TV. It's making me really anxious because it's not going away, and it feels like it's getting worse.",
+    "role": "patient",
+    "timestamp": 1750720084905
+  },
+  {
+    "question": "I would like to request ALS",
+    "answer": "I'm feeling pretty scared right now. Can you tell me what's going on?",
+    "role": "patient",
+    "timestamp": 1750720097846
+  },
+  {
+    "question": "what is my general impression of the patient",
+    "answer": "I'm sorry, but I can't see myself. Can you tell me what's going on with me?",
+    "role": "patient",
+    "timestamp": 1750720122244
+  },
+  {
+    "question": "the chief complaint is allergic reaction",
+    "answer": "I can't stop itching, and my throat feels kind of tight. I think I'm having an allergic reaction to something I ate. My skin is all red and blotchy, and I feel a little lightheaded.",
+    "role": "patient",
+    "timestamp": 1750720149218
+  },
+  {
+    "question": "how severe is this allergic reaction",
+    "answer": "I don't know how severe it is, but I'm feeling really uncomfortable. My skin is itchy, and I have hives all over. My throat feels a little tight, and I’m starting to feel anxious. Can you help me?",
+    "role": "patient",
+    "timestamp": 1750720176790
+  },
+  {
+    "question": "what were you doing before they started",
+    "answer": "I was just sitting on the couch watching TV. I wasn't doing anything strenuous or unusual. It just kind of came on suddenly.",
+    "role": "patient",
+    "timestamp": 1750720194704
+  },
+  {
+    "question": "what time did the start",
+    "answer": "It started around 2 o'clock this afternoon. I was just sitting at my desk when I suddenly felt this sharp pain in my chest. It kind of took me by surprise.",
+    "role": "patient",
+    "timestamp": 1750720208522
+  },
+  {
+    "question": "how severe is this reaction",
+    "answer": "I don’t really know how severe it is, but I’m feeling really uncomfortable. My throat feels tight and I’m starting to feel a bit dizzy. My skin is also really itchy and I have these red patches. Can you help me?",
+    "role": "patient",
+    "timestamp": 1750720217512
+  },
+  {
+    "question": "recheck vitals",
+    "answer": "I don't really know what that means. Are you going to take my blood pressure again?",
+    "role": "patient",
+    "timestamp": 1750720247967
+  },
+  {
+    "question": "recheck blood pressure",
+    "answer": "Sure, but can you remind me what my blood pressure was before?",
+    "role": "patient",
+    "timestamp": 1750720256720
+  },
+  {
+    "question": "what is a respiratory rate",
+    "answer": "I'm not really sure about all the medical terms, but I think a respiratory rate is how many times you breathe in and out in a minute. Is that right?",
+    "role": "patient",
+    "timestamp": 1750720276639
+  },
+  {
+    "question": "Master the patient's EpiPen",
+    "answer": "(As the patient) Oh, my EpiPen? It's in my bag, in the front pocket. I know I'm supposed to use it if I have a severe allergic reaction, but I've never actually had to use it myself. Do you know how to use it? I'm getting a little anxious just thinking about it.",
+    "role": "patient",
+    "timestamp": 1750720290654
+  },
+  {
+    "question": "administer the patient's EpiPen",
+    "answer": "I'm feeling really short of breath and my throat is tightening up. I think I might need my EpiPen. It's in my bag—can you help me with it?",
+    "role": "patient",
+    "timestamp": 1750720302409
+  },
+  {
+    "question": "give the patient 0.3 mg of epi",
+    "answer": "What? What's going on? Why do I need epinephrine?",
+    "role": "patient",
+    "timestamp": 1750720315185
+  },
+  {
+    "question": "request ALS",
+    "answer": "I think I'm okay, but I'm feeling really dizzy and my chest hurts a lot. I just want to make sure everything's alright. Can you please get some help for me?",
+    "role": "patient",
+    "timestamp": 1750720336029
+  },
+  {
+    "question": "is the patient breathing",
+    "answer": "*Breathing shallowly and with some difficulty* Yes, I'm... I'm breathing, but it's a bit hard to catch my breath.",
+    "role": "patient",
+    "timestamp": 1750720350524
+  },
+  {
+    "question": "tell me how you're feeling",
+    "answer": "I've been feeling really dizzy and lightheaded. It's like the room is spinning, and I'm having a hard time keeping my balance. My heart feels like it's racing too. I'm just really worried about what's going on.",
+    "role": "patient",
+    "timestamp": 1750720378425
+  },
+  {
+    "question": "do you have the patient oxygen",
+    "answer": "I don't think so. I mean, I'm just sitting here in my living room. I haven't been given any oxygen yet. Why do you ask? Am I supposed to have it?",
+    "role": "patient",
+    "timestamp": 1750720412610
+  },
+  {
+    "question": "give the patient oxygen",
+    "answer": "What's happening? Am I going to be okay? I feel a bit lightheaded and short of breath.",
+    "role": "patient",
+    "timestamp": 1750720423777
+  },
+  {
+    "question": "what is the respiratory rate",
+    "answer": "I'm not sure, but I feel like I'm breathing faster than usual. It feels like I can't catch my breath properly.",
+    "role": "patient",
+    "timestamp": 1750720446492
+  },
+  {
+    "question": "transport the patient emergent to the hospital",
+    "answer": "Where are we going? What's happening? Am I going to be okay?",
+    "role": "patient",
+    "timestamp": 1750720517647
+  },
+  {
+    "question": "transport patient",
+    "answer": "Could you please tell me where we're going? I'm not sure what's happening right now.",
+    "role": "patient",
+    "timestamp": 1750720526125
+  },
+  {
+    "question": "what is my chief complaint",
+    "answer": "I've been having this really sharp pain in my chest. It's been going on for about an hour now and it's not going away.",
+    "role": "patient",
+    "timestamp": 1750720542189
+  },
+  {
+    "question": "what were you doing when this started",
+    "answer": "I was just sitting on the couch watching TV when it happened. I wasn't doing anything strenuous or out of the ordinary.",
+    "role": "patient",
+    "timestamp": 1750720555285
+  },
+  {
+    "question": "suspicious tongue",
+    "answer": "(Feeling a bit anxious)\n\nUm, yeah, I've noticed something unusual with my tongue. It's got this strange patch or spot on it that wasn't there before. It's kind of worrying me. I'm not sure if it's serious, but it just doesn't seem normal.",
+    "role": "patient",
+    "timestamp": 1750720576825
+  },
+  {
+    "question": "do I see any swelling in the patient's throat",
+    "answer": "I'm not sure. I can't really see my own throat, but it's feeling pretty tight and uncomfortable. It feels like it's getting harder to breathe. Can you check for me?",
+    "role": "patient",
+    "timestamp": 1750720585742
+  },
+  {
+    "question": "BSI",
+    "answer": "What do you mean by BSI? Are you talking about a medical condition or something else?",
+    "role": "patient",
+    "timestamp": 1750722586589
+  },
+  {
+    "question": "is the scene safe",
+    "answer": "I don't know. I was just sitting on the couch when I started feeling really dizzy and my chest started hurting. I haven't moved since.",
+    "role": "patient",
+    "timestamp": 1750722596580
+  },
+  {
+    "question": "bsi",
+    "answer": "I'm sorry, I don't understand what you mean by \"bsi.\" Could you explain or ask me something else?",
+    "role": "patient",
+    "timestamp": 1750723013630
+  },
+  {
+    "question": "is the scene safe",
+    "answer": "I don't know, I'm just feeling really dizzy and lightheaded right now. I was just at home when this started happening.",
+    "role": "patient",
+    "timestamp": 1750723025869
+  },
+  {
+    "question": "is the scene safe",
+    "answer": "I don't know, I just feel really dizzy and I'm sitting on the floor in my living room. I haven't noticed anything dangerous around me, though.",
+    "role": "patient",
+    "timestamp": 1750725623440
+  },
+  {
+    "question": "is the scene safe",
+    "answer": "I think so. I haven't noticed anything dangerous around here, but I’ve been feeling really dizzy and lightheaded, so I haven’t moved much.",
+    "role": "patient",
+    "timestamp": 1750725630343
+  },
+  {
+    "question": "how many patients",
+    "answer": "I'm sorry, I'm not sure what you mean. Are you asking about something specific related to my situation?",
+    "role": "patient",
+    "timestamp": 1750725644326
+  },
+  {
+    "question": "what is the blood pressure",
+    "answer": "I'm not sure about the exact numbers, but I feel a bit dizzy and lightheaded. Maybe that's related to my blood pressure?",
+    "role": "patient",
+    "timestamp": 1750725672155
+  },
+  {
+    "question": "is the scene safe",
+    "answer": "I don't know, I'm just sitting here on the curb. I called because I'm not feeling well.",
+    "role": "patient",
+    "timestamp": 1750725694820
+  },
+  {
+    "question": "any nausea",
+    "answer": "Yes, I do feel a bit nauseous. It's been coming and going since this morning.",
+    "role": "patient",
+    "timestamp": 1750725763730
+  },
+  {
+    "question": "how many patients",
+    "answer": "I’m sorry, I don’t quite understand what you’re asking. Could you clarify? I'm just not feeling well right now.",
+    "role": "patient",
+    "timestamp": 1750725807698
+  },
+  {
+    "question": "is the scene safe",
+    "answer": "I don't know. I was just sitting here and suddenly felt really dizzy. Everything seems a bit blurry, and I'm feeling kind of weak. Is something wrong around here?",
+    "role": "patient",
+    "timestamp": 1750725821823
+  },
+  {
+    "question": "PlayStation on oxygen",
+    "answer": "I'm sorry, I don't quite understand what you're asking. Could you explain a bit more?",
+    "role": "patient",
+    "timestamp": 1750725835905
+  },
+  {
+    "question": "play the patient on oxygen",
+    "answer": "*Patient takes a slow, deep breath through the nasal cannula, then exhales softly.*\n\nOh, hi there. *pauses to catch breath* Yeah, the oxygen helps a lot. It's just been a bit harder to breathe today. I guess I'm just feeling a little more tired than usual.",
+    "role": "patient",
+    "timestamp": 1750725847109
+  },
+  {
+    "question": "how are you feeling",
+    "answer": "I'm not feeling so great. I've been having this really sharp pain in my chest, and it's making me feel really anxious. It's hard to catch my breath too.",
+    "role": "patient",
+    "timestamp": 1750725864912
+  },
+  {
+    "question": "when did this start",
+    "answer": "It started about an hour ago. I was just sitting on the couch watching TV, and suddenly I felt this sharp pain in my chest. It hasn't gone away since.",
+    "role": "patient",
+    "timestamp": 1750725878249
+  },
+  {
+    "question": "does anything make this feel better",
+    "answer": "Well, when I sit down and rest for a bit, it seems to ease up a little. But as soon as I start moving around again, it comes back.",
+    "role": "patient",
+    "timestamp": 1750725886449
+  },
+  {
+    "question": "I read request Alice",
+    "answer": "I'm sorry, I don't understand what you're asking. Can you please clarify?",
+    "role": "patient",
+    "timestamp": 1750725912153
+  },
+  {
+    "question": "give patient 0.3 mg of epi",
+    "answer": "What's happening? Why do I need epinephrine? Am I having an allergic reaction or something?",
+    "role": "patient",
+    "timestamp": 1750725943211
+  },
+  {
+    "question": "what did you eat",
+    "answer": "I had a sandwich for lunch, just a simple turkey and cheese on whole wheat bread. And I also had a cup of coffee earlier in the morning.",
+    "role": "patient",
+    "timestamp": 1750726051004
+  },
+  {
+    "question": "is the scene safe",
+    "answer": "Uh, yeah, I think so. I'm just sitting here on the couch. There's nothing dangerous around me that I can see.",
+    "role": "patient",
+    "timestamp": 1750727202823
+  },
+  {
+    "question": "how many patients",
+    "answer": "I'm not sure about other patients, but I’m the one here needing help right now.",
+    "role": "patient",
+    "timestamp": 1750727220481
+  },
+  {
+    "question": "how many patients",
+    "answer": "I’m sorry, I don’t quite understand. Are you asking how many patients are in the waiting room, or something else? I'm not sure what you mean.",
+    "role": "patient",
+    "timestamp": 1750727239489
+  },
+  {
+    "question": "is the scene safe",
+    "answer": "I don't know, but I think so. I'm just sitting here on the couch, and nothing seems out of the ordinary. Why do you ask?",
+    "role": "patient",
+    "timestamp": 1750773787795
+  },
+  {
+    "question": "how many patients",
+    "answer": "I'm sorry, I don't quite understand what you're asking. Are you asking how many patients are here, or something else?",
+    "role": "patient",
+    "timestamp": 1750773801431
+  },
+  {
+    "question": "what is going today",
+    "answer": "I don't know, I've just been feeling really off today. My chest feels tight, and I'm a bit short of breath. It's kind of worrying me.",
+    "role": "patient",
+    "timestamp": 1750773838227
+  },
+  {
+    "question": "do you have chest pain",
+    "answer": "Yeah, I've been having this tightness in my chest. It started about an hour ago and hasn't really let up. It's kind of like a squeezing feeling.",
+    "role": "patient",
+    "timestamp": 1750773904839
+  },
+  {
+    "question": "any SOB",
+    "answer": "Yeah, I'm feeling a bit short of breath. It's not too bad, but it's definitely there.",
+    "role": "patient",
+    "timestamp": 1750773913021
+  },
+  {
+    "question": "check respirations",
+    "answer": "I'm not sure exactly what you're asking, but I'm having a bit of trouble catching my breath. It feels like I'm breathing faster than normal.",
+    "role": "patient",
+    "timestamp": 1750773962727
+  },
+  {
+    "question": "is the patient alert",
+    "answer": "Yes, I'm awake and can hear you.",
+    "role": "patient",
+    "timestamp": 1750774006320
+  },
+  {
+    "question": "do you have any allgeries",
+    "answer": "Yes, I'm allergic to penicillin.",
+    "role": "patient",
+    "timestamp": 1750774021844
+  },
+  {
+    "question": "is the scene safe",
+    "answer": "Uh, yeah, I think so. I mean, I'm just sitting here on my porch. Nothing dangerous around, just feeling really dizzy and my heart's racing.",
+    "role": "patient",
+    "timestamp": 1750774049401
   }
-}
+]
