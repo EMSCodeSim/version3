@@ -951,5 +951,176 @@
     "points": 0,
     "criticalFail": false,
     "trigger": ""
+    ]
+  },
+  "117":
+
+
+  {
+    "question": "consider c-cpine",
+    "answer": "you have considered c-cpine",
+    "role": "patient",
+    "timestamp": 1750777745851
+  },
+  "118":
+  {
+    "question": "how many patients do I have",
+    "answer": "You have only one patient.",
+    "role": "patient",
+    "timestamp": 1750784023353
+  },
+  "119":
+  {
+    "question": "do I have only the one patient",
+    "answer": "You have only one patient",
+    "role": "patient",
+    "timestamp": 1750784059286
+  },
+  "120":
+  {
+    "question": "is the patient looking at me as I walk up",
+    "answer": "The patient is alert and tracking you",
+    "role": "patient",
+    "timestamp": 1750784099218
+  },
+  "121":
+  {
+    "question": "what is the patient's skin look like",
+    "answer": "The patient's skin is dry and flushed.  You notice a rash to her chest.",
+    "role": "patient",
+    "timestamp": 1750784161258
+  },
+  "122":
+  {
+    "question": "is the patient responsive to pain",
+    "answer": "The patient is responsive to pain.",
+    "role": "patient",
+    "timestamp": 1750784175943
+  },
+  "123":
+  {
+    "question": "is the patient unresponsive",
+    "answer": "No, I'm awake. What happened? Why are you asking if I'm unresponsive?",
+    "role": "patient",
+    "timestamp": 1750784183961
+  },
+  "124":
+  {
+    "question": "what is your name",
+    "answer": "My name is Emily Johnson.",
+    "role": "patient",
+    "timestamp": 1750784200371
+  },
+  "125":
+  {
+    "question": "how old are you",
+    "answer": "I'm 45 years old.",
+    "role": "patient",
+    "timestamp": 1750784209643
+  },
+  "126":
+  {
+    "question": "what is your date of birth",
+    "answer": "It's February 14, 1980.",
+    "role": "patient",
+    "timestamp": 1750784217953
+  },
+  "127":
+  {
+    "question": "do you know where you are right now",
+    "answer": "Yeah, I'm at home. I was just sitting on the couch when I started feeling weird.",
+    "role": "patient",
+    "timestamp": 1750784230385
+  },
+  "128":
+  {
+    "question": "do you know what time it is",
+    "answer": "I do not know the exact time, but it is shortly after lunch.",
+    "role": "patient",
+    "timestamp": 1750784245627
+  },
+  "129":
+  {
+    "question": "what is the date",
+    "answer": "Today is Friday",
+    "role": "patient",
+    "timestamp": 1750784253823
+  },
+  "130":
+  {
+    "question": "do you know what's going on right now",
+    "answer": "I am feeling really short of breath and feel like my throat is swelling shut.",
+    "role": "patient",
+    "timestamp": 1750784261032
+  },
+  "131":
+  {
+    "question": "Play Station on oxygen",
+    "answer": "The patient is now on Oxygen",
+    "role": "patient",
+    "timestamp": 1750784269597
+  },
+  "132":
+  {
+    "question": "do I see any bleeding",
+    "answer": "You see no bleeding",
+    "role": "patient",
+    "timestamp": 1750784309918
+  },
+  "133":
+  {
+    "question": "does this seem to go anywhere",
+    "answer": "I’m sorry, I’m not sure what you mean by that. Could you clarify?",
+    "role": "patient",
+    "timestamp": 1750784376751
+  },
+  "134":
+  {
+    "question": "have you ever had a allergic reaction this bad",
+    "answer": "Once as a kid, I had to spend several days in the hospital after that.",
+    "role": "patient",
+    "timestamp": 1750784394643
+  },
+  "135":
+  {
+    "question": "on a scale of 1 to 10 how bad is this reaction",
+    "answer": "Uh, I'd say it's about a 7. My skin feels really itchy and it's getting hard to breathe. I'm pretty uncomfortable.",
+    "role": "patient",
+    "timestamp": 1750784405160
+  },
+  "136":
+  {
+    "question": "when did you eat last",
+    "answer": "I had lunch about 15 minutes ago",
+    "role": "patient",
+    "timestamp": 1750784451829
+  },
+  "137":
+  {
+    "question": "stick out your tongue",
+    "answer": "Uh, okay. *Sticks out tongue.* What are you looking for?",
+    "role": "patient",
+    "timestamp": 1750784487433
+  },
+  "138":
+  {
+    "question": "any Falls or trauma",
+    "answer": "No, I haven't had any falls or trauma recently. I've been pretty careful.",
+    "role": "patient",
+    "timestamp": 1750784561840
+  },
+  "139":
+  {
+    "question": "give oxygen",
+    "answer": "Why do I need oxygen? Am I okay? What's going on?",
+    "role": "patient",
+    "timestamp": 1750784602851
+  },
+  "140":
+  {
+    "question": "give albuterol",
+    "answer": "Albuterol has been given",
+    "role": "patient",
+    "timestamp": 1750784662933
   }
-}
+]
