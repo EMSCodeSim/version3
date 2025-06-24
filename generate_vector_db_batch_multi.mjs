@@ -3,13 +3,11 @@
 import fs from 'fs';
 import OpenAI from 'openai';
 
-// ---- EDIT THESE TO MATCH YOUR PROJECT ----
+// ---- SCENARIO-SPECIFIC SETTINGS ----
 const INPUT_FILES = [
-  'scenarios/chest_pain_002/ems_database_part1.json',
-  'scenarios/chest_pain_002/ems_database_part2.json',
-  'scenarios/chest_pain_002/ems_database_part3.json'
+  'scenarios/allergic_reaction_001/ems_database_part1.json'
 ];
-const OUTPUT_FILE = 'vector-db.json';
+const OUTPUT_FILE = 'scenarios/allergic_reaction_001/vector-db-1.json';
 const BATCH_SIZE = 100; // 2048 max for OpenAI, 100 is safe and efficient
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
