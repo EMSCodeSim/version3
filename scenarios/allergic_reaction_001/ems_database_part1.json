@@ -1,101 +1,122 @@
 {
   "0": {
-    "question": "Is the scene safe?",
-    "answer": "The scene is safe. There are no hazards present.",
-    "scoreCategory": "Scene Size-up",
+    "question": "what were you eating",
+    "answer": "All I had was a cookie",
+    "role": "patient",
+    "timestamp": 1750708526620,
+    "skillSheetID": "sampleLastIntake",
     "tags": [
-      "scene safety",
-      "bsi",
-      "hazards",
-      "ppe"
-    ],
-    "skillSheetID": "sceneSafety"
+      "sample",
+      "history-taking",
+      "patient-assessment"
+    ]
   },
   "1": {
     "question": "Do I need additional resources?",
     "answer": "You have your partner, and ALS backup is en route if needed.",
     "scoreCategory": "Scene Size-up",
     "tags": [
-      "additional resources",
-      "als",
-      "scene size-up"
+      "scene_management",
+      "resource_management",
+      "decision_making"
     ],
     "skillSheetID": "requestsAdditionalResources"
   },
   "2": {
-    "question": "What do I see?",
-    "answer": "You see a 24-year-old female sitting on the couch, anxious and scratching at red, raised hives on her neck and arms. She is pale and appears short of breath.",
-    "scoreCategory": "Initial Impression",
-    "tags": [
-      "general impression",
-      "appearance",
-      "hives",
-      "patient look",
-      "scene"
-    ],
-    "trigger": "patient_with_hives.jpg",
-    "skillSheetID": "generalImpression"
-  },
-  "3": {
-    "question": "Is there any life threat?",
-    "answer": "The patient has difficulty breathing, wheezing, and swelling of her lips and tongue—these are immediate life threats.",
-    "scoreCategory": "Primary Assessment",
-    "tags": [
-      "life threats",
-      "anaphylaxis",
-      "airway swelling",
-      "scene size-up"
-    ],
-    "skillSheetID": "generalImpression"
-  },
-  "4": {
-    "question": "What is her airway status?",
-    "answer": "Her airway is open, but you note mild swelling of her lips and tongue.",
-    "scoreCategory": "Airway",
+    "question": "check Airway",
+    "answer": "*You see the EMS provider checking your airway, but you are feeling anxious and a bit short of breath.*\n\n*Coughs weakly* \"I... I can breathe, but it's kind of hard. My throat feels a bit tight.\"",
+    "role": "proctor",
+    "timestamp": 1750718455934,
+    "skillSheetID": "airway",
+    "response": "The patient has labored breathing and you hear stridor",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
     "tags": [
       "airway",
-      "assessment",
-      "swelling",
-      "primary"
+      "breathing",
+      "ems",
+      "patient assessment",
+      "respiratory"
     ],
-    "skillSheetID": "airway"
+    "trigger": ""
+  },
+  "3": {
+    "question": "check blood pressure",
+    "answer": "I don't have a blood pressure cuff, but I can tell you how I'm feeling. I've been a bit dizzy and lightheaded lately. Do you think that might be related to my blood pressure?",
+    "role": "proctor",
+    "timestamp": 1750718469917,
+    "skillSheetID": "obtainsBaselineVitalsBP",
+    "response": "Blood pressure is 102/66",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "tags": [
+      "blood pressure",
+      "vitals",
+      "assessment"
+    ],
+    "trigger": ""
+  },
+  "4": {
+    "question": "listen to breath sounds",
+    "answer": "I'm not sure what you're listening for, but I can tell you that I feel a bit short of breath. It's like I'm trying to take a deep breath, but I can't quite get there. Is there something you're worried about with my breathing?",
+    "role": "proctor",
+    "timestamp": 1750718489985,
+    "skillSheetID": "airway",
+    "response": "You hear wheezes in all lobes",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "tags": [
+      "respiratory",
+      "assessment",
+      "auscultation"
+    ],
+    "trigger": ""
   },
   "5": {
-    "question": "How is her breathing?",
-    "answer": "She is breathing rapidly, and you hear diffuse wheezing throughout both lung fields.",
-    "scoreCategory": "Breathing",
+    "question": "do you have any medical problems",
+    "answer": "No, I don't have any major medical problems that I'm aware of. I mean, I have the usual stuff like occasional headaches or a cold, but nothing chronic or serious. Why do you ask?",
+    "role": "patient",
+    "timestamp": 1750718821684,
+    "skillSheetID": "samplePastHistory",
+    "response": "No, I don't have any major medical problems that I'm aware of. I mean, I have the usual stuff like occasional headaches or a cold, but nothing chronic or serious, I did have a allergic reaction to peanuts once.",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
     "tags": [
-      "breathing",
-      "respiratory",
-      "wheezing",
-      "primary assessment"
+      "patient-history",
+      "medical-history",
+      "assessment"
     ],
-    "skillSheetID": "airway"
+    "trigger": ""
   },
   "6": {
-    "question": "How is her circulation?",
-    "answer": "She is pale, cool, diaphoretic with a rapid pulse. Capillary refill is about 2 seconds.",
-    "scoreCategory": "Circulation",
+    "question": "have you ever had a reaction like this",
+    "answer": "No, I've never felt like this before. It's all new to me, and it's kind of scary.",
+    "role": "patient",
+    "timestamp": 1750718835843,
+    "skillSheetID": "sampleAllergies",
+    "response": "Once as a kid",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
     "tags": [
-      "circulation",
-      "shock",
-      "cap refill",
-      "skin",
-      "primary"
+      "allergies",
+      "patient history",
+      "sample"
     ],
-    "skillSheetID": "circulation"
+    "trigger": ""
   },
   "7": {
     "question": "What are her vitals?",
     "answer": "BP 98/56, HR 124, RR 28, SpO2 91%, Temp 98.6°F.",
     "scoreCategory": "Vital Signs",
     "tags": [
-      "vital signs",
-      "assessment",
-      "primary",
-      "bp",
-      "hr",
-      "spo2"
+      "vitals",
+      "baseline",
+      "assessment"
     ],
     "skillSheetID": "obtainsBaselineVitalsBP"
   },
@@ -104,46 +125,54 @@
     "answer": "Her skin is pale, cool, and clammy. She has raised hives on her neck and arms.",
     "scoreCategory": "Skin Signs",
     "tags": [
-      "skin signs",
-      "hives",
       "assessment",
-      "primary"
+      "skin",
+      "signs"
     ],
     "skillSheetID": "sampleSigns"
   },
   "9": {
-    "question": "Is she alert?",
-    "answer": "She is alert but anxious, speaking in short sentences.",
-    "scoreCategory": "Level of Consciousness",
+    "question": "check patients Airway",
+    "answer": "*You hear the patient breathing but notice a slight wheeze. The patient is able to speak, but their voice is a bit strained.*\n\n\"Yeah, I can breathe okay... it just feels a little tight in my chest.\"",
+    "role": "proctor",
+    "timestamp": 1750719874978,
+    "skillSheetID": "airway",
+    "response": "The patient is having a hard time breathing and you hear stridor",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
     "tags": [
-      "loc",
-      "avpu",
-      "mental status",
-      "primary assessment"
+      "airway",
+      "breathing",
+      "patient assessment"
     ],
-    "skillSheetID": "determinesResponsiveness"
+    "trigger": ""
   },
   "10": {
-    "question": "What is the chief complaint?",
-    "answer": "My throat feels tight and it’s hard to breathe. I’m very itchy.",
-    "scoreCategory": "Chief Complaint",
+    "question": "put on gloves",
+    "answer": "Why are you putting on gloves? Is something wrong with me?",
+    "role": "proctor",
+    "timestamp": 1750719897958,
+    "skillSheetID": "ppeBsi",
+    "response": "PPE is on",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
     "tags": [
-      "chief complaint",
-      "cc",
-      "history",
-      "sample"
+      "safety",
+      "personal protective equipment",
+      "infection control"
     ],
-    "skillSheetID": "chiefComplaint"
+    "trigger": ""
   },
   "11": {
     "question": "Can you tell me what happened?",
     "answer": "I ate some cookies at work. About 15 minutes later, I started itching and my throat felt tight.",
     "scoreCategory": "History of Present Illness",
     "tags": [
-      "history of present illness",
-      "hpi",
-      "onset",
-      "sample"
+      "patient-assessment",
+      "communication",
+      "history-taking"
     ],
     "skillSheetID": "chiefComplaint"
   },
@@ -152,10 +181,9 @@
     "answer": "Yes, I’m severely allergic to peanuts.",
     "scoreCategory": "SAMPLE History",
     "tags": [
+      "patient-assessment",
       "allergies",
-      "sample",
-      "history",
-      "food allergy"
+      "sample-history"
     ],
     "skillSheetID": "sampleAllergies",
     "response": "Yes, I’m severely allergic to peanuts.",
@@ -169,555 +197,15 @@
     "answer": "I don’t take any medications regularly.",
     "scoreCategory": "SAMPLE History",
     "tags": [
-      "medications",
-      "sample",
-      "history"
+      "patient-assessment",
+      "sample-history",
+      "medications"
     ],
     "skillSheetID": "sampleMedications",
     "response": "I don’t take any medications regularly, I do have a Epi pen but have never used it",
     "points": 0,
     "criticalFail": false,
     "role": "patient",
-    "trigger": ""
-  },
-  "14": {
-    "question": "Do you have an EpiPen?",
-    "answer": "Yes, I have one in my purse, but I haven’t used it yet.",
-    "scoreCategory": "SAMPLE History",
-    "tags": [
-      "epipen",
-      "medications",
-      "sample",
-      "history",
-      "interventions"
-    ],
-    "skillSheetID": "sampleMedications",
-    "response": "Yes, I have one in my purse, but I haven’t used it yet.",
-    "points": 0,
-    "criticalFail": false,
-    "role": "patient",
-    "trigger": ""
-  },
-  "15": {
-    "question": "Have you ever had this before?",
-    "answer": "Yes, I had a reaction as a child, but it was not this bad.",
-    "scoreCategory": "Past Medical History",
-    "tags": [
-      "past medical history",
-      "pmh",
-      "sample",
-      "history"
-    ],
-    "skillSheetID": "samplePastHistory"
-  },
-  "16": {
-    "question": "When did this start?",
-    "answer": "It started about 15 minutes ago after eating the cookies.",
-    "scoreCategory": "Onset",
-    "tags": [
-      "onset",
-      "sample",
-      "timing",
-      "history"
-    ],
-    "skillSheetID": "opqrstOnset"
-  },
-  "17": {
-    "question": "When did you last eat or drink?",
-    "answer": "I had lunch at work and then cookies. I think the cookies had peanuts.",
-    "scoreCategory": "Last Oral Intake",
-    "tags": [
-      "last oral intake",
-      "sample",
-      "history",
-      "food"
-    ],
-    "skillSheetID": "sampleLastIntake"
-  },
-  "18": {
-    "question": "What do her lungs sound like?",
-    "answer": "You hear diffuse wheezing in both lungs.",
-    "scoreCategory": "Physical Exam",
-    "tags": [
-      "lung sounds",
-      "assessment",
-      "wheezing",
-      "secondary"
-    ],
-    "skillSheetID": "assessesAffectedBodyPart",
-    "response": "You hear diffuse wheezing in both lungs.",
-    "points": 0,
-    "criticalFail": false,
-    "role": "proctor",
-    "trigger": ""
-  },
-  "19": {
-    "question": "Is there swelling anywhere?",
-    "answer": "There is mild swelling of her lips and tongue. Hives are present on her neck and arms.",
-    "scoreCategory": "Physical Exam",
-    "tags": [
-      "swelling",
-      "angioedema",
-      "assessment",
-      "secondary"
-    ],
-    "skillSheetID": "assessesAffectedBodyPart",
-    "response": "There is mild swelling of her lips and tongue. Hives are present on her neck and arms.",
-    "points": 0,
-    "criticalFail": false,
-    "role": "proctor",
-    "trigger": ""
-  },
-  "20": {
-    "question": "Can I check her pupils?",
-    "answer": "Her pupils are equal and reactive to light.",
-    "scoreCategory": "Physical Exam",
-    "tags": [
-      "pupils",
-      "assessment",
-      "secondary",
-      "neuro"
-    ],
-    "skillSheetID": "assessesAffectedBodyPart",
-    "response": "Her pupils are equal and reactive to light.",
-    "points": 0,
-    "criticalFail": false,
-    "role": "proctor",
-    "trigger": ""
-  },
-  "21": {
-    "question": "I am giving her the EpiPen.",
-    "answer": "You administer the EpiPen. Within two minutes, her breathing improves and her hives begin to fade. Vitals are now BP 110/70, HR 102, RR 20, SpO2 96%.",
-    "scoreCategory": "Medication Administration",
-    "tags": [
-      "epipen",
-      "epinephrine",
-      "med admin",
-      "intervention",
-      "treatment"
-    ],
-    "trigger": "updateVitals",
-    "skillSheetID": "",
-    "response": "You administer the EpiPen. Within two minutes, her breathing improves and her hives begin to fade. Vitals are now BP 110/70, HR 102, RR 20, SpO2 96%.",
-    "points": 0,
-    "criticalFail": false,
-    "role": "proctor"
-  },
-  "22": {
-    "question": "I’m giving high-flow oxygen.",
-    "answer": "You place her on high-flow oxygen. Her oxygen saturation begins to improve.",
-    "scoreCategory": "Oxygen Administration",
-    "tags": [
-      "oxygen",
-      "airway",
-      "intervention",
-      "treatment"
-    ],
-    "skillSheetID": "oxygenTherapy",
-    "response": "You place her on high-flow oxygen. Her oxygen saturation begins to improve.",
-    "points": 0,
-    "criticalFail": false,
-    "role": "proctor",
-    "trigger": ""
-  },
-  "23": {
-    "question": "I am calling for ALS backup.",
-    "answer": "ALS is en route and will arrive shortly.",
-    "scoreCategory": "Team Leadership",
-    "tags": [
-      "als",
-      "team lead",
-      "additional resources",
-      "command"
-    ],
-    "skillSheetID": "requestsAdditionalResources",
-    "response": "ALS is unable to respond",
-    "points": 0,
-    "criticalFail": false,
-    "role": "proctor",
-    "trigger": ""
-  },
-  "24": {
-    "question": "How does the patient look after treatment?",
-    "answer": "She is less anxious, her hives are fading, and her breathing is less labored. Vitals are improving.",
-    "scoreCategory": "Reassessment",
-    "tags": [
-      "reassessment",
-      "response to treatment",
-      "monitor"
-    ],
-    "skillSheetID": "generalImpression",
-    "response": "She is less anxious, her hives are fading, and her breathing is less labored. Vitals are improving.",
-    "points": 0,
-    "criticalFail": false,
-    "role": "proctor",
-    "trigger": ""
-  },
-  "25": {
-    "question": "I am preparing for immediate transport.",
-    "answer": "Excellent. This patient requires rapid transport to the hospital.",
-    "scoreCategory": "Transport Decision",
-    "tags": [
-      "transport",
-      "decision",
-      "priority",
-      "load and go"
-    ],
-    "skillSheetID": "patientPriority",
-    "response": "Excellent. This patient requires rapid transport to the hospital.",
-    "points": 0,
-    "criticalFail": false,
-    "role": "proctor",
-    "trigger": ""
-  },
-  "26": {
-    "question": "I will reassess vitals every five minutes.",
-    "answer": "You continue to monitor her vitals and symptoms during transport.",
-    "scoreCategory": "Ongoing Assessment",
-    "tags": [
-      "reassessment",
-      "vitals",
-      "monitoring",
-      "transport"
-    ],
-    "skillSheetID": "verbalizesReassessment",
-    "response": "You continue to monitor her vitals and symptoms during transport.",
-    "points": 0,
-    "criticalFail": false,
-    "role": "proctor",
-    "trigger": ""
-  },
-  "27": {
-    "question": "what were you eating",
-    "answer": "All I had was a cookie",
-    "role": "patient",
-    "timestamp": 1750708526620,
-    "skillSheetID": "sampleLastIntake",
-    "response": "All I had was a cookie",
-    "scoreCategory": "",
-    "points": 0,
-    "criticalFail": false,
-    "tags": [],
-    "trigger": ""
-  },
-  "28": {
-    "question": "scene safety",
-    "answer": "The scene is safe",
-    "role": "patient",
-    "timestamp": 1750710337524,
-    "skillSheetID": "sceneSafety",
-    "response": "The scene is safe",
-    "scoreCategory": "",
-    "points": 0,
-    "criticalFail": false,
-    "tags": [],
-    "trigger": ""
-  },
-  "29": {
-    "question": "how many patients",
-    "answer": "you have only one patient",
-    "role": "patient",
-    "timestamp": 1750710353788,
-    "skillSheetID": "determinesNumberOfPatients"
-  },
-  "30": {
-    "question": "bsi",
-    "answer": "Proper BSI is on",
-    "role": "patient",
-    "timestamp": 1750710370324,
-    "skillSheetID": "ppeBsi"
-  },
-  "31": {
-    "question": "I will put on gloves",
-    "answer": "Proper BSI is on",
-    "role": "patient",
-    "timestamp": 1750710387539,
-    "skillSheetID": "ppeBsi"
-  },
-  "32": {
-    "question": "Call for ALS",
-    "answer": "ALS is unable to respond at this time",
-    "role": "patient",
-    "timestamp": 1750710402756,
-    "skillSheetID": "requestsAdditionalResources"
-  },
-  "33": {
-    "question": "I would consider ALS",
-    "answer": "ALS is unable to respond at this time",
-    "role": "patient",
-    "timestamp": 1750710416694,
-    "skillSheetID": "fieldImpression"
-  },
-  "34": {
-    "question": "hello, what is going on today",
-    "answer": "Hi, um, well, I'm having really bad reaction to something I ate",
-    "role": "patient",
-    "timestamp": 1750710435749,
-    "skillSheetID": "chiefComplaint"
-  },
-  "35": {
-    "question": "what is your name",
-    "answer": "My name is Sarah Thompson.",
-    "role": "patient",
-    "timestamp": 1750710443158,
-    "skillSheetID": "chiefComplaint"
-  },
-  "36": {
-    "question": "how can I help you",
-    "answer": "I’m not feeling too well. I feel like my tongue is swelling up and it is getting hard to breath",
-    "role": "patient",
-    "timestamp": 1750710462957,
-    "skillSheetID": "chiefComplaint"
-  },
-  "37": {
-    "question": "are you having chest pain",
-    "answer": "No, I do not have any chest pain",
-    "role": "patient",
-    "timestamp": 1750710476739,
-    "skillSheetID": "chiefComplaint"
-  },
-  "38": {
-    "question": "do you have any SOB",
-    "answer": "Yeah, I'm feeling a bit short of breath right now. It's kind of hard to take a deep breath.",
-    "role": "patient",
-    "timestamp": 1750710493529,
-    "skillSheetID": "chiefComplaint"
-  },
-  "39": {
-    "question": "when did you eat last",
-    "answer": "I had a cookie about 15 minutes ago",
-    "role": "patient",
-    "timestamp": 1750710507267,
-    "skillSheetID": "sampleLastIntake"
-  },
-  "41": {
-    "question": "what is your medical history",
-    "answer": "I have a history of allergic reactions to peanuts",
-    "role": "patient",
-    "timestamp": 1750710530751,
-    "skillSheetID": "samplePastHistory"
-  },
-  "42": {
-    "question": "do you have any allgeries",
-    "answer": "Yes, I'm allergic to peanuts",
-    "role": "patient",
-    "timestamp": 1750710548884,
-    "skillSheetID": "sampleAllergies"
-  },
-  "43": {
-    "question": "do you take any medications",
-    "answer": "Yes, I do have a EPI Pen but have never used it",
-    "role": "patient",
-    "timestamp": 1750710584693,
-    "skillSheetID": "sampleMedications"
-  },
-  "44": {
-    "question": "check a blood pressure",
-    "answer": "The blood pressure is 110/70",
-    "role": "patient",
-    "timestamp": 1750710594410,
-    "skillSheetID": "obtainsBaselineVitalsBP"
-  },
-  "45": {
-    "question": "check pulse",
-    "answer": "The pulse is 102 and regular",
-    "role": "patient",
-    "timestamp": 1750710601876,
-    "skillSheetID": "circulation"
-  },
-  "46": {
-    "question": "check SaO2",
-    "answer": "SaO2 is 91%",
-    "role": "patient",
-    "timestamp": 1750710613920,
-    "skillSheetID": "oxygenTherapy"
-  },
-  "47": {
-    "question": "Give patient .3mg EPI",
-    "answer": "EPI has been given",
-    "role": "patient",
-    "timestamp": 1750710634206,
-    "skillSheetID": "oxygenTherapy"
-  },
-  "48": {
-    "question": "what were you doing when it started",
-    "answer": "I was just sitting on the couch watching TV when I started.",
-    "role": "patient",
-    "timestamp": 1750710680196,
-    "skillSheetID": "opqrstOnset"
-  },
-  "49": {
-    "question": "how would you describe this feeling",
-    "answer": "It's hard to explain, but it feels like my tongue and throat are swelling, it's getting hard to breath.",
-    "role": "patient",
-    "timestamp": 1750710702937,
-    "skillSheetID": "opqrstQuality"
-  },
-  "50": {
-    "question": "do you have any pain",
-    "answer": "I would not really call it pain, just a odd feeling in my throat",
-    "role": "patient",
-    "timestamp": 1750710714803,
-    "skillSheetID": "chiefComplaint"
-  },
-  "51": {
-    "question": "what is your past medical history",
-    "answer": "I have no medical problems, but I am allergic to peanuts",
-    "role": "patient",
-    "timestamp": 1750710737790,
-    "skillSheetID": "samplePastHistory"
-  },
-  "52": {
-    "question": "transport emergent to hospital",
-    "answer": "You are now transporting emergent to the hospital",
-    "role": "patient",
-    "timestamp": 1750710760100,
-    "skillSheetID": "patientPriority"
-  },
-  "53": {
-    "question": "place patient on 15L O2 NRB",
-    "answer": "The patient is now on oxygen",
-    "role": "patient",
-    "timestamp": 1750710776686,
-    "skillSheetID": "oxygenTherapy"
-  },
-  "54": {
-    "question": "recheck vitals every 5 minutes",
-    "answer": "copy, you will recheck vitals every 5 minutes.",
-    "role": "patient",
-    "timestamp": 1750710794503,
-    "skillSheetID": "verbalizesReassessment"
-  },
-  "55": {
-    "question": "check skin",
-    "answer": "skin looks hot and flushed with a rash on the chest",
-    "role": "patient",
-    "timestamp": 1750710808940,
-    "skillSheetID": "circulation"
-  },
-  "56": {
-    "question": "any nauses",
-    "answer": "Yeah, I do feel a bit nauseous, like I might throw up.",
-    "role": "patient",
-    "timestamp": 1750710842333,
-    "skillSheetID": "chiefComplaint"
-  },
-  "57": {
-    "question": "has this ever happened to you before",
-    "answer": "Yes, I had a reaction like this once when I was a Kid",
-    "role": "patient",
-    "timestamp": 1750710860229,
-    "skillSheetID": "samplePastHistory"
-  },
-  "58": {
-    "question": "I would consider c spine",
-    "answer": "copy, c-spine has been considered",
-    "role": "proctor",
-    "timestamp": 1750710900342,
-    "skillSheetID": "considersCSpine",
-    "response": "copy, c-spine has been considered",
-    "scoreCategory": "",
-    "points": 0,
-    "criticalFail": false,
-    "tags": [],
-    "trigger": ""
-},
-  "0": {
-    "question": "what were you eating",
-    "answer": "All I had was a cookie",
-    "role": "patient",
-    "timestamp": 1750708526620,
-    "skillSheetID": "sampleLastIntake"
-  },
-  "2": {
-    "question": "check Airway",
-    "answer": "*You see the EMS provider checking your airway, but you are feeling anxious and a bit short of breath.*\n\n*Coughs weakly* \"I... I can breathe, but it's kind of hard. My throat feels a bit tight.\"",
-    "role": "proctor",
-    "timestamp": 1750718455934,
-    "skillSheetID": "airway",
-    "response": "The patient has labored breathing and you hear stridor",
-    "scoreCategory": "",
-    "points": 0,
-    "criticalFail": false,
-    "tags": [],
-    "trigger": ""
-  },
-  "3": {
-    "question": "check blood pressure",
-    "answer": "I don't have a blood pressure cuff, but I can tell you how I'm feeling. I've been a bit dizzy and lightheaded lately. Do you think that might be related to my blood pressure?",
-    "role": "proctor",
-    "timestamp": 1750718469917,
-    "skillSheetID": "obtainsBaselineVitalsBP",
-    "response": "Blood pressure is 102/66",
-    "scoreCategory": "",
-    "points": 0,
-    "criticalFail": false,
-    "tags": [],
-    "trigger": ""
-  },
-  "4": {
-    "question": "listen to breath sounds",
-    "answer": "I'm not sure what you're listening for, but I can tell you that I feel a bit short of breath. It's like I'm trying to take a deep breath, but I can't quite get there. Is there something you're worried about with my breathing?",
-    "role": "proctor",
-    "timestamp": 1750718489985,
-    "skillSheetID": "airway",
-    "response": "You hear wheezes in all lobes",
-    "scoreCategory": "",
-    "points": 0,
-    "criticalFail": false,
-    "tags": [],
-    "trigger": ""
-  },
-  "5": {
-    "question": "do you have any medical problems",
-    "answer": "No, I don't have any major medical problems that I'm aware of. I mean, I have the usual stuff like occasional headaches or a cold, but nothing chronic or serious. Why do you ask?",
-    "role": "patient",
-    "timestamp": 1750718821684,
-    "skillSheetID": "samplePastHistory",
-    "response": "No, I don't have any major medical problems that I'm aware of. I mean, I have the usual stuff like occasional headaches or a cold, but nothing chronic or serious, I did have a allergic reaction to peanuts once.",
-    "scoreCategory": "",
-    "points": 0,
-    "criticalFail": false,
-    "tags": [],
-    "trigger": ""
-  },
-  "6": {
-    "question": "have you ever had a reaction like this",
-    "answer": "No, I've never felt like this before. It's all new to me, and it's kind of scary.",
-    "role": "patient",
-    "timestamp": 1750718835843,
-    "skillSheetID": "sampleAllergies",
-    "response": "Once as a kid",
-    "scoreCategory": "",
-    "points": 0,
-    "criticalFail": false,
-    "tags": [],
-    "trigger": ""
-  },
-  "9": {
-    "question": "check patients Airway",
-    "answer": "*You hear the patient breathing but notice a slight wheeze. The patient is able to speak, but their voice is a bit strained.*\n\n\"Yeah, I can breathe okay... it just feels a little tight in my chest.\"",
-    "role": "proctor",
-    "timestamp": 1750719874978,
-    "skillSheetID": "airway",
-    "response": "The patient is having a hard time breathing and you hear stridor",
-    "scoreCategory": "",
-    "points": 0,
-    "criticalFail": false,
-    "tags": [],
-    "trigger": ""
-  },
-  "10": {
-    "question": "put on gloves",
-    "answer": "Why are you putting on gloves? Is something wrong with me?",
-    "role": "proctor",
-    "timestamp": 1750719897958,
-    "skillSheetID": "ppeBsi",
-    "response": "PPE is on",
-    "scoreCategory": "",
-    "points": 0,
-    "criticalFail": false,
-    "tags": [],
     "trigger": ""
   },
   "14": {
@@ -730,7 +218,13 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "medications",
+      "allergy",
+      "epipen",
+      "patient history",
+      "emergency response"
+    ],
     "trigger": ""
   },
   "15": {
@@ -743,7 +237,12 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "opqrst",
+      "onset",
+      "pain assessment",
+      "history taking"
+    ],
     "trigger": ""
   },
   "16": {
@@ -756,7 +255,11 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "assessment",
+      "pain management",
+      "patient interview"
+    ],
     "trigger": ""
   },
   "17": {
@@ -769,7 +272,27 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "patient-assessment",
+      "initial-evaluation",
+      "ems-training"
+    ],
+    "trigger": ""
+  },
+  "18": {
+    "question": "What do her lungs sound like?",
+    "answer": "You hear diffuse wheezing in both lungs.",
+    "scoreCategory": "Physical Exam",
+    "tags": [
+      "lung sounds",
+      "assessment",
+      "auscultation"
+    ],
+    "skillSheetID": "assessesAffectedBodyPart",
+    "response": "You hear diffuse wheezing in both lungs.",
+    "points": 0,
+    "criticalFail": false,
+    "role": "proctor",
     "trigger": ""
   },
   "19": {
@@ -782,7 +305,11 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "noi",
+      "assessment",
+      "illness"
+    ],
     "trigger": ""
   },
   "20": {
@@ -795,8 +322,28 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "communication",
+      "advancedlifesupport",
+      "resource-management"
+    ],
     "trigger": ""
+  },
+  "21": {
+    "question": "I am giving her the EpiPen.",
+    "answer": "You administer the EpiPen. Within two minutes, her breathing improves and her hives begin to fade. Vitals are now BP 110/70, HR 102, RR 20, SpO2 96%.",
+    "scoreCategory": "Medication Administration",
+    "tags": [
+      "medication administration",
+      "allergic reaction",
+      "epinephrine"
+    ],
+    "trigger": "updateVitals",
+    "skillSheetID": "oxygenTherapy",
+    "response": "You administer the EpiPen. Within two minutes, her breathing improves and her hives begin to fade. Vitals are now BP 110/70, HR 102, RR 20, SpO2 96%.",
+    "points": 0,
+    "criticalFail": false,
+    "role": "proctor"
   },
   "22": {
     "question": "the chief complaint is allergic reaction",
@@ -808,7 +355,11 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "chief complaint",
+      "allergy",
+      "patient assessment"
+    ],
     "trigger": ""
   },
   "23": {
@@ -816,28 +367,48 @@
     "answer": "I don't know how severe it is, but I'm feeling really uncomfortable. My skin is itchy, and I have hives all over. My throat feels a little tight, and I’m starting to feel anxious. Can you help me?",
     "role": "patient",
     "timestamp": 1750720176790,
-    "skillSheetID": "opqrstSeverity"
+    "skillSheetID": "opqrstSeverity",
+    "tags": [
+      "severity",
+      "allergic reaction",
+      "assessment"
+    ]
   },
   "24": {
     "question": "what were you doing before they started",
     "answer": "I was just sitting on the couch watching TV. I wasn't doing anything strenuous or unusual. It just kind of came on suddenly.",
     "role": "patient",
     "timestamp": 1750720194704,
-    "skillSheetID": "opqrstOnset"
+    "skillSheetID": "opqrstOnset",
+    "tags": [
+      "sample",
+      "history",
+      "patient assessment"
+    ]
   },
   "25": {
     "question": "what time did the start",
     "answer": "It started around 2 o'clock this afternoon. I was just sitting at my desk when I suddenly felt this sharp pain in my chest. It kind of took me by surprise.",
     "role": "patient",
     "timestamp": 1750720208522,
-    "skillSheetID": "opqrstTime"
+    "skillSheetID": "opqrstTime",
+    "tags": [
+      "opqrst",
+      "pain assessment",
+      "time evaluation"
+    ]
   },
   "26": {
     "question": "how severe is this reaction",
     "answer": "I don’t really know how severe it is, but I’m feeling really uncomfortable. My throat feels tight and I’m starting to feel a bit dizzy. My skin is also really itchy and I have these red patches. Can you help me?",
     "role": "patient",
     "timestamp": 1750720217512,
-    "skillSheetID": "opqrstSeverity"
+    "skillSheetID": "opqrstSeverity",
+    "tags": [
+      "assessment",
+      "severity",
+      "patient_evaluation"
+    ]
   },
   "27": {
     "question": "recheck vitals",
@@ -849,7 +420,11 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "reassessment",
+      "vitals",
+      "monitoring"
+    ],
     "trigger": ""
   },
   "28": {
@@ -862,7 +437,11 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "blood pressure",
+      "reassessment",
+      "vitals"
+    ],
     "trigger": ""
   },
   "29": {
@@ -875,8 +454,24 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "respiratory rate",
+      "vitals",
+      "assessment"
+    ],
     "trigger": ""
+  },
+  "30": {
+    "question": "bsi",
+    "answer": "Proper BSI is on",
+    "role": "patient",
+    "timestamp": 1750710370324,
+    "skillSheetID": "ppeBsi",
+    "tags": [
+      "safety",
+      "infection control",
+      "personal protective equipment"
+    ]
   },
   "31": {
     "question": "administer the patient's EpiPen",
@@ -888,7 +483,11 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "epipen",
+      "medication administration",
+      "allergic reaction"
+    ],
     "trigger": ""
   },
   "32": {
@@ -901,7 +500,11 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "medication",
+      "epinephrine",
+      "dosage"
+    ],
     "trigger": ""
   },
   "33": {
@@ -914,7 +517,11 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "advancedlifesupport",
+      "resource-management",
+      "communication"
+    ],
     "trigger": ""
   },
   "34": {
@@ -927,7 +534,11 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "breathing",
+      "respiratory",
+      "assessment"
+    ],
     "trigger": ""
   },
   "35": {
@@ -940,8 +551,24 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "patient-assessment",
+      "communication",
+      "history-taking"
+    ],
     "trigger": ""
+  },
+  "36": {
+    "question": "how can I help you",
+    "answer": "I’m not feeling too well. I feel like my tongue is swelling up and it is getting hard to breath",
+    "role": "patient",
+    "timestamp": 1750710462957,
+    "skillSheetID": "chiefComplaint",
+    "tags": [
+      "patient-assessment",
+      "communication",
+      "initial-contact"
+    ]
   },
   "37": {
     "question": "give the patient oxygen",
@@ -953,7 +580,11 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "oxygen",
+      "therapy",
+      "respiratory care"
+    ],
     "trigger": ""
   },
   "38": {
@@ -966,7 +597,11 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "respiratory rate",
+      "vital signs",
+      "assessment"
+    ],
     "trigger": ""
   },
   "39": {
@@ -979,7 +614,11 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "transport",
+      "emergent",
+      "hospital"
+    ],
     "trigger": ""
   },
   "40": {
@@ -992,8 +631,24 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "transport",
+      "patient care",
+      "priority assessment"
+    ],
     "trigger": ""
+  },
+  "41": {
+    "question": "what is your medical history",
+    "answer": "I have a history of allergic reactions to peanuts",
+    "role": "patient",
+    "timestamp": 1750710530751,
+    "skillSheetID": "samplePastHistory",
+    "tags": [
+      "patient-history",
+      "medical-history",
+      "sample"
+    ]
   },
   "42": {
     "question": "what were you doing when this started",
@@ -1005,8 +660,26 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "patient-assessment",
+      "history-taking",
+      "onset",
+      "opqrst",
+      "interview"
+    ],
     "trigger": ""
+  },
+  "43": {
+    "question": "do you take any medications",
+    "answer": "Yes, I do have a EPI Pen but have never used it",
+    "role": "patient",
+    "timestamp": 1750710584693,
+    "skillSheetID": "sampleMedications",
+    "tags": [
+      "patient-history",
+      "medications",
+      "sample"
+    ]
   },
   "44": {
     "question": "do I see any swelling in the patient's throat",
@@ -1018,523 +691,265 @@
     "scoreCategory": "",
     "points": 0,
     "criticalFail": false,
-    "tags": [],
+    "tags": [
+      "airway",
+      "swelling",
+      "assessment",
+      "throat"
+    ],
     "trigger": ""
   },
-  "45":
-  {
-    "question": "what were you eating",
-    "answer": "All I had was a cookie",
-    "role": "patient",
-    "timestamp": 1750708526620
-  },
-  "46":
-  {
-    "question": "check Airway",
-    "answer": "*You see the EMS provider checking your airway, but you are feeling anxious and a bit short of breath.*\n\n*Coughs weakly* \"I... I can breathe, but it's kind of hard. My throat feels a bit tight.\"",
-    "role": "patient",
-    "timestamp": 1750718455934
-  },
-  "47":
-  {
-    "question": "check blood pressure",
-    "answer": "I don't have a blood pressure cuff, but I can tell you how I'm feeling. I've been a bit dizzy and lightheaded lately. Do you think that might be related to my blood pressure?",
-    "role": "patient",
-    "timestamp": 1750718469917
-  },
-  "48":
-  {
-    "question": "listen to breath sounds",
-    "answer": "I'm not sure what you're listening for, but I can tell you that I feel a bit short of breath. It's like I'm trying to take a deep breath, but I can't quite get there. Is there something you're worried about with my breathing?",
-    "role": "patient",
-    "timestamp": 1750718489985
-  },
-  "49":
-  {
-    "question": "do you have any medical problems",
-    "answer": "No, I don't have any major medical problems that I'm aware of. I mean, I have the usual stuff like occasional headaches or a cold, but nothing chronic or serious. Why do you ask?",
-    "role": "patient",
-    "timestamp": 1750718821684
-  },
-  "50":
-  {
-    "question": "have you ever had a reaction like this",
-    "answer": "No, I've never felt like this before. It's all new to me, and it's kind of scary.",
-    "role": "patient",
-    "timestamp": 1750718835843
-  },
-  "51":
-  {
-    "question": "check patients Airway",
-    "answer": "*You hear the patient breathing but notice a slight wheeze. The patient is able to speak, but their voice is a bit strained.*\n\n\"Yeah, I can breathe okay... it just feels a little tight in my chest.\"",
-    "role": "patient",
-    "timestamp": 1750719874978
-  },
-  "52":
-  {
-    "question": "put on gloves",
-    "answer": "Why are you putting on gloves? Is something wrong with me?",
-    "role": "patient",
-    "timestamp": 1750719897958
-  },
-  "53":
-  {
-    "question": "check blood pressure",
-    "answer": "Oh, I'm not sure what my blood pressure is right now. I don't have a monitor with me. Do you have one to check it?",
-    "role": "patient",
-    "timestamp": 1750719915852
-  },
-  "54":
-  {
-    "question": "PlayStation on oxygen",
-    "answer": "I think you might be misunderstanding something. I'm not sure what you mean by \"PlayStation on oxygen.\" Are you asking if I play video games while on oxygen therapy?",
-    "role": "patient",
-    "timestamp": 1750719935066
-  },
-  "55":
-  {
-    "question": "play the patient on oxygen",
-    "answer": "*The patient is a 68-year-old man sitting on a stretcher with a nasal cannula supplying oxygen. He appears slightly short of breath but is calm and responsive.*\n\n\"Hi, I'm feeling a bit better with this oxygen. I was really struggling to catch my breath before you came. This has happened a few times before, but today it felt worse. Can you tell me what's going on?\"",
-    "role": "patient",
-    "timestamp": 1750719945151
-  },
-  "56":
-  {
-    "question": "have you used your EpiPen",
-    "answer": "No, I haven't used my EpiPen today. I'm just feeling a bit off, but I don't think it's an allergic reaction.",
-    "role": "patient",
-    "timestamp": 1750719979629
-  },"57":
-  {
-    "question": "when did it start",
-    "answer": "It started about an hour ago. I was just sitting on the couch, and suddenly I felt this sharp pain in my chest. It hasn't really gone away since then.",
-    "role": "patient",
-    "timestamp": 1750720002590
-  },
-  "58":
-  {
-    "question": "does 18 make it better or worse",
-    "answer": "I'm sorry, I'm not quite sure what you mean by \"18.\" Could you clarify? I'm not feeling too well, so any more context would help.",
-    "role": "patient",
-    "timestamp": 1750720011189
-  },
-  "59":
-  {
-    "question": "what is my general impression of the patient",
-    "answer": "I'm not sure how to answer that. I'm just feeling really dizzy and my chest feels tight. Can you help me figure out what's going on?",
-    "role": "patient",
-    "timestamp": 1750720041234
-  },
-  "60":
-  {
-    "question": "DSi",
-    "answer": "I'm sorry, I don't know what \"DSi\" means. Could you explain or ask me something else?",
-    "role": "patient",
-    "timestamp": 1750720052943
-  },
-  "61":
-  {
-    "question": "what is the nature of illness",
-    "answer": "I've been having this really sharp pain in my chest for the past hour or so. It started suddenly while I was just sitting and watching TV. It's making me really anxious because it's not going away, and it feels like it's getting worse.",
-    "role": "patient",
-    "timestamp": 1750720084905
-  },
-  "62":
-  {
-    "question": "I would like to request ALS",
-    "answer": "I'm feeling pretty scared right now. Can you tell me what's going on?",
-    "role": "patient",
-    "timestamp": 1750720097846
-  },
-  "63":
-  {
-    "question": "what is my general impression of the patient",
-    "answer": "I'm sorry, but I can't see myself. Can you tell me what's going on with me?",
-    "role": "patient",
-    "timestamp": 1750720122244
-  },
-  "64":
-  {
-    "question": "the chief complaint is allergic reaction",
-    "answer": "I can't stop itching, and my throat feels kind of tight. I think I'm having an allergic reaction to something I ate. My skin is all red and blotchy, and I feel a little lightheaded.",
-    "role": "patient",
-    "timestamp": 1750720149218
-  },
-  "65":
-  {
-    "question": "how severe is this allergic reaction",
-    "answer": "I don't know how severe it is, but I'm feeling really uncomfortable. My skin is itchy, and I have hives all over. My throat feels a little tight, and I’m starting to feel anxious. Can you help me?",
-    "role": "patient",
-    "timestamp": 1750720176790
-  },
-  "66":
-  {
-    "question": "what were you doing before they started",
-    "answer": "I was just sitting on the couch watching TV. I wasn't doing anything strenuous or unusual. It just kind of came on suddenly.",
-    "role": "patient",
-    "timestamp": 1750720194704
-  },"67":
-  {
-    "question": "what time did the start",
-    "answer": "It started around 2 o'clock this afternoon. I was just sitting at my desk when I suddenly felt this sharp pain in my chest. It kind of took me by surprise.",
-    "role": "patient",
-    "timestamp": 1750720208522
-  },
-  "68":
-  {
-    "question": "how severe is this reaction",
-    "answer": "I don’t really know how severe it is, but I’m feeling really uncomfortable. My throat feels tight and I’m starting to feel a bit dizzy. My skin is also really itchy and I have these red patches. Can you help me?",
-    "role": "patient",
-    "timestamp": 1750720217512
-  },
-  "69":
-  {
-    "question": "recheck vitals",
-    "answer": "I don't really know what that means. Are you going to take my blood pressure again?",
-    "role": "patient",
-    "timestamp": 1750720247967
-  },
-  "70":
-  {
-    "question": "recheck blood pressure",
-    "answer": "Sure, but can you remind me what my blood pressure was before?",
-    "role": "patient",
-    "timestamp": 1750720256720
-  },
-  "71":
-  {
-    "question": "what is a respiratory rate",
-    "answer": "I'm not really sure about all the medical terms, but I think a respiratory rate is how many times you breathe in and out in a minute. Is that right?",
-    "role": "patient",
-    "timestamp": 1750720276639
-  },
-  "72":
-  {
-    "question": "Master the patient's EpiPen",
-    "answer": "(As the patient) Oh, my EpiPen? It's in my bag, in the front pocket. I know I'm supposed to use it if I have a severe allergic reaction, but I've never actually had to use it myself. Do you know how to use it? I'm getting a little anxious just thinking about it.",
-    "role": "patient",
-    "timestamp": 1750720290654
-  },
-  "73":
-  {
-    "question": "administer the patient's EpiPen",
-    "answer": "I'm feeling really short of breath and my throat is tightening up. I think I might need my EpiPen. It's in my bag—can you help me with it?",
-    "role": "patient",
-    "timestamp": 1750720302409
-  },
-  "74":
-  {
-    "question": "give the patient 0.3 mg of epi",
-    "answer": "What? What's going on? Why do I need epinephrine?",
-    "role": "patient",
-    "timestamp": 1750720315185
-  },
-  "75":
-  {
-    "question": "request ALS",
-    "answer": "I think I'm okay, but I'm feeling really dizzy and my chest hurts a lot. I just want to make sure everything's alright. Can you please get some help for me?",
-    "role": "patient",
-    "timestamp": 1750720336029
-  },
-  "76":
-  {
-    "question": "is the patient breathing",
-    "answer": "*Breathing shallowly and with some difficulty* Yes, I'm... I'm breathing, but it's a bit hard to catch my breath.",
-    "role": "patient",
-    "timestamp": 1750720350524
-  },
-  "77":
-  {
-    "question": "tell me how you're feeling",
-    "answer": "I've been feeling really dizzy and lightheaded. It's like the room is spinning, and I'm having a hard time keeping my balance. My heart feels like it's racing too. I'm just really worried about what's going on.",
-    "role": "patient",
-    "timestamp": 1750720378425
-  },
-  "78":
-  {
-    "question": "do you have the patient oxygen",
-    "answer": "I don't think so. I mean, I'm just sitting here in my living room. I haven't been given any oxygen yet. Why do you ask? Am I supposed to have it?",
-    "role": "patient",
-    "timestamp": 1750720412610
-  },
-  "78":
-  {
-    "question": "give the patient oxygen",
-    "answer": "What's happening? Am I going to be okay? I feel a bit lightheaded and short of breath.",
-    "role": "patient",
-    "timestamp": 1750720423777
-  },
-  "79":
-  {
-    "question": "what is the respiratory rate",
-    "answer": "I'm not sure, but I feel like I'm breathing faster than usual. It feels like I can't catch my breath properly.",
-    "role": "patient",
-    "timestamp": 1750720446492
-  },
-  "80":
-  {
-    "question": "transport the patient emergent to the hospital",
-    "answer": "Where are we going? What's happening? Am I going to be okay?",
-    "role": "patient",
-    "timestamp": 1750720517647
-  },
-  "81":
-  {
-    "question": "transport patient",
-    "answer": "Could you please tell me where we're going? I'm not sure what's happening right now.",
-    "role": "patient",
-    "timestamp": 1750720526125
-  },
-  "82":
-  {
+  "82": {
     "question": "what is my chief complaint",
     "answer": "I've been having this really sharp pain in my chest. It's been going on for about an hour now and it's not going away.",
-    "role": "patient",
-    "timestamp": 1750720542189
+    "role": "proctor",
+    "timestamp": 1750720542189,
+    "skillSheetID": "chiefComplaint",
+    "tags": [
+      "patient-assessment",
+      "communication",
+      "history-taking"
+    ],
+    "response": "Your chief complaint is shortness of breath",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "83":
-  {
-    "question": "what were you doing when this started",
-    "answer": "I was just sitting on the couch watching TV when it happened. I wasn't doing anything strenuous or out of the ordinary.",
-    "role": "patient",
-    "timestamp": 1750720555285
-  },
-  "84":
-  {
-    "question": "suspicious tongue",
-    "answer": "(Feeling a bit anxious)\n\nUm, yeah, I've noticed something unusual with my tongue. It's got this strange patch or spot on it that wasn't there before. It's kind of worrying me. I'm not sure if it's serious, but it just doesn't seem normal.",
-    "role": "patient",
-    "timestamp": 1750720576825
-  },
-  "85":
-  {
-    "question": "do I see any swelling in the patient's throat",
-    "answer": "I'm not sure. I can't really see my own throat, but it's feeling pretty tight and uncomfortable. It feels like it's getting harder to breathe. Can you check for me?",
-    "role": "patient",
-    "timestamp": 1750720585742
-  },
-  "86":
-  {
-    "question": "BSI",
-    "answer": "What do you mean by BSI? Are you talking about a medical condition or something else?",
-    "role": "patient",
-    "timestamp": 1750722586589
-  },
-  "87":
-  {
+  "87": {
     "question": "is the scene safe",
     "answer": "I don't know. I was just sitting on the couch when I started feeling really dizzy and my chest started hurting. I haven't moved since.",
-    "role": "patient",
-    "timestamp": 1750722596580
+    "role": "proctor",
+    "timestamp": 1750722596580,
+    "skillSheetID": "sceneSafety",
+    "tags": [
+      "safety",
+      "scene assessment"
+    ],
+    "response": "Yes, the scene is safe.",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "88":
-  {
-    "question": "bsi",
-    "answer": "I'm sorry, I don't understand what you mean by \"bsi.\" Could you explain or ask me something else?",
-    "role": "patient",
-    "timestamp": 1750723013630
-  },
-  "89":
-  {
-    "question": "is the scene safe",
-    "answer": "I don't know, I'm just feeling really dizzy and lightheaded right now. I was just at home when this started happening.",
-    "role": "patient",
-    "timestamp": 1750723025869
-  },
-  "90":
-  {
-    "question": "is the scene safe",
-    "answer": "I don't know, I just feel really dizzy and I'm sitting on the floor in my living room. I haven't noticed anything dangerous around me, though.",
-    "role": "patient",
-    "timestamp": 1750725623440
-  },
-  "91":
-  {
-    "question": "is the scene safe",
-    "answer": "I think so. I haven't noticed anything dangerous around here, but I’ve been feeling really dizzy and lightheaded, so I haven’t moved much.",
-    "role": "patient",
-    "timestamp": 1750725630343
-  },
-  "92":
-  {
+  "92": {
     "question": "how many patients",
     "answer": "I'm sorry, I'm not sure what you mean. Are you asking about something specific related to my situation?",
-    "role": "patient",
-    "timestamp": 1750725644326
+    "role": "proctor",
+    "timestamp": 1750725644326,
+    "skillSheetID": "determinesNumberOfPatients",
+    "tags": [
+      "patient count"
+    ],
+    "response": "You have only one patient.",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "93":
-  {
+  "93": {
     "question": "what is the blood pressure",
     "answer": "I'm not sure about the exact numbers, but I feel a bit dizzy and lightheaded. Maybe that's related to my blood pressure?",
-    "role": "patient",
-    "timestamp": 1750725672155
+    "role": "proctor",
+    "timestamp": 1750725672155,
+    "skillSheetID": "obtainsBaselineVitalsBP",
+    "tags": [
+      "blood pressure",
+      "vitals",
+      "assessment"
+    ],
+    "response": "Blood pressure is 98/50",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "94":
-  {
-    "question": "is the scene safe",
-    "answer": "I don't know, I'm just sitting here on the curb. I called because I'm not feeling well.",
-    "role": "patient",
-    "timestamp": 1750725694820
-  },
-  "95":
-  {
+  "95": {
     "question": "any nausea",
     "answer": "Yes, I do feel a bit nauseous. It's been coming and going since this morning.",
     "role": "patient",
-    "timestamp": 1750725763730
+    "timestamp": 1750725763730,
+    "skillSheetID": "chiefComplaint",
+    "tags": [
+      "nausea"
+    ],
+    "response": "Yes, I do feel a bit nauseous.",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "96":
-  {
-    "question": "how many patients",
-    "answer": "I’m sorry, I don’t quite understand what you’re asking. Could you clarify? I'm just not feeling well right now.",
-    "role": "patient",
-    "timestamp": 1750725807698
-  },
-  "97":
-  {
-    "question": "is the scene safe",
-    "answer": "I don't know. I was just sitting here and suddenly felt really dizzy. Everything seems a bit blurry, and I'm feeling kind of weak. Is something wrong around here?",
-    "role": "patient",
-    "timestamp": 1750725821823
-  },
-  "98":
-  {
-    "question": "PlayStation on oxygen",
-    "answer": "I'm sorry, I don't quite understand what you're asking. Could you explain a bit more?",
-    "role": "patient",
-    "timestamp": 1750725835905
-  },
-  "99":
-  {
-    "question": "play the patient on oxygen",
-    "answer": "*Patient takes a slow, deep breath through the nasal cannula, then exhales softly.*\n\nOh, hi there. *pauses to catch breath* Yeah, the oxygen helps a lot. It's just been a bit harder to breathe today. I guess I'm just feeling a little more tired than usual.",
-    "role": "patient",
-    "timestamp": 1750725847109
-  },
-  "100":
-  {
+  "100": {
     "question": "how are you feeling",
     "answer": "I'm not feeling so great. I've been having this really sharp pain in my chest, and it's making me feel really anxious. It's hard to catch my breath too.",
     "role": "patient",
-    "timestamp": 1750725864912
+    "timestamp": 1750725864912,
+    "skillSheetID": "chiefComplaint",
+    "tags": [
+      "patient-assessment",
+      "communication",
+      "initial-contact"
+    ],
+    "response": "It's getting hard to breath and it feels like my throat is closing.",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "101":
-  {
+  "101": {
     "question": "when did this start",
     "answer": "It started about an hour ago. I was just sitting on the couch watching TV, and suddenly I felt this sharp pain in my chest. It hasn't gone away since.",
     "role": "patient",
-    "timestamp": 1750725878249
+    "timestamp": 1750725878249,
+    "skillSheetID": "opqrstOnset",
+    "tags": [
+      "onset",
+      "history-taking"
+    ],
+    "response": "It started about 15 minutes ago.",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "102":
-  {
+  "102": {
     "question": "does anything make this feel better",
     "answer": "Well, when I sit down and rest for a bit, it seems to ease up a little. But as soon as I start moving around again, it comes back.",
     "role": "patient",
-    "timestamp": 1750725886449
+    "timestamp": 1750725886449,
+    "skillSheetID": "opqrstProvocation",
+    "tags": [
+      "provocation",
+      "patient interview"
+    ],
+    "response": "No, it just keeps getting worse, help me",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "103":
-  {
-    "question": "I read request Alice",
-    "answer": "I'm sorry, I don't understand what you're asking. Can you please clarify?",
-    "role": "patient",
-    "timestamp": 1750725912153
-  },
-  "104":
-  {
+  "104": {
     "question": "give patient 0.3 mg of epi",
     "answer": "What's happening? Why do I need epinephrine? Am I having an allergic reaction or something?",
-    "role": "patient",
-    "timestamp": 1750725943211
+    "role": "Proctor",
+    "timestamp": 1750725943211,
+    "skillSheetID": "oxygenTherapy",
+    "tags": [
+      "epinephrine"
+    ],
+    "response": "EPI has been given.",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "105":
-  {
+  "105": {
     "question": "what did you eat",
     "answer": "I had a sandwich for lunch, just a simple turkey and cheese on whole wheat bread. And I also had a cup of coffee earlier in the morning.",
     "role": "patient",
-    "timestamp": 1750726051004
+    "timestamp": 1750726051004,
+    "skillSheetID": "sampleLastIntake",
+    "tags": [
+      "patient-history",
+      "assessment",
+      "intake"
+    ],
+    "response": "I had a sandwich for lunch, just a simple turkey and cheese on whole wheat bread and some cookies.",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "106":
-  {
-    "question": "is the scene safe",
-    "answer": "Uh, yeah, I think so. I'm just sitting here on the couch. There's nothing dangerous around me that I can see.",
-    "role": "patient",
-    "timestamp": 1750727202823
-  },
-  "107":
-  {
-    "question": "how many patients",
-    "answer": "I'm not sure about other patients, but I’m the one here needing help right now.",
-    "role": "patient",
-    "timestamp": 1750727220481
-  },
-  "108":
-  {
-    "question": "how many patients",
-    "answer": "I’m sorry, I don’t quite understand. Are you asking how many patients are in the waiting room, or something else? I'm not sure what you mean.",
-    "role": "patient",
-    "timestamp": 1750727239489
-  },
-  "109":
-  {
-    "question": "is the scene safe",
-    "answer": "I don't know, but I think so. I'm just sitting here on the couch, and nothing seems out of the ordinary. Why do you ask?",
-    "role": "patient",
-    "timestamp": 1750773787795
-  },
-  "110":
-  {
-    "question": "how many patients",
-    "answer": "I'm sorry, I don't quite understand what you're asking. Are you asking how many patients are here, or something else?",
-    "role": "patient",
-    "timestamp": 1750773801431
-  },
-  "111":
-  {
+  "111": {
     "question": "what is going today",
     "answer": "I don't know, I've just been feeling really off today. My chest feels tight, and I'm a bit short of breath. It's kind of worrying me.",
     "role": "patient",
-    "timestamp": 1750773838227
+    "timestamp": 1750773838227,
+    "skillSheetID": "chiefComplaint",
+    "tags": [
+      "patient-assessment",
+      "communication",
+      "history-taking"
+    ],
+    "response": "I don't know, I've just been feeling really off today.  It's getting hard to breath and my throat feels like it is closing shut.",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "112":
-  {
+  "112": {
     "question": "do you have chest pain",
     "answer": "Yeah, I've been having this tightness in my chest. It started about an hour ago and hasn't really let up. It's kind of like a squeezing feeling.",
     "role": "patient",
-    "timestamp": 1750773904839
+    "timestamp": 1750773904839,
+    "skillSheetID": "chiefComplaint",
+    "tags": [
+      "patient-assessment",
+      "chest-pain",
+      "symptom-evaluation"
+    ],
+    "response": "No but it is getting harder to breath",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "113":
-  {
+  "113": {
     "question": "any SOB",
     "answer": "Yeah, I'm feeling a bit short of breath. It's not too bad, but it's definitely there.",
     "role": "patient",
-    "timestamp": 1750773913021
+    "timestamp": 1750773913021,
+    "skillSheetID": "chiefComplaint",
+    "tags": [
+      "patient-assessment",
+      "respiratory",
+      "communication"
+    ]
   },
-  "114":
-  {
+  "114": {
     "question": "check respirations",
     "answer": "I'm not sure exactly what you're asking, but I'm having a bit of trouble catching my breath. It feels like I'm breathing faster than normal.",
-    "role": "patient",
-    "timestamp": 1750773962727
+    "role": "proctor",
+    "timestamp": 1750773962727,
+    "skillSheetID": "obtainsBaselineVitalsRR",
+    "tags": [
+      "respirations",
+      "vital signs",
+      "assessment"
+    ],
+    "response": "The patient is breathing 22/minute",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   },
-  "115":
-  {
+  "115": {
     "question": "is the patient alert",
     "answer": "Yes, I'm awake and can hear you.",
     "role": "patient",
-    "timestamp": 1750774006320
+    "timestamp": 1750774006320,
+    "skillSheetID": "determinesResponsiveness",
+    "tags": [
+      "responsiveness",
+      "alertness",
+      "patient-assessment"
+    ]
   },
-  "116":
-  {
+  "116": {
     "question": "do you have any allgeries",
     "answer": "Yes, I'm allergic to penicillin.",
     "role": "patient",
-    "timestamp": 1750774021844
-  },
-  "117":
-  {
-    "question": "is the scene safe",
-    "answer": "Uh, yeah, I think so. I mean, I'm just sitting here on my porch. Nothing dangerous around, just feeling really dizzy and my heart's racing.",
-    "role": "patient",
-    "timestamp": 1750774049401
+    "timestamp": 1750774021844,
+    "skillSheetID": "sampleAllergies",
+    "tags": [
+      "allergies",
+      "patient history",
+      "sample"
+    ],
+    "response": "Yes, I'm allergic to peanuts.",
+    "scoreCategory": "",
+    "points": 0,
+    "criticalFail": false,
+    "trigger": ""
   }
 }
