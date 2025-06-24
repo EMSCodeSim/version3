@@ -86,7 +86,6 @@ async function rephraseUserInput(input) {
   }
 }
 
-
 // VECTOR MATCH (calls serverless function to get embedding)
 async function findVectorMatch(userInput, threshold = 0.40) {
   const embedRes = await fetch('/.netlify/functions/embed', {
@@ -110,7 +109,28 @@ async function findVectorMatch(userInput, threshold = 0.40) {
   return null;
 }
 
-// === MATCH ORDER: hardcoded → vector → rephrase → tag → GPT ===
+// === Tag Match Logic ===
+function findTagMatch(message) {
+  const questionTokens = new Set(normalize(message).split(/\s+/));
+  let bestEntry = null;
+  let bestOverlap = 0;
+  for (const entry of hardcodedResponses) {
+    if (Array.isArray(entry.tags) && entry.tags.length > 0) {
+      // Overlap count
+      const overlap = entry.tags.filter(t => questionTokens.has(normalize(t))).length;
+      if (overlap > bestOverlap) {
+        bestOverlap = overlap;
+        bestEntry = entry;
+      }
+    }
+  }
+  if (bestEntry && bestOverlap > 0 && (bestEntry.response || bestEntry.answer)) {
+    return bestEntry;
+  }
+  return null;
+}
+
+// === MATCH ORDER: exact → vector → rephrase → tag → GPT ===
 export async function routeUserInput(message, { scenarioId, role }) {
   const norm = normalize(message);
 
@@ -151,6 +171,16 @@ export async function routeUserInput(message, { scenarioId, role }) {
     }
   } catch (err) {
     console.error("Rephrase search failed:", err);
+  }
+
+  // 4. Tag match
+  try {
+    const tagEntry = findTagMatch(message);
+    if (tagEntry) {
+      return { response: tagEntry.response || tagEntry.answer, source: "tag", matchedEntry: tagEntry };
+    }
+  } catch (err) {
+    console.error("Tag match failed:", err);
   }
 
   // 5. GPT fallback
