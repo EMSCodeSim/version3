@@ -24,6 +24,20 @@ if (!dedupeGptBtn) {
 }
 dedupeGptBtn.onclick = dedupeAndGptAutoTag;
 
+// --- NEW: Auto-Tag SkillSheetID & Tags Only ---
+let autoTagBtn = document.getElementById("autoTagBtn");
+if (!autoTagBtn) {
+  autoTagBtn = document.createElement("button");
+  autoTagBtn.id = "autoTagBtn";
+  autoTagBtn.className = "btn";
+  autoTagBtn.textContent = "Auto-Tag SkillSheetID & Tags";
+  autoTagBtn.style.marginBottom = "8px";
+  if (responsesContainer?.parentNode) {
+    responsesContainer.parentNode.insertBefore(autoTagBtn, responsesContainer);
+  }
+}
+autoTagBtn.onclick = autoTagSkillSheetAndTags;
+
 window.availableScenarioFiles = [];
 
 if (loadPathBtn) loadPathBtn.addEventListener("click", loadJsonFromPath);
@@ -82,6 +96,7 @@ async function loadJsonFromPath() {
     bulkAssignBtn.style.display = "inline-block";
     convertLegacyBtn.style.display = "inline-block";
     dedupeGptBtn.style.display = "inline-block";
+    autoTagBtn.style.display = "inline-block";
     logBox.innerText = `Loaded file: ${filePath}`;
   } catch (err) {
     logBox.innerText = "❌ " + err.message;
@@ -91,6 +106,7 @@ async function loadJsonFromPath() {
     bulkAssignBtn.style.display = "none";
     convertLegacyBtn.style.display = "none";
     dedupeGptBtn.style.display = "none";
+    autoTagBtn.style.display = "none";
   }
 }
 
@@ -109,6 +125,7 @@ function handleJsonFileSelect(evt) {
       bulkAssignBtn.style.display = "inline-block";
       convertLegacyBtn.style.display = "inline-block";
       dedupeGptBtn.style.display = "inline-block";
+      autoTagBtn.style.display = "inline-block";
       logBox.innerText = "JSON file loaded from disk.";
     } catch (err) {
       logBox.innerText = "❌ Failed to parse JSON: " + err.message;
@@ -118,6 +135,7 @@ function handleJsonFileSelect(evt) {
       bulkAssignBtn.style.display = "none";
       convertLegacyBtn.style.display = "none";
       dedupeGptBtn.style.display = "none";
+      autoTagBtn.style.display = "none";
     }
   };
   reader.readAsText(file);
@@ -408,5 +426,96 @@ Return ONLY the Skill Sheet ID, nothing else.`;
   }
   renderAllJsonEntries(window.jsonEditData);
   logBox.innerText = "✅ Deduped & GPT auto-tagging complete! Review then Download.";
+  alert("Done! Review your entries and download.");
+}
+
+// === Auto-Tag SkillSheetID & Tags (Non-destructive to Q/A) ===
+async function autoTagSkillSheetAndTags() {
+  if (!window.jsonEditData) return alert("No JSON loaded.");
+
+  const SKILL_IDS = [
+    "ppeBsi", "sceneSafety", "determinesMOIorNOI", "determinesNumberOfPatients", "requestsAdditionalResources", "considersCSpine",
+    "generalImpression", "determinesResponsiveness", "chiefComplaint", "airway", "oxygenTherapy", "circulation", "patientPriority",
+    "opqrstOnset", "opqrstProvocation", "opqrstQuality", "opqrstRadiation", "opqrstSeverity", "opqrstTime", "sampleSigns",
+    "sampleAllergies", "sampleMedications", "samplePastHistory", "sampleLastIntake", "sampleEvents", "assessesAffectedBodyPart",
+    "obtainsBaselineVitalsBP", "obtainsBaselineVitalsHR", "obtainsBaselineVitalsRR", "fieldImpression", "managesSecondaryInjuries", "verbalizesReassessment"
+  ];
+
+  if (!window.openaiApiKey) {
+    window.openaiApiKey = prompt("Enter your OpenAI API Key (will NOT be sent anywhere except OpenAI):", "");
+    if (!window.openaiApiKey) return alert("API key required.");
+  }
+
+  let entries = Array.isArray(window.jsonEditData)
+    ? window.jsonEditData.map((val, idx) => [idx, val])
+    : Object.entries(window.jsonEditData);
+
+  let total = entries.length, done = 0;
+  let proceed = confirm(`Auto-tag ALL (${total}) entries with GPT-4 Turbo? This will use OpenAI credits.`);
+  if (!proceed) return;
+
+  logBox.innerText = "Auto-tagging in progress...";
+
+  for (const [key, entry] of entries) {
+    let question = entry.question || entry.prompt || "";
+    if (!question.trim()) continue;
+
+    // Only fill skillSheetID if blank or missing
+    let prompt = `
+You are an EMS educator and NREMT instructor.
+From this list: ${SKILL_IDS.join(", ")}
+Pick the **single best matching Skill Sheet ID** for the question below.
+Also, return 3 to 6 comma-separated tags (lowercase, no duplicates) that best summarize the key concepts of the question for searching.
+
+Format:
+SkillSheetID: (ID from list)
+Tags: tag1, tag2, tag3
+
+Question: "${question}"
+`;
+
+    try {
+      let resp = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + window.openaiApiKey,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "gpt-4-turbo",
+          messages: [
+            { role: "system", content: "You are an EMS educator and NREMT instructor." },
+            { role: "user", content: prompt }
+          ],
+          max_tokens: 60,
+          temperature: 0
+        })
+      });
+      let data = await resp.json();
+      let skillLine = (data.choices && data.choices[0]?.message?.content?.match(/SkillSheetID:\s*(\S+)/i)) || [];
+      let tagsLine = (data.choices && data.choices[0]?.message?.content?.match(/Tags:\s*([^\n]+)/i)) || [];
+      let skillID = skillLine[1] || "";
+      let tagsStr = tagsLine[1] || "";
+
+      // Set skillSheetID ONLY if blank
+      if ((!entry.skillSheetID || entry.skillSheetID === "") && SKILL_IDS.includes(skillID)) {
+        entry.skillSheetID = skillID;
+      }
+      // Always set/replace tags (don't touch question/answer)
+      entry.tags = tagsStr.split(",").map(t => t.trim().toLowerCase()).filter(t => t);
+
+    } catch (err) {
+      console.error("GPT error:", err);
+      entry.tags = entry.tags || [];
+    }
+
+    done++;
+    if (done % 10 === 0) {
+      logBox.innerText = `Auto-tagged ${done}/${total}...`;
+    }
+    await new Promise(r => setTimeout(r, 800));
+  }
+  renderAllJsonEntries(window.jsonEditData);
+  logBox.innerText = "✅ Auto-tagging complete! Review then Download.";
   alert("Done! Review your entries and download.");
 }
