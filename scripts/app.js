@@ -1,17 +1,12 @@
 // app.js
 
-import { loadHardcodedResponses, routeUserInput, loadVectorDb } from './router.js';
-import { initializeScoreTracker, gradeActionBySkillID, getSkillSheetStatus } from './grading.js';
-import { comboMic } from './mic.js';
-
 if (!window.scoreTracker) window.scoreTracker = {};
 
 let patientContext = "";
 let gradingTemplate = {};
 window.scenarioStarted = false;
-window.selectedScenario = ""; // global
 
-let currentScenarioId = 'chest_pain_002'; // default
+let currentScenarioId = 'chest_pain_002'; // Default scenario
 let currentScenarioPath = getCurrentScenarioPath();
 
 function getCurrentScenarioPath() {
@@ -19,28 +14,32 @@ function getCurrentScenarioPath() {
 }
 
 function showScenarioPicker(show) {
-  // For desktop
+  // For desktop: expects #scenario-select-container
   const pickerRow = document.getElementById('scenario-select-container');
   if (pickerRow) pickerRow.hidden = !show;
-  // For mobile
+  // For mobile: expects #landing (phone.html landing screen)
   const landing = document.getElementById('landing');
   if (landing) landing.style.display = show ? '' : 'none';
 }
 
 // --- Display chat bubbles with TTS and triggers ---
 function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio, trigger) {
+  // Use #chat-box (desktop) or #chat (mobile)
   const chatBox = document.getElementById('chat-box') || document.getElementById('chat');
   if (!chatBox) return;
 
+  // On desktop, preserve scene image
   let scenarioImg = null;
   if (chatBox.firstChild && chatBox.firstChild.tagName === "IMG" && chatBox.firstChild.src.includes("scene1.PNG")) {
     scenarioImg = chatBox.firstChild.cloneNode(true);
   }
+  // For mobile: do not clear history!
   if (chatBox.id === 'chat-box') {
     chatBox.innerHTML = "";
     if (scenarioImg) chatBox.appendChild(scenarioImg);
   }
 
+  // TRIGGER IMAGE/AUDIO (if present)
   if (trigger && typeof trigger === "string" && trigger.trim() !== "") {
     const triggerLower = trigger.toLowerCase();
     if (!triggerLower.includes("scene1.png")) {
@@ -51,7 +50,9 @@ function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio, trigger) {
         img.style.maxWidth = "100%";
         img.style.borderRadius = "10px";
         img.style.marginBottom = "14px";
-        img.onerror = function() { this.style.display = "none"; };
+        img.onerror = function() {
+          this.style.display = "none";
+        };
         chatBox.appendChild(img);
       }
       if (triggerLower.match(/\.(mp3|wav|m4a|ogg)$/)) {
@@ -65,6 +66,7 @@ function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio, trigger) {
     }
   }
 
+  // USER bubble
   if (userMsg && userMsg.trim()) {
     const userDiv = document.createElement('div');
     userDiv.className = "bubble user";
@@ -72,6 +74,7 @@ function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio, trigger) {
     chatBox.appendChild(userDiv);
   }
 
+  // RESPONSE bubble: play audio first, then show text
   function showReplyBubble() {
     if (replyMsg && replyMsg.trim()) {
       let bubbleClass = "bubble system";
@@ -87,6 +90,7 @@ function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio, trigger) {
     }
   }
 
+  // --- Play TTS audio before showing text ---
   if (ttsAudio) {
     let audioSrc = ttsAudio.startsWith("data:") ? ttsAudio : "data:audio/mp3;base64," + ttsAudio;
     document.querySelectorAll("audio#scenarioTTS").forEach(audio => {
@@ -161,7 +165,6 @@ async function startScenario(selectedId) {
   window.scenarioStarted = true;
   if (selectedId) {
     currentScenarioId = selectedId;
-    window.selectedScenario = selectedId;
     currentScenarioPath = getCurrentScenarioPath();
   }
   showScenarioPicker(false);
@@ -174,8 +177,9 @@ async function startScenario(selectedId) {
   try {
     if (spinner) spinner.style.display = "block";
 
-    await loadHardcodedResponses(currentScenarioPath);
-    await loadVectorDb(currentScenarioPath);
+    // Load hardcoded and vector DB
+    if (window.loadHardcodedResponses) await window.loadHardcodedResponses(currentScenarioPath);
+    if (window.loadVectorDb) await window.loadVectorDb(currentScenarioPath);
 
     // Load config
     const configRes = await fetch(`${currentScenarioPath}config.json`);
@@ -184,10 +188,10 @@ async function startScenario(selectedId) {
 
     try {
       let gradingType = config.grading || "medical";
-      await loadGradingTemplate(gradingType);
+      if (window.loadGradingTemplate) await window.loadGradingTemplate(gradingType);
       if (window.updateSkillChecklistUI) window.updateSkillChecklistUI();
     } catch (err) {
-      await loadGradingTemplate("medical");
+      if (window.loadGradingTemplate) await window.loadGradingTemplate("medical");
       if (window.updateSkillChecklistUI) window.updateSkillChecklistUI();
     }
 
@@ -249,7 +253,7 @@ async function loadGradingTemplate(type = "medical") {
     for (let key of Object.keys(gradingTemplate)) newTemplate[key] = false;
     gradingTemplate = newTemplate;
   }
-  initializeScoreTracker(gradingTemplate);
+  if (window.initializeScoreTracker) window.initializeScoreTracker(gradingTemplate);
   if (window.updateSkillChecklistUI) window.updateSkillChecklistUI();
 }
 
@@ -259,7 +263,8 @@ async function processUserMessage(message) {
 
   try {
     const scenarioPath = getCurrentScenarioPath();
-    const { response, source, matchedEntry } = await routeUserInput(message, {
+    if (!window.routeUserInput) throw new Error("Missing router.js logic!");
+    const { response, source, matchedEntry } = await window.routeUserInput(message, {
       scenarioId: scenarioPath,
       role: "user"
     });
@@ -290,7 +295,7 @@ async function processUserMessage(message) {
     // Skill Sheet Grading
     if (matchedEntry && (matchedEntry.skillSheetID || matchedEntry["Skill Sheet ID"])) {
       let skillKey = matchedEntry.skillSheetID || matchedEntry["Skill Sheet ID"];
-      gradeActionBySkillID(skillKey);
+      if (window.gradeActionBySkillID) window.gradeActionBySkillID(skillKey);
       if (window.updateSkillChecklistUI) window.updateSkillChecklistUI();
     }
 
@@ -306,7 +311,6 @@ window.addEventListener('DOMContentLoaded', () => {
   if (picker) {
     picker.addEventListener('change', (e) => {
       currentScenarioId = e.target.value;
-      window.selectedScenario = currentScenarioId;
       currentScenarioPath = getCurrentScenarioPath();
     });
   }
@@ -314,7 +318,6 @@ window.addEventListener('DOMContentLoaded', () => {
   if (startBtn) {
     startBtn.addEventListener('click', () => {
       currentScenarioId = picker.value;
-      window.selectedScenario = currentScenarioId;
       currentScenarioPath = getCurrentScenarioPath();
       startScenario();
     });
@@ -325,7 +328,6 @@ window.addEventListener('DOMContentLoaded', () => {
   if (landingSelect && landingStartBtn) {
     landingSelect.addEventListener('change', function() {
       currentScenarioId = this.value;
-      window.selectedScenario = currentScenarioId;
       currentScenarioPath = getCurrentScenarioPath();
       landingStartBtn.disabled = !currentScenarioId;
     });
@@ -347,8 +349,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Mic button: Use combo mic (browser STT or Whisper fallback)
   const micBtn = document.getElementById('mic-button') || document.getElementById('mic-btn');
-  if (micBtn) {
-    micBtn.onclick = comboMic;
+  if (micBtn && window.comboMic) {
+    micBtn.onclick = window.comboMic;
   }
 
   // Send/Enter logic (desktop)
@@ -387,11 +389,10 @@ window.endScenario = endScenario;
 window.processUserMessage = processUserMessage;
 window.displayChatPair = displayChatPair;
 window.handleUserInput = processUserMessage; // For phone.html
-window.startScenarioLogic = startScenario;    // For phone.html
-window.handleMicInput = comboMic;             // For phone.html
-
-// --- Skill sheet integration for phone ---
-window.getSkillSheetStatus = getSkillSheetStatus;
-window.updateSkillChecklistUI = function() {
-  if (typeof renderSkillSheet === "function") renderSkillSheet();
+window.startScenarioLogic = startScenario; // For phone.html
+window.handleMicInput = function() {
+  if (window.comboMic) window.comboMic();
+  else displayChatPair("", "[Voice input coming soon]", "system");
 };
+window.speakOnce = speakOnce;
+window.loadGradingTemplate = loadGradingTemplate;
