@@ -16,6 +16,14 @@
     .bubble.proctor { background: #a1a1aa; color: #23232d; align-self: flex-start;}
     .bubble.dispatch { background: #facc15; color: #3c2e03; align-self: center;}
     .bubble.system { background: #c7d2fe; color: #29304a; align-self: center; font-size: 0.99rem;}
+    #skill-sheet-btn { position: fixed; bottom: 72px; right: 16px; z-index: 12; background: #10b981; color: #fff; border-radius: 22px; border: none; padding: 13px 18px; font-size: 1.12rem; font-weight: 700; box-shadow: 0 3px 14px rgba(16,185,129,0.13); cursor: pointer; transition: background 0.13s;}
+    #skill-sheet-btn:active { background: #0e9f6e; }
+    #skill-sheet-panel { display: none; position: fixed; left: 0; right: 0; bottom: 0; background: #fff; box-shadow: 0 -8px 30px rgba(30,64,175,0.09); border-radius: 22px 22px 0 0; padding: 20px 18px 32px 18px; z-index: 21; max-height: 82vh; overflow-y: auto; animation: slideUp 0.3s;}
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    #skill-sheet-panel h3 { margin: 0 0 16px 0; font-size: 1.15rem; color: #155e4e; text-align: center;}
+    .skill-row { display: flex; align-items: center; margin: 10px 0; font-size: 1.05rem; color: #18463b;}
+    .skill-check { font-size: 1.22rem; margin-right: 10px;}
+    #close-skill-sheet { background: #ec4899; color: #fff; border: none; border-radius: 14px; padding: 8px 16px; font-weight: 600; position: absolute; right: 16px; top: 14px; font-size: 1rem;}
     #input-bar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; background: #fff; padding: 8px 6px; box-shadow: 0 -2px 8px rgba(44,76,125,0.09);}
     #mic-btn { background: #4f46e5; color: #fff; border: none; border-radius: 50%; width: 47px; height: 47px; margin-right: 10px; font-size: 1.38rem; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 9px rgba(80,80,220,0.11);}
     #mic-btn:active { background: #6366f1; }
@@ -38,6 +46,12 @@
     <div id="scenario-title">EMS Mobile Sim</div>
   </div>
   <div id="chat"></div>
+  <button id="skill-sheet-btn" onclick="showSkillSheet()" style="display:none;">✔️ Skill Sheet</button>
+  <div id="skill-sheet-panel">
+    <button id="close-skill-sheet" onclick="closeSkillSheet()">Close</button>
+    <h3>Medical Assessment Skill Sheet</h3>
+    <div id="skill-rows"></div>
+  </div>
   <div id="input-bar" style="display:none;">
     <button id="mic-btn" title="Record voice" onclick="startMic()">🎤</button>
     <input id="user-input" placeholder="Type or say your assessment..." autocomplete="off" />
@@ -71,7 +85,7 @@
       document.getElementById('landing').style.display = 'none';
       document.getElementById('header').style.display = '';
       document.getElementById('input-bar').style.display = '';
-      // Same scenario logic as desktop:
+      document.getElementById('skill-sheet-btn').style.display = '';
       if (typeof window.startScenarioLogic === "function") {
         window.startScenarioLogic(scenario);
       } else if (typeof window.startScenario === "function") {
@@ -83,7 +97,6 @@
         scenario.replace(/_/g, ' ').replace(/\d+$/, '').toUpperCase();
     };
 
-    // Bubble helpers (same as before)
     function addBubble(text, role) {
       const bubble = document.createElement('div');
       bubble.className = `bubble ${role}`;
@@ -101,6 +114,7 @@
       if (typeof window.handleUserInput === "function") {
         window.handleUserInput(userText);
       }
+      setTimeout(renderSkillSheet, 700);
     }
     document.getElementById('user-input').addEventListener('keydown', e => {
       if (e.key === 'Enter') sendInput();
@@ -112,7 +126,46 @@
         addBubble("[Voice input coming soon]", "system");
       }
     }
-    // Add any additional helpers you want (skill sheet, etc)
+
+    // --- Skill sheet and grading ---
+    function renderSkillSheet() {
+      let skillSheet = [];
+      if (typeof getSkillSheetStatus === "function") {
+        skillSheet = getSkillSheetStatus();
+      } else {
+        skillSheet = [
+          { text: "Scene safety/PPE", checked: false },
+          { text: "Determine MOI/NOI", checked: false },
+          { text: "Number of patients", checked: false },
+          { text: "Request additional resources", checked: false },
+          { text: "Consider C-spine", checked: false },
+          { text: "General impression", checked: false },
+          { text: "Responsiveness/LOC", checked: false },
+          { text: "Chief complaint", checked: false },
+          { text: "Airway", checked: false },
+          { text: "Breathing", checked: false },
+          { text: "Oxygen therapy", checked: false },
+          { text: "Circulation", checked: false },
+          { text: "Baseline vitals", checked: false },
+          { text: "SAMPLE/OPQRST", checked: false },
+          { text: "Field impression", checked: false },
+          { text: "Medication/EpiPen", checked: false },
+          { text: "Reassessment", checked: false },
+          { text: "Transport decision", checked: false }
+        ];
+      }
+      document.getElementById('skill-rows').innerHTML = skillSheet.map(
+        s => `<div class="skill-row">${s.checked ? `<span class="skill-check">✔️</span>` : `<span class="skill-check">⬜️</span>`}${s.text}</div>`
+      ).join('');
+    }
+    window.showSkillSheet = function() {
+      renderSkillSheet();
+      document.getElementById('skill-sheet-panel').style.display = 'block';
+    };
+    window.closeSkillSheet = function() {
+      document.getElementById('skill-sheet-panel').style.display = 'none';
+    };
+    // Optionally re-render when needed
   </script>
 </body>
 </html>
