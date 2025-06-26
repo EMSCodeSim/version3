@@ -5,12 +5,12 @@
   <title>EMS Simulator (Mobile)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <style>
-    html, body { height: 100%; margin: 0; padding: 0; background: #e8f1fa; font-family: 'Inter', Arial, sans-serif; overscroll-behavior: none;}
-    body { display: flex; flex-direction: column; height: 100vh;}
-    #header { background: #fff; color: #2a3b4d; font-weight: bold; font-size: 1.22rem; text-align: center; padding: 12px 8px 8px 8px; box-shadow: 0 2px 6px rgba(44,76,125,0.07); letter-spacing: 1px; display: flex; justify-content: space-between; align-items: center;}
+    html, body { height: 100%; margin: 0; padding: 0; background: #e8f1fa; font-family: 'Inter', Arial, sans-serif; }
+    body { display: flex; flex-direction: column; height: 100vh; }
+    #header { background: #fff; color: #2a3b4d; font-weight: bold; font-size: 1.22rem; text-align: center; padding: 12px 8px 8px 8px; box-shadow: 0 2px 6px rgba(44,76,125,0.07); letter-spacing: 1px; display: flex; justify-content: space-between; align-items: center; }
     #scenario-title { flex: 1; text-align: left;}
     #live-badge { background: #4ade80; color: #12472b; border-radius: 13px; padding: 4px 12px; font-size: 0.9rem; font-weight: 600; margin-left: 12px;}
-    #chat { flex: 1 1 auto; overflow-y: auto; padding: 16px 8px 70px 8px; display: flex; flex-direction: column; height: 100%;}
+    #chat { flex: 1 1 auto; overflow-y: auto; padding: 16px 8px 70px 8px; display: flex; flex-direction: column; height: 100%; }
     .bubble { max-width: 85%; padding: 13px 16px; margin: 8px 0; border-radius: 22px; font-size: 1.08rem; word-break: break-word; box-shadow: 0 2px 10px rgba(44,76,125,0.08); display: inline-block; position: relative; animation: fadeIn 0.4s;}
     .bubble.user { background: #4f8cfb; color: #fff; align-self: flex-end; }
     .bubble.patient { background: #19c19b; color: #fff; align-self: flex-start; }
@@ -31,12 +31,12 @@
     #user-input { flex: 1 1 auto; font-size: 1.09rem; border: 1.5px solid #cdd4e2; border-radius: 18px; padding: 10px 16px; outline: none; background: #fff; margin-right: 8px;}
     #send-btn { background: #2563eb; color: #fff; border: none; border-radius: 18px; padding: 13px 22px; font-size: 1.08rem; font-weight: 700; cursor: pointer; box-shadow: 0 2px 8px rgba(30,58,138,0.08); transition: background 0.13s;}
     #send-btn:active { background: #1d4ed8; }
-    #start-bar { width: 100%; position: absolute; top: 50%; left: 0; text-align: center; z-index: 99;}
-    #start-btn { background: #14b8a6; color: #fff; border: none; border-radius: 22px; font-size: 1.28rem; font-weight: 700; padding: 20px 48px; margin: 16px auto; box-shadow: 0 2px 8px rgba(44,76,125,0.11); cursor: pointer;}
+    #landing { width: 100%; position: absolute; top: 20vh; left: 0; text-align: center; z-index: 99;}
+    #start-btn { background: #14b8a6; color: #fff; border: none; border-radius: 22px; font-size: 1.28rem; font-weight: 700; padding: 20px 48px; margin: 24px auto 0 auto; box-shadow: 0 2px 8px rgba(44,76,125,0.11); cursor: pointer;}
     #start-btn:active { background: #0d9488; }
-    @media (max-width: 375px) { #header { font-size: 1.09rem; } #skill-sheet-panel { padding: 10px 3px 22px 3px; } #user-input { font-size: 1rem; } #send-btn, #mic-btn, #skill-sheet-btn { font-size: 1rem; } }
+    #scenario-select { margin: 18px auto 0 auto; font-size: 1.15rem; border-radius: 15px; border: 1.5px solid #8bafd3; padding: 13px 18px; min-width: 66%; }
+    @media (max-width: 375px) { #header { font-size: 1.09rem; } #skill-sheet-panel { padding: 10px 3px 22px 3px; } #user-input { font-size: 1rem; } #send-btn, #mic-btn, #skill-sheet-btn { font-size: 1rem; } #scenario-select { font-size: 1rem; } }
   </style>
-  <!-- Load scenario scripts (ensure these are present and set up for window/global use) -->
   <script src="app.js"></script>
   <script src="router.js"></script>
   <script src="grading.js"></script>
@@ -58,15 +58,26 @@
     <input id="user-input" placeholder="Type or say your assessment..." autocomplete="off" />
     <button id="send-btn" onclick="sendInput()">Send</button>
   </div>
-  <div id="start-bar">
-    <button id="start-btn" onclick="startScenario()">Start Scenario</button>
+  <div id="landing">
+    <h2>Choose a Scenario</h2>
+    <select id="scenario-select">
+      <option value="" disabled selected>Select scenario...</option>
+      <option value="chest_pain_002">Chest Pain</option>
+      <option value="allergic_reaction_001">Allergic Reaction</option>
+      <!-- Add more scenarios here -->
+    </select>
+    <br>
+    <button id="start-btn" disabled onclick="startScenario()">Start Scenario</button>
   </div>
   <script>
-    let scenario = window.selectedScenario || "allergic_reaction_001";
-    document.getElementById('scenario-title').innerText = scenario.replace(/_/g, ' ').replace(/\d+$/, '').toUpperCase();
+    let scenario = "";
     let scenarioStarted = false;
 
-    // SKILL SHEET RENDER
+    document.getElementById('scenario-select').addEventListener('change', function() {
+      scenario = this.value;
+      document.getElementById('start-btn').disabled = !scenario;
+    });
+
     function renderSkillSheet() {
       let skillSheet = [];
       if (typeof getSkillSheetStatus === "function") {
@@ -102,7 +113,6 @@
     function showSkillSheet() { document.getElementById('skill-sheet-panel').style.display = 'block'; }
     function closeSkillSheet() { document.getElementById('skill-sheet-panel').style.display = 'none'; }
 
-    // CHAT BUBBLES (called from app.js)
     function addBubble(text, role) {
       const bubble = document.createElement('div');
       bubble.className = `bubble ${role}`;
@@ -111,7 +121,6 @@
       document.getElementById('chat').scrollTop = 99999;
     }
 
-    // TRUE LOGIC: HOOKS INTO YOUR app.js (not demo)
     async function sendInput() {
       const input = document.getElementById('user-input');
       const userText = input.value.trim();
@@ -135,22 +144,24 @@
       }
     }
 
-    // STARTUP BUTTON
     function startScenario() {
       scenarioStarted = true;
       document.getElementById('header').style.display = '';
       document.getElementById('input-bar').style.display = '';
       document.getElementById('skill-sheet-btn').style.display = '';
-      document.getElementById('start-bar').style.display = 'none';
-      // Optional: trigger main scenario startup logic (dispatch, patient info, etc.)
+      document.getElementById('landing').style.display = 'none';
+
+      // Set global scenario variable for all scripts
+      window.selectedScenario = scenario;
+      document.getElementById('scenario-title').innerText = scenario.replace(/_/g, ' ').replace(/\d+$/, '').toUpperCase();
+
+      // Trigger main scenario startup logic (dispatch, patient info, etc.)
       if (typeof window.startScenarioLogic === "function") {
         window.startScenarioLogic(scenario);
       } else {
         addBubble("You arrive to find a patient who appears in distress.", 'system');
       }
     }
-    // If scenario is already running (from app.js or session), hide start screen
-    if (window.isScenarioStarted) startScenario();
 
     // Make addBubble globally available for app.js etc
     window.addBubble = addBubble;
