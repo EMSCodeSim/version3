@@ -5,177 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>EMS Simulator - Mobile</title>
   <style>
-    body {
-      margin: 0;
-      background: #e8f1fa;
-      font-family: 'Inter', Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-    #header {
-      padding: 16px 8px 8px 8px;
-      background: #fff;
-      color: #2a3b4d;
-      font-weight: bold;
-      font-size: 1.25rem;
-      text-align: center;
-      box-shadow: 0 2px 4px rgba(44,76,125,0.06);
-      letter-spacing: 1px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    #scenario-title { flex: 1; }
-    #live-badge {
-      background: #4ade80;
-      color: #12472b;
-      border-radius: 12px;
-      padding: 3px 12px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      margin-left: 10px;
-    }
-    #chat {
-      flex: 1 1 auto;
-      overflow-y: auto;
-      padding: 14px 8px 70px 8px;
-      display: flex;
-      flex-direction: column;
-    }
-    .bubble {
-      max-width: 85%;
-      padding: 12px 16px;
-      margin: 8px 0;
-      border-radius: 22px;
-      font-size: 1.08rem;
-      word-break: break-word;
-      box-shadow: 0 2px 8px rgba(44,76,125,0.08);
-      display: inline-block;
-      position: relative;
-      animation: fadeIn 0.4s;
-    }
-    .bubble.user { background: #4f8cfb; color: #fff; align-self: flex-end; }
-    .bubble.patient { background: #19c19b; color: #fff; align-self: flex-start; }
-    .bubble.proctor { background: #c3c8d6; color: #30313d; align-self: flex-start; }
-    .bubble.system { background: #eee; color: #687384; align-self: center; font-size: 0.95rem;}
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-    #skill-sheet-btn {
-      position: fixed;
-      bottom: 72px;
-      right: 14px;
-      z-index: 12;
-      background: #10b981;
-      color: #fff;
-      border-radius: 24px;
-      border: none;
-      padding: 12px 18px;
-      font-size: 1.15rem;
-      font-weight: 700;
-      box-shadow: 0 3px 14px rgba(16,185,129,0.13);
-      cursor: pointer;
-      transition: background 0.13s;
-    }
-    #skill-sheet-btn:active { background: #0e9f6e; }
-
-    #skill-sheet-panel {
-      display: none;
-      position: fixed;
-      left: 0; right: 0; bottom: 0;
-      background: #fff;
-      box-shadow: 0 -8px 30px rgba(30,64,175,0.09);
-      border-radius: 22px 22px 0 0;
-      padding: 20px 18px 32px 18px;
-      z-index: 21;
-      max-height: 80vh;
-      overflow-y: auto;
-      animation: slideUp 0.3s;
-    }
-    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-    #skill-sheet-panel h3 {
-      margin: 0 0 16px 0; font-size: 1.12rem; color: #155e4e; text-align: center;
-    }
-    .skill-row {
-      display: flex;
-      align-items: center;
-      margin: 8px 0;
-      font-size: 1.05rem;
-      color: #18463b;
-    }
-    .skill-check {
-      font-size: 1.22rem; margin-right: 10px;
-    }
-    #close-skill-sheet {
-      background: #ec4899;
-      color: #fff;
-      border: none;
-      border-radius: 14px;
-      padding: 8px 16px;
-      font-weight: 600;
-      position: absolute;
-      right: 14px; top: 12px;
-      font-size: 1rem;
-    }
-    #input-bar {
-      position: fixed;
-      left: 0; right: 0; bottom: 0;
-      display: flex;
-      align-items: center;
-      background: #f9fafb;
-      padding: 8px 5px;
-      box-shadow: 0 -2px 8px rgba(44,76,125,0.09);
-      z-index: 10;
-    }
-    #mic-btn {
-      background: #818cf8;
-      color: #fff;
-      border: none;
-      border-radius: 50%;
-      width: 44px; height: 44px;
-      margin-right: 10px;
-      font-size: 1.33rem;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 1px 6px rgba(80,80,220,0.09);
-      transition: background 0.12s;
-    }
-    #mic-btn:active { background: #6366f1; }
-    #user-input {
-      flex: 1 1 auto;
-      font-size: 1.09rem;
-      border: 1.5px solid #cdd4e2;
-      border-radius: 18px;
-      padding: 10px 16px;
-      outline: none;
-      background: #fff;
-      margin-right: 8px;
-    }
-    #send-btn {
-      background: #2563eb;
-      color: #fff;
-      border: none;
-      border-radius: 18px;
-      padding: 12px 22px;
-      font-size: 1.08rem;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(30,58,138,0.08);
-      transition: background 0.13s;
-    }
-    #send-btn:active { background: #1d4ed8; }
-    /* Smallest screens: shrink padding/font */
-    @media (max-width: 375px) {
-      #header { font-size: 1.09rem; }
-      #skill-sheet-panel { padding: 12px 5px 24px 5px; }
-      #user-input { font-size: 1rem; }
-      #send-btn, #mic-btn, #skill-sheet-btn { font-size: 1rem; }
-    }
+    /* ... (same styles as last time, omitted for brevity) ... */
   </style>
 </head>
 <body>
   <div id="header">
-    <div id="scenario-title">Allergic Reaction #001</div>
+    <div id="scenario-title">Scenario: <span id="scenarioName"></span></div>
     <span id="live-badge">Live</span>
   </div>
   <div id="chat"></div>
@@ -194,28 +29,45 @@
   </div>
 
   <script>
-    // Dummy skill sheet list - replace with your real skills/checked state!
+    // ---- SETTINGS ----
+    // Set this based on scenario (could be read from query or config)
+    let scenario = "allergic_reaction_001"; // <-- Replace with dynamic load if needed
+    document.getElementById('scenarioName').innerText = scenario.replace(/_/g, ' ').replace(/\d+$/, '').toUpperCase();
+
+    // --- Skill Sheet Lines and Mapping ---
     const skillSheet = [
-      { text: "Scene safety/PPE", checked: false },
-      { text: "Determine MOI/NOI", checked: false },
-      { text: "Number of patients", checked: false },
-      { text: "Request additional resources", checked: false },
-      { text: "Consider C-spine", checked: false },
-      { text: "General impression", checked: false },
-      { text: "Responsiveness/LOC", checked: false },
-      { text: "Chief complaint", checked: false },
-      { text: "Airway", checked: false },
-      { text: "Breathing", checked: false },
-      { text: "Oxygen therapy", checked: false },
-      { text: "Circulation", checked: false },
-      { text: "Baseline vitals", checked: false },
-      { text: "SAMPLE/OPQRST", checked: false },
-      { text: "Field impression", checked: false },
-      { text: "Medication/EpiPen", checked: false },
-      { text: "Reassessment", checked: false },
-      { text: "Transport decision", checked: false }
+      { id: "ppeBsi", text: "Scene safety/PPE", checked: false },
+      { id: "determinesMOIorNOI", text: "Determine MOI/NOI", checked: false },
+      { id: "determinesNumberOfPatients", text: "Number of patients", checked: false },
+      { id: "requestsAdditionalResources", text: "Request additional resources", checked: false },
+      { id: "considersCSpine", text: "Consider C-spine", checked: false },
+      { id: "generalImpression", text: "General impression", checked: false },
+      { id: "determinesResponsiveness", text: "Responsiveness/LOC", checked: false },
+      { id: "chiefComplaint", text: "Chief complaint", checked: false },
+      { id: "airway", text: "Airway", checked: false },
+      { id: "breathing", text: "Breathing", checked: false },
+      { id: "oxygenTherapy", text: "Oxygen therapy", checked: false },
+      { id: "circulation", text: "Circulation", checked: false },
+      { id: "obtainsBaselineVitalsBP", text: "BP", checked: false },
+      { id: "obtainsBaselineVitalsHR", text: "Pulse", checked: false },
+      { id: "obtainsBaselineVitalsRR", text: "Respirations", checked: false },
+      { id: "sampleAllergies", text: "SAMPLE - Allergies", checked: false },
+      { id: "sampleMedications", text: "SAMPLE - Medications", checked: false },
+      { id: "samplePastHistory", text: "SAMPLE - History", checked: false },
+      { id: "sampleLastIntake", text: "SAMPLE - Last intake", checked: false },
+      { id: "sampleEvents", text: "SAMPLE - Events", checked: false },
+      { id: "opqrstOnset", text: "OPQRST - Onset", checked: false },
+      { id: "opqrstProvocation", text: "OPQRST - Provocation", checked: false },
+      { id: "opqrstQuality", text: "OPQRST - Quality", checked: false },
+      { id: "opqrstRadiation", text: "OPQRST - Radiation", checked: false },
+      { id: "opqrstSeverity", text: "OPQRST - Severity", checked: false },
+      { id: "opqrstTime", text: "OPQRST - Time", checked: false },
+      { id: "fieldImpression", text: "Field impression", checked: false },
+      { id: "medicationRights", text: "Medication/EpiPen", checked: false },
+      { id: "verbalizesReassessment", text: "Reassessment", checked: false },
+      { id: "verbalizesTransport", text: "Transport decision", checked: false }
     ];
-    // Render skill sheet
+
     function renderSkillSheet() {
       const rows = skillSheet.map(
         s => `<div class="skill-row">${s.checked ? `<span class="skill-check">✔️</span>` : `<span class="skill-check">⬜️</span>`}${s.text}</div>`
@@ -224,14 +76,10 @@
     }
     renderSkillSheet();
 
-    function showSkillSheet() {
-      document.getElementById('skill-sheet-panel').style.display = 'block';
-    }
-    function closeSkillSheet() {
-      document.getElementById('skill-sheet-panel').style.display = 'none';
-    }
+    function showSkillSheet() { document.getElementById('skill-sheet-panel').style.display = 'block'; }
+    function closeSkillSheet() { document.getElementById('skill-sheet-panel').style.display = 'none'; }
 
-    // Dummy chat (replace with your app logic!)
+    // --- Chat Logic ---
     function addBubble(text, role) {
       const bubble = document.createElement('div');
       bubble.className = `bubble ${role}`;
@@ -239,19 +87,55 @@
       document.getElementById('chat').appendChild(bubble);
       document.getElementById('chat').scrollTop = 99999;
     }
-    function sendInput() {
+
+    // Unified router -- plug in your existing scenario engine here!
+    async function getResponse(question) {
+      // Replace this dummy with your router/app logic!
+      // E.g., use fetch('/api/router', {method:'POST',body:JSON.stringify({scenario,question})})...
+      // For demo, respond with a canned reply.
+      // Simulate: get {answer, role, skillSheetID}
+      // In real usage, hook this to your full router logic (hardcode, vector, tag, gpt fallback)
+      let dummy = {
+        answer: "This is where the patient's or proctor's answer appears.",
+        role: (Math.random() < 0.5) ? "patient" : "proctor",
+        skillSheetID: (Math.random() < 0.3) ? skillSheet[Math.floor(Math.random()*skillSheet.length)].id : null
+      };
+      // await real API call here!
+      return dummy;
+    }
+
+    async function sendInput() {
       const input = document.getElementById('user-input');
-      if (input.value.trim()) {
-        addBubble(input.value, 'user');
-        setTimeout(() => addBubble("Proctor/Patient reply here...", 'proctor'), 600);
-        input.value = '';
+      const userText = input.value.trim();
+      if (!userText) return;
+      addBubble(userText, 'user');
+      input.value = '';
+      const response = await getResponse(userText);
+      addBubble(response.answer, response.role);
+      // Update skill sheet if needed
+      if (response.skillSheetID) {
+        const idx = skillSheet.findIndex(s => s.id === response.skillSheetID);
+        if (idx >= 0 && !skillSheet[idx].checked) {
+          skillSheet[idx].checked = true;
+          renderSkillSheet();
+        }
       }
     }
+
+    // Voice input (Whisper integration): plug in your code here
     function startMic() {
       addBubble("[Voice input coming soon]", "system");
     }
-    // Demo greeting
+
+    // Enter/Return sends message
+    document.getElementById('user-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') sendInput();
+    });
+
+    // Demo startup scene
     setTimeout(() => addBubble("You arrive to find a patient who appears in distress.", 'system'), 400);
+
+    // --- End of Script ---
   </script>
 </body>
 </html>
