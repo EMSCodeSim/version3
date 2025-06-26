@@ -5,8 +5,29 @@
   <title>EMS Simulator (Mobile)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <style>
-    /* (All your mobile CSS styles, as before) */
-    /* ... [use your preferred CSS here] ... */
+    html, body { margin: 0; padding: 0; height: 100%; background: #e8f1fa; font-family: 'Inter', Arial, sans-serif;}
+    body { display: flex; flex-direction: column; height: 100vh; }
+    #header { background: #2563eb; color: #fff; font-weight: bold; font-size: 1.25rem; text-align: center; padding: 14px 8px 8px 8px; box-shadow: 0 2px 7px rgba(30,64,175,0.12); letter-spacing: 1px; display: flex; justify-content: center; align-items: center;}
+    #scenario-title { flex: 1; text-align: center; letter-spacing: 1.5px;}
+    #chat { flex: 1 1 auto; overflow-y: auto; padding: 18px 7px 80px 7px; display: flex; flex-direction: column; background: #e8f1fa; }
+    .bubble { max-width: 80%; padding: 13px 16px; margin: 8px 0; border-radius: 22px; font-size: 1.12rem; word-break: break-word; box-shadow: 0 2px 10px rgba(44,76,125,0.08);}
+    .bubble.user { background: #2563eb; color: #fff; align-self: flex-end; border-bottom-right-radius: 7px;}
+    .bubble.patient { background: #10b981; color: #fff; align-self: flex-start; border-bottom-left-radius: 7px;}
+    .bubble.proctor { background: #a1a1aa; color: #23232d; align-self: flex-start;}
+    .bubble.dispatch { background: #facc15; color: #3c2e03; align-self: center;}
+    .bubble.system { background: #c7d2fe; color: #29304a; align-self: center; font-size: 0.99rem;}
+    #input-bar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; background: #fff; padding: 8px 6px; box-shadow: 0 -2px 8px rgba(44,76,125,0.09);}
+    #mic-btn { background: #4f46e5; color: #fff; border: none; border-radius: 50%; width: 47px; height: 47px; margin-right: 10px; font-size: 1.38rem; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 9px rgba(80,80,220,0.11);}
+    #mic-btn:active { background: #6366f1; }
+    #user-input { flex: 1 1 auto; font-size: 1.09rem; border: 1.5px solid #cdd4e2; border-radius: 17px; padding: 10px 15px; outline: none; background: #f5f6fa; margin-right: 8px;}
+    #send-btn { background: #2563eb; color: #fff; border: none; border-radius: 17px; padding: 12px 22px; font-size: 1.09rem; font-weight: 700; cursor: pointer; box-shadow: 0 2px 8px rgba(30,58,138,0.08);}
+    #send-btn:active { background: #1d4ed8; }
+    #landing { width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; z-index: 50; background: rgba(232,241,250, 0.98); display: flex; flex-direction: column; align-items: center; justify-content: center;}
+    #landing-box { background: #fff; border-radius: 22px; box-shadow: 0 6px 24px rgba(44,76,125,0.12); padding: 34px 28px 34px 28px; min-width: 75vw;}
+    #start-btn { background: #14b8a6; color: #fff; border: none; border-radius: 18px; font-size: 1.23rem; font-weight: 700; padding: 16px 44px; margin: 23px auto 0 auto; box-shadow: 0 2px 8px rgba(44,76,125,0.13); cursor: pointer;}
+    #start-btn:active { background: #0d9488; }
+    #scenario-select { margin: 22px auto 0 auto; font-size: 1.17rem; border-radius: 14px; border: 1.5px solid #8bafd3; padding: 13px 19px; min-width: 66%; background: #f3f4f6; }
+    @media (max-width: 375px) { #header { font-size: 1.09rem; } #user-input { font-size: 1rem; } #send-btn, #mic-btn { font-size: 1rem; } #scenario-select { font-size: 1rem; } #landing-box { min-width: 94vw; } }
   </style>
   <script src="app.js"></script>
   <script src="router.js"></script>
@@ -14,31 +35,26 @@
 </head>
 <body>
   <div id="header" style="display:none;">
-    <div id="scenario-title"></div>
-    <span id="live-badge">Live</span>
+    <div id="scenario-title">EMS Mobile Sim</div>
   </div>
   <div id="chat"></div>
-  <button id="skill-sheet-btn" onclick="showSkillSheet()" style="display:none;">✔️ Skill Sheet</button>
-  <div id="skill-sheet-panel">
-    <button id="close-skill-sheet" onclick="closeSkillSheet()">Close</button>
-    <h3>Medical Assessment Skill Sheet</h3>
-    <div id="skill-rows"></div>
-  </div>
   <div id="input-bar" style="display:none;">
     <button id="mic-btn" title="Record voice" onclick="startMic()">🎤</button>
     <input id="user-input" placeholder="Type or say your assessment..." autocomplete="off" />
     <button id="send-btn" onclick="sendInput()">Send</button>
   </div>
   <div id="landing">
-    <h2>Choose a Scenario</h2>
-    <select id="scenario-select">
-      <option value="" disabled selected>Select scenario...</option>
-      <option value="chest_pain_002">Chest Pain</option>
-      <option value="allergic_reaction_001">Allergic Reaction</option>
-      <!-- Add more scenarios here -->
-    </select>
-    <br>
-    <button id="start-btn" disabled>Start Scenario</button>
+    <div id="landing-box">
+      <h2 style="margin-top:0;">Start a Scenario</h2>
+      <select id="scenario-select">
+        <option value="" disabled selected>Select scenario...</option>
+        <option value="chest_pain_002">Chest Pain</option>
+        <option value="allergic_reaction_001">Allergic Reaction</option>
+        <!-- Add more scenarios here -->
+      </select>
+      <br>
+      <button id="start-btn" disabled>Start Scenario</button>
+    </div>
   </div>
   <script>
     let scenario = "";
@@ -51,33 +67,23 @@
 
     document.getElementById('start-btn').onclick = function() {
       scenarioStarted = true;
-      // Set global variable for scenario
       window.selectedScenario = scenario;
-      // Hide landing, show UI
       document.getElementById('landing').style.display = 'none';
       document.getElementById('header').style.display = '';
       document.getElementById('input-bar').style.display = '';
-      document.getElementById('skill-sheet-btn').style.display = '';
-
-      // -- CALL THE SAME FUNCTION AS YOUR COMPUTER VERSION! --
-      // Prefer startScenarioLogic if you use that on desktop:
+      // Same scenario logic as desktop:
       if (typeof window.startScenarioLogic === "function") {
-        window.startScenarioLogic(scenario); // RECOMMENDED: most modern setups
+        window.startScenarioLogic(scenario);
       } else if (typeof window.startScenario === "function") {
-        window.startScenario(scenario);      // Fallback for classic setups
+        window.startScenario(scenario);
       } else {
-        alert("Scenario loader function not found in app.js!");
+        alert("Scenario loader function not found!");
       }
-
-      // Update header
       document.getElementById('scenario-title').innerText =
         scenario.replace(/_/g, ' ').replace(/\d+$/, '').toUpperCase();
     };
 
-    // Skill sheet helpers, mic, and send input logic (same as before)
-    // ... (your existing JS for these; unchanged from desktop)
-    function showSkillSheet() { document.getElementById('skill-sheet-panel').style.display = 'block'; }
-    function closeSkillSheet() { document.getElementById('skill-sheet-panel').style.display = 'none'; }
+    // Bubble helpers (same as before)
     function addBubble(text, role) {
       const bubble = document.createElement('div');
       bubble.className = `bubble ${role}`;
@@ -85,6 +91,7 @@
       document.getElementById('chat').appendChild(bubble);
       document.getElementById('chat').scrollTop = 99999;
     }
+
     async function sendInput() {
       const input = document.getElementById('user-input');
       const userText = input.value.trim();
@@ -94,7 +101,6 @@
       if (typeof window.handleUserInput === "function") {
         window.handleUserInput(userText);
       }
-      setTimeout(renderSkillSheet, 700);
     }
     document.getElementById('user-input').addEventListener('keydown', e => {
       if (e.key === 'Enter') sendInput();
@@ -106,7 +112,7 @@
         addBubble("[Voice input coming soon]", "system");
       }
     }
-    // ... renderSkillSheet and other helpers (as in your desktop index)
+    // Add any additional helpers you want (skill sheet, etc)
   </script>
 </body>
 </html>
