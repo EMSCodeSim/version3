@@ -10,7 +10,7 @@ let patientContext = "";
 let gradingTemplate = {};
 window.scenarioStarted = false;
 
-let currentScenarioId = 'chest_pain_002'; // Default scenario (update as needed)
+let currentScenarioId = 'chest_pain_002'; // Default scenario
 let currentScenarioPath = getCurrentScenarioPath();
 
 function getCurrentScenarioPath() {
@@ -18,24 +18,32 @@ function getCurrentScenarioPath() {
 }
 
 function showScenarioPicker(show) {
+  // For desktop: expects #scenario-select-container
   const pickerRow = document.getElementById('scenario-select-container');
   if (pickerRow) pickerRow.hidden = !show;
+  // For mobile: expects #landing (phone.html landing screen)
+  const landing = document.getElementById('landing');
+  if (landing) landing.style.display = show ? '' : 'none';
 }
 
 // --- Display chat bubbles with TTS and triggers ---
 function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio, trigger) {
-  const chatBox = document.getElementById('chat-box');
+  // Use #chat-box (desktop) or #chat (mobile)
+  const chatBox = document.getElementById('chat-box') || document.getElementById('chat');
   if (!chatBox) return;
 
-  // Keep scenario image if present
+  // On desktop, preserve scene image
   let scenarioImg = null;
   if (chatBox.firstChild && chatBox.firstChild.tagName === "IMG" && chatBox.firstChild.src.includes("scene1.PNG")) {
     scenarioImg = chatBox.firstChild.cloneNode(true);
   }
-  chatBox.innerHTML = "";
-  if (scenarioImg) chatBox.appendChild(scenarioImg);
+  // For mobile: do not clear history!
+  if (chatBox.id === 'chat-box') {
+    chatBox.innerHTML = "";
+    if (scenarioImg) chatBox.appendChild(scenarioImg);
+  }
 
-  // TRIGGER IMAGE/AUDIO (if present and not scenario image)
+  // TRIGGER IMAGE/AUDIO (if present)
   if (trigger && typeof trigger === "string" && trigger.trim() !== "") {
     const triggerLower = trigger.toLowerCase();
     if (!triggerLower.includes("scene1.png")) {
@@ -48,10 +56,6 @@ function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio, trigger) {
         img.style.marginBottom = "14px";
         img.onerror = function() {
           this.style.display = "none";
-          const warn = document.createElement('div');
-          warn.textContent = "Image not found: " + img.src;
-          warn.style.color = "red";
-          chatBox.insertBefore(warn, chatBox.children[scenarioImg ? 1 : 0] || null);
         };
         chatBox.appendChild(img);
       }
@@ -66,35 +70,25 @@ function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio, trigger) {
     }
   }
 
-  // USER bubble (always show immediately)
+  // USER bubble
   if (userMsg && userMsg.trim()) {
     const userDiv = document.createElement('div');
-    userDiv.className = "chat-bubble user-bubble";
-    userDiv.innerHTML = `<b>You:</b> ${userMsg}`;
+    userDiv.className = "bubble user";
+    userDiv.innerHTML = userMsg;
     chatBox.appendChild(userDiv);
   }
 
   // RESPONSE bubble: play audio first, then show text
   function showReplyBubble() {
     if (replyMsg && replyMsg.trim()) {
-      let bubbleClass = "chat-bubble system-bubble";
-      let label = "";
-      if (replyRole === "patient") {
-        bubbleClass = "chat-bubble patient-bubble";
-        label = "Patient";
-      } else if (replyRole === "proctor") {
-        bubbleClass = "chat-bubble proctor-bubble";
-        label = "Proctor";
-      } else if (replyRole === "dispatch") {
-        bubbleClass = "chat-bubble dispatch-bubble";
-        label = "Dispatch";
-      } else if (replyRole === "system") {
-        bubbleClass = "chat-bubble system-bubble";
-        label = "System";
-      }
+      let bubbleClass = "bubble system";
+      if (replyRole === "patient") bubbleClass = "bubble patient";
+      else if (replyRole === "proctor") bubbleClass = "bubble proctor";
+      else if (replyRole === "dispatch") bubbleClass = "bubble dispatch";
+      else if (replyRole === "system") bubbleClass = "bubble system";
       const replyDiv = document.createElement('div');
       replyDiv.className = bubbleClass;
-      replyDiv.innerHTML = label ? `<b>${label}:</b> ${replyMsg}` : replyMsg;
+      replyDiv.innerHTML = replyMsg;
       chatBox.appendChild(replyDiv);
       chatBox.scrollTop = chatBox.scrollHeight;
     }
@@ -134,13 +128,13 @@ function displayChatPair(userMsg, replyMsg, replyRole, ttsAudio, trigger) {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// --- Play audio utility (kept for backward compatibility) ---
+// --- Play audio utility ---
 function playAudio(src) {
   document.querySelectorAll("audio#scenarioTTS").forEach(audio => {
     try { audio.pause(); } catch (e) {}
     audio.remove();
   });
-  const chatBox = document.getElementById("chat-box");
+  const chatBox = document.getElementById("chat-box") || document.getElementById("chat");
   const audioElement = document.createElement("audio");
   audioElement.id = "scenarioTTS";
   audioElement.src = src;
@@ -170,18 +164,24 @@ function logErrorToDatabase(errorInfo) {
 }
 
 // --- MAIN: Start Scenario ---
-async function startScenario() {
+async function startScenario(selectedId) {
   if (window.scenarioStarted) return;
   window.scenarioStarted = true;
+  if (selectedId) {
+    currentScenarioId = selectedId;
+    currentScenarioPath = getCurrentScenarioPath();
+  }
   showScenarioPicker(false);
 
-  currentScenarioPath = getCurrentScenarioPath();
+  // Show scenario title (both layouts)
+  const scenarioTitle = document.getElementById('scenario-title');
+  if (scenarioTitle) scenarioTitle.innerText = currentScenarioId.replace(/_/g, ' ').replace(/\d+$/, '').toUpperCase();
 
   const spinner = document.getElementById('loading-spinner');
   try {
     if (spinner) spinner.style.display = "block";
 
-    // Load hardcoded and vector DB (using current scenario path)
+    // Load hardcoded and vector DB
     await loadHardcodedResponses(currentScenarioPath);
     await loadVectorDb(currentScenarioPath);
 
@@ -211,9 +211,9 @@ async function startScenario() {
     if (window.resetSkillChecklistUI) window.resetSkillChecklistUI();
 
     // --- Show scenario image (scene1.PNG) at the top ---
-    const chatBox = document.getElementById('chat-box');
+    const chatBox = document.getElementById('chat-box') || document.getElementById('chat');
     if (chatBox) {
-      chatBox.innerHTML = ""; // clear previous content
+      chatBox.innerHTML = "";
       const img = document.createElement("img");
       img.src = `${currentScenarioPath}scene1.PNG`;
       img.alt = "Scene Image";
@@ -240,8 +240,8 @@ async function startScenario() {
 // --- End Scenario handler ---
 function endScenario() {
   window.scenarioStarted = false;
-  const chatBox = document.getElementById('chat-box');
-  if (chatBox) chatBox.innerHTML += `<div class="chat-bubble system-bubble">Scenario ended.</div>`;
+  const chatBox = document.getElementById('chat-box') || document.getElementById('chat');
+  if (chatBox) chatBox.innerHTML += `<div class="bubble system">Scenario ended.</div>`;
   showScenarioPicker(true);
 }
 
@@ -311,7 +311,7 @@ async function processUserMessage(message) {
 
 // --- Picker and UI logic ---
 window.addEventListener('DOMContentLoaded', () => {
-  // Scenario picker select logic
+  // Desktop picker
   const picker = document.getElementById('scenario-picker');
   if (picker) {
     picker.addEventListener('change', (e) => {
@@ -319,14 +319,25 @@ window.addEventListener('DOMContentLoaded', () => {
       currentScenarioPath = getCurrentScenarioPath();
     });
   }
-
-  // Start Scenario button
   const startBtn = document.getElementById('start-scenario-btn');
   if (startBtn) {
     startBtn.addEventListener('click', () => {
       currentScenarioId = picker.value;
       currentScenarioPath = getCurrentScenarioPath();
       startScenario();
+    });
+  }
+  // Mobile picker (phone.html)
+  const landingSelect = document.getElementById('scenario-select');
+  const landingStartBtn = document.getElementById('start-btn');
+  if (landingSelect && landingStartBtn) {
+    landingSelect.addEventListener('change', function() {
+      currentScenarioId = this.value;
+      currentScenarioPath = getCurrentScenarioPath();
+      landingStartBtn.disabled = !currentScenarioId;
+    });
+    landingStartBtn.addEventListener('click', function() {
+      if (currentScenarioId) startScenario(currentScenarioId);
     });
   }
 
@@ -342,12 +353,12 @@ window.addEventListener('DOMContentLoaded', () => {
   showScenarioPicker(true);
 
   // Mic button: Use combo mic (browser STT or Whisper fallback)
-  const micBtn = document.getElementById('mic-button');
+  const micBtn = document.getElementById('mic-button') || document.getElementById('mic-btn');
   if (micBtn) {
     micBtn.onclick = comboMic;
   }
 
-  // Send/Enter logic
+  // Send/Enter logic (desktop)
   const sendBtn = document.getElementById('send-button');
   const input = document.getElementById('user-input');
   if (sendBtn && input) {
@@ -365,10 +376,23 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+  // Send/Enter logic (mobile)
+  if (input && !sendBtn) {
+    input.addEventListener('keypress', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        processUserMessage(input.value.trim());
+        input.value = '';
+      }
+    });
+  }
 });
 
-// --- Attach to window for ES module compatibility ---
+// --- Attach to window for global use ---
 window.startScenario = startScenario;
 window.endScenario = endScenario;
 window.processUserMessage = processUserMessage;
 window.displayChatPair = displayChatPair;
+window.handleUserInput = processUserMessage; // For phone.html
+window.startScenarioLogic = startScenario; // For phone.html
+window.handleMicInput = comboMic; // For phone.html
