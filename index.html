@@ -1,4 +1,17 @@
 <!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <script>
+    // Mobile device detection and redirect
+    if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      if (!window.location.pathname.includes('phone.html')) {
+        window.location.href = 'phone.html';
+      }
+    }
+  </script>
+
+
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
