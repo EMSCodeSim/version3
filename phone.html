@@ -2,120 +2,73 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>EMS Simulator - Mobile</title>
   <link rel="stylesheet" href="styles/style.css" />
   <style>
     body {
-      background: linear-gradient(120deg, #dbeafe 0%, #f4fdff 100%);
+      background: linear-gradient(120deg,#dbeafe 0%,#f4fdff 100%);
       min-height: 100vh;
       font-family: 'Segoe UI', Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      color: #1e293b;
-      display: flex;
-      flex-direction: column;
+      margin: 0; padding: 0; color: #1e293b;
+      display: flex; flex-direction: column;
     }
     #header {
-      background: linear-gradient(90deg, #1976d2 0%, #20e3c2 100%);
-      color: #fff;
-      text-align: center;
-      padding: 12px 0;
-      font-size: 1.4em;
-      font-weight: 600;
-      letter-spacing: 2px;
+      background: linear-gradient(90deg,#1976d2 0%,#20e3c2 100%);
+      color: #fff; text-align: center;
+      padding: 12px 0; font-size: 1.3em;
+      font-weight: 600; letter-spacing: 2px;
     }
     #simulator {
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      flex: 1;
-      padding: 0 0 30px 0;
-      max-width: 480px;
-      margin: 0 auto;
-      width: 100vw;
+      display: flex; flex-direction: column; align-items: stretch;
+      flex: 1; padding: 0 0 30px 0; max-width: 500px; margin: 0 auto; width: 100vw;
     }
     #scenario-picker-row {
       padding: 10px 0 0 0;
-      display: flex;
-      flex-direction: row;
-      gap: 9px;
-      align-items: center;
-      justify-content: center;
+      display: flex; flex-direction: row; gap: 8px;
+      align-items: center; justify-content: center;
     }
     #scenario-picker {
-      font-size: 1em;
-      padding: 8px 10px;
-      border-radius: 7px;
-      border: 1.6px solid #bae6fd;
-      width: 60%;
+      font-size: 1em; padding: 8px 10px; border-radius: 7px;
+      border: 1.6px solid #bae6fd; width: 60%;
     }
     #start-button, #handoff-button {
       background: linear-gradient(90deg,#1976d2,#20e3c2);
-      color: #fff;
-      border: none;
-      border-radius: 7px;
-      padding: 9px 16px;
-      font-size: 1em;
-      font-weight: 600;
-      margin-left: 2px;
-      margin-right: 2px;
+      color: #fff; border: none; border-radius: 7px;
+      padding: 9px 16px; font-size: 1em; font-weight: 600;
+      margin-left: 2px; margin-right: 2px;
       box-shadow: 0 1px 8px 0 rgba(25,118,210,0.09);
       cursor: pointer;
     }
     #main-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin: 0 3vw;
+      flex: 1; display: flex; flex-direction: column; gap: 6px; margin: 0 3vw;
     }
     #chat-box {
-      min-height: 270px;
-      max-height: 340px;
-      overflow-y: auto;
-      background: #f4fdff;
-      padding: 13px 10px 8px 10px;
-      border-radius: 13px;
-      border: 1.9px solid #bae6fd;
+      min-height: 270px; max-height: 340px; overflow-y: auto;
+      background: #f4fdff; padding: 13px 10px 8px 10px;
+      border-radius: 13px; border: 1.9px solid #bae6fd;
       box-shadow: 0 2px 13px 0 rgba(25,118,210,0.07);
-      margin-bottom: 12px;
-      font-size: 1em;
+      margin-bottom: 12px; font-size: 1em;
     }
     .input-row {
-      display: flex;
-      flex-direction: row;
-      gap: 8px;
-      align-items: center;
-      width: 100%;
-      margin-top: 2px;
+      display: flex; flex-direction: row; gap: 8px;
+      align-items: center; width: 100%; margin-top: 2px;
     }
     #user-input {
-      flex: 1;
-      padding: 12px 9px;
-      font-size: 1em;
-      border-radius: 7px;
-      border: 1.5px solid #bae6fd;
-      background: #fff;
+      flex: 1; padding: 12px 9px; font-size: 1em; border-radius: 7px;
+      border: 1.5px solid #bae6fd; background: #fff;
     }
     #user-input:focus { border-color: #20e3c2; }
     #send-button, #mic-button {
       background: linear-gradient(90deg,#1976d2,#20e3c2);
-      color: #fff;
-      border: none;
-      border-radius: 7px;
-      font-weight: 600;
-      font-size: 1.07em;
-      padding: 10px 16px;
-      cursor: pointer;
+      color: #fff; border: none; border-radius: 7px; font-weight: 600;
+      font-size: 1.07em; padding: 10px 16px; cursor: pointer;
     }
     #send-button:hover, #mic-button:hover {
       background: linear-gradient(90deg,#1353a3,#1cd3be);
     }
     #mic-button.recording {
-      background: #be123c !important;
-      color: #fff;
-      animation: pulseRed 1s infinite;
+      background: #be123c !important; color: #fff; animation: pulseRed 1s infinite;
     }
     @keyframes pulseRed {
       0% { box-shadow: 0 0 0 0 #be123c77; }
@@ -123,40 +76,51 @@
       100% { box-shadow: 0 0 0 0 #be123c00; }
     }
     #loading-spinner {
-      display: none;
-      text-align: center;
-      padding: 10px;
+      display: none; text-align: center; padding: 10px;
+    }
+    /* Skill Sheet Expand/Collapse Bar */
+    #skillSheetBar {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(90deg,#1976d2,#20e3c2);
+      color: #fff; text-align: center; padding: 13px 0 13px 0;
+      font-size: 1.13em; font-weight: 600;
+      border-radius: 15px 15px 0 0;
+      box-shadow: 0 -2px 10px #20e3c244;
+      cursor: pointer; z-index: 101; transition: transform 0.2s;
     }
     #skillSheetPane {
-      background: #f6fbff;
-      border-radius: 13px;
-      border: 1.7px solid #bae6fd;
-      padding: 8px 8px 8px 11px;
-      margin: 11px 0 0 0;
-      font-size: .98em;
-      box-shadow: 0 1px 8px 0 rgba(32,227,194,0.07);
+      display: none;
+      position: fixed; left: 0; right: 0; bottom: 0;
+      background: #f4fdff; border-radius: 20px 20px 0 0;
+      border: 2px solid #bae6fd;
+      box-shadow: 0 -2px 25px #1976d222;
+      padding: 0 0 12px 0; z-index: 102;
+      max-height: 66vh; overflow-y: auto;
+      transition: transform 0.25s;
     }
-    #skillSheetPane h3 {
-      font-size: 1.07em;
-      margin: 0 0 7px 0;
-      color: #1976d2;
-      letter-spacing: 2px;
-      font-weight: 700;
+    #skillSheetHeader {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 17px 7px 17px; font-size: 1.15em; font-weight: bold;
+      color: #1976d2; border-bottom: 1px solid #bae6fd;
+      background: #e0f7fa; border-radius: 20px 20px 0 0;
+    }
+    #closeSkillSheet {
+      font-size: 1.18em; background: none; color: #be123c; border: none;
+      cursor: pointer; padding: 0 6px; font-weight: 700;
     }
     #skillChecklist {
-      padding-left: 0;
-      list-style: none;
-      margin: 0 0 8px 0;
+      list-style: none; margin: 0; padding: 13px 22px 5px 22px; font-size: 1.08em;
     }
     #skillChecklist li {
-      padding: 3px 0 3px 0;
-      border-bottom: 1px solid #bae6fd;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 1em;
+      padding: 5px 0 5px 0; border-bottom: 1px solid #bae6fd;
+      display: flex; align-items: center; gap: 7px; font-size: 1em;
     }
     #skillChecklist li:last-child { border-bottom: none; }
+    @media (max-width: 600px) {
+      #main-content { margin: 0 2vw; }
+      #skillSheetPane { max-height: 78vh; }
+      #chat-box { max-height: 300px; }
+    }
   </style>
 </head>
 <body>
@@ -184,55 +148,40 @@
         <button id="send-button">Send</button>
         <button id="mic-button">🎤</button>
       </div>
-      <div id="skillSheetPane">
-        <h3>Skill Sheet</h3>
-        <ul id="skillChecklist">
-          <li id="EMT-B-MED-1">BSI/PPE <span class="status"></span></li>
-          <li id="EMT-B-MED-2">Scene Safety <span class="status"></span></li>
-          <li id="EMT-B-MED-3">MOI/NOI <span class="status"></span></li>
-          <li id="EMT-B-MED-4">Number of Patients <span class="status"></span></li>
-          <li id="EMT-B-MED-5">Additional EMS <span class="status"></span></li>
-          <li id="EMT-B-MED-6">C-Spine <span class="status"></span></li>
-          <li id="EMT-B-MED-7">Impression <span class="status"></span></li>
-          <li id="EMT-B-MED-8">Responsiveness/LOC <span class="status"></span></li>
-          <li id="EMT-B-MED-9">Chief Complaint <span class="status"></span></li>
-          <li id="EMT-B-MED-10">Airway/Breathing <span class="status"></span></li>
-          <li id="EMT-B-MED-11">Oxygen Therapy <span class="status"></span></li>
-          <li id="EMT-B-MED-12">Circulation <span class="status"></span></li>
-          <li id="EMT-B-MED-13">Priority/Transport <span class="status"></span></li>
-          <li id="EMT-B-MED-14">Onset <span class="status"></span></li>
-          <li id="EMT-B-MED-15">Provocation <span class="status"></span></li>
-          <li id="EMT-B-MED-16">Quality <span class="status"></span></li>
-          <li id="EMT-B-MED-17">Radiation <span class="status"></span></li>
-          <li id="EMT-B-MED-18">Severity <span class="status"></span></li>
-          <li id="EMT-B-MED-19">Time <span class="status"></span></li>
-          <li id="EMT-B-MED-20">Signs/Symptoms <span class="status"></span></li>
-          <li id="EMT-B-MED-21">Allergies <span class="status"></span></li>
-          <li id="EMT-B-MED-22">Medications <span class="status"></span></li>
-          <li id="EMT-B-MED-23">PMH <span class="status"></span></li>
-          <li id="EMT-B-MED-24">Last Oral Intake <span class="status"></span></li>
-          <li id="EMT-B-MED-25">Events <span class="status"></span></li>
-          <li id="EMT-B-MED-26">Affected System <span class="status"></span></li>
-          <li id="EMT-B-MED-27">BP <span class="status"></span></li>
-          <li id="EMT-B-MED-28">Heart Rate <span class="status"></span></li>
-          <li id="EMT-B-MED-29">Respiratory Rate <span class="status"></span></li>
-          <li id="EMT-B-MED-30">Field Impression <span class="status"></span></li>
-          <li id="EMT-B-MED-31">Interventions <span class="status"></span></li>
-          <li id="EMT-B-MED-32">Reassess <span class="status"></span></li>
-        </ul>
-      </div>
     </div>
   </div>
 
-  <!-- SCRIPTS: Load in same order as desktop -->
-  <script type="module" src="scripts/grading.js"></script>
-  <script type="module" src="scripts/checklist.js"></script>
-  <script type="module" src="scripts/app.js"></script>
-  <script type="module" src="scripts/handoff_inline.js"></script>
-  <script type="module" src="scripts/mic.js"></script>
+  <!-- Collapsed skill sheet bar/button -->
+  <div id="skillSheetBar" onclick="toggleSkillSheet(true)">
+    <span>📋 Show Skill Sheet</span>
+  </div>
+  <!-- Expandable live skill sheet -->
+  <div id="skillSheetPane">
+    <div id="skillSheetHeader">
+      <span>Skill Sheet</span>
+      <button id="closeSkillSheet" onclick="toggleSkillSheet(false)">✕</button>
+    </div>
+    <ul id="skillChecklist">
+      <!-- Skill sheet items are rendered here by grading.js/checklist.js -->
+    </ul>
+  </div>
+
+  <!-- SCRIPTS (in same order as index.html) -->
+  <script src="scripts/grading.js"></script>
+  <script src="scripts/checklist.js"></script>
+  <script src="scripts/app.js"></script>
+  <script src="scripts/handoff_inline.js"></script>
+  <script src="scripts/mic.js"></script>
   <script>
-    // Event listeners to match desktop
-    document.addEventListener("DOMContentLoaded", function () {
+    function toggleSkillSheet(show) {
+      document.getElementById("skillSheetPane").style.display = show ? "block" : "none";
+      document.getElementById("skillSheetBar").style.display = show ? "none" : "block";
+    }
+    // On page load, start collapsed
+    document.addEventListener("DOMContentLoaded", function() {
+      toggleSkillSheet(false);
+
+      // Button listeners to match index.html
       const scenarioPicker = document.getElementById("scenario-picker");
       const startBtn = document.getElementById("start-button");
       const handoffBtn = document.getElementById("handoff-button");
@@ -261,4 +210,3 @@
   </script>
 </body>
 </html>
-
