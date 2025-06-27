@@ -1,171 +1,264 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>EMS Simulator (Mobile)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EMS Simulator - Mobile</title>
+  <link rel="stylesheet" href="styles/style.css" />
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; background: #e8f1fa; font-family: 'Inter', Arial, sans-serif;}
-    body { display: flex; flex-direction: column; height: 100vh; }
-    #header { background: #2563eb; color: #fff; font-weight: bold; font-size: 1.25rem; text-align: center; padding: 14px 8px 8px 8px; box-shadow: 0 2px 7px rgba(30,64,175,0.12); letter-spacing: 1px; display: flex; justify-content: center; align-items: center;}
-    #scenario-title { flex: 1; text-align: center; letter-spacing: 1.5px;}
-    #chat { flex: 1 1 auto; overflow-y: auto; padding: 18px 7px 80px 7px; display: flex; flex-direction: column; background: #e8f1fa; }
-    .bubble { max-width: 80%; padding: 13px 16px; margin: 8px 0; border-radius: 22px; font-size: 1.12rem; word-break: break-word; box-shadow: 0 2px 10px rgba(44,76,125,0.08);}
-    .bubble.user { background: #2563eb; color: #fff; align-self: flex-end; border-bottom-right-radius: 7px;}
-    .bubble.patient { background: #10b981; color: #fff; align-self: flex-start; border-bottom-left-radius: 7px;}
-    .bubble.proctor { background: #a1a1aa; color: #23232d; align-self: flex-start;}
-    .bubble.dispatch { background: #facc15; color: #3c2e03; align-self: center;}
-    .bubble.system { background: #c7d2fe; color: #29304a; align-self: center; font-size: 0.99rem;}
-    #skill-sheet-btn { position: fixed; bottom: 72px; right: 16px; z-index: 12; background: #10b981; color: #fff; border-radius: 22px; border: none; padding: 13px 18px; font-size: 1.12rem; font-weight: 700; box-shadow: 0 3px 14px rgba(16,185,129,0.13); cursor: pointer; transition: background 0.13s;}
-    #skill-sheet-btn:active { background: #0e9f6e; }
-    #skill-sheet-panel { display: none; position: fixed; left: 0; right: 0; bottom: 0; background: #fff; box-shadow: 0 -8px 30px rgba(30,64,175,0.09); border-radius: 22px 22px 0 0; padding: 20px 18px 32px 18px; z-index: 21; max-height: 82vh; overflow-y: auto; animation: slideUp 0.3s;}
-    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-    #skill-sheet-panel h3 { margin: 0 0 16px 0; font-size: 1.15rem; color: #155e4e; text-align: center;}
-    .skill-row { display: flex; align-items: center; margin: 10px 0; font-size: 1.05rem; color: #18463b;}
-    .skill-check { font-size: 1.22rem; margin-right: 10px;}
-    #close-skill-sheet { background: #ec4899; color: #fff; border: none; border-radius: 14px; padding: 8px 16px; font-weight: 600; position: absolute; right: 16px; top: 14px; font-size: 1rem;}
-    #input-bar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; background: #fff; padding: 8px 6px; box-shadow: 0 -2px 8px rgba(44,76,125,0.09);}
-    #mic-btn { background: #4f46e5; color: #fff; border: none; border-radius: 50%; width: 47px; height: 47px; margin-right: 10px; font-size: 1.38rem; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 9px rgba(80,80,220,0.11);}
-    #mic-btn:active { background: #6366f1; }
-    #user-input { flex: 1 1 auto; font-size: 1.09rem; border: 1.5px solid #cdd4e2; border-radius: 17px; padding: 10px 15px; outline: none; background: #f5f6fa; margin-right: 8px;}
-    #send-btn { background: #2563eb; color: #fff; border: none; border-radius: 17px; padding: 12px 22px; font-size: 1.09rem; font-weight: 700; cursor: pointer; box-shadow: 0 2px 8px rgba(30,58,138,0.08);}
-    #send-btn:active { background: #1d4ed8; }
-    #landing { width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; z-index: 50; background: rgba(232,241,250, 0.98); display: flex; flex-direction: column; align-items: center; justify-content: center;}
-    #landing-box { background: #fff; border-radius: 22px; box-shadow: 0 6px 24px rgba(44,76,125,0.12); padding: 34px 28px 34px 28px; min-width: 75vw;}
-    #start-btn { background: #14b8a6; color: #fff; border: none; border-radius: 18px; font-size: 1.23rem; font-weight: 700; padding: 16px 44px; margin: 23px auto 0 auto; box-shadow: 0 2px 8px rgba(44,76,125,0.13); cursor: pointer;}
-    #start-btn:active { background: #0d9488; }
-    #scenario-select { margin: 22px auto 0 auto; font-size: 1.17rem; border-radius: 14px; border: 1.5px solid #8bafd3; padding: 13px 19px; min-width: 66%; background: #f3f4f6; }
-    @media (max-width: 375px) { #header { font-size: 1.09rem; } #user-input { font-size: 1rem; } #send-btn, #mic-btn { font-size: 1rem; } #scenario-select { font-size: 1rem; } #landing-box { min-width: 94vw; } }
+    body {
+      background: linear-gradient(120deg, #dbeafe 0%, #f4fdff 100%);
+      min-height: 100vh;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      color: #1e293b;
+      display: flex;
+      flex-direction: column;
+    }
+    #header {
+      background: linear-gradient(90deg, #1976d2 0%, #20e3c2 100%);
+      color: #fff;
+      text-align: center;
+      padding: 12px 0;
+      font-size: 1.4em;
+      font-weight: 600;
+      letter-spacing: 2px;
+    }
+    #simulator {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      flex: 1;
+      padding: 0 0 30px 0;
+      max-width: 480px;
+      margin: 0 auto;
+      width: 100vw;
+    }
+    #scenario-picker-row {
+      padding: 10px 0 0 0;
+      display: flex;
+      flex-direction: row;
+      gap: 9px;
+      align-items: center;
+      justify-content: center;
+    }
+    #scenario-picker {
+      font-size: 1em;
+      padding: 8px 10px;
+      border-radius: 7px;
+      border: 1.6px solid #bae6fd;
+      width: 60%;
+    }
+    #start-button, #handoff-button {
+      background: linear-gradient(90deg,#1976d2,#20e3c2);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 9px 16px;
+      font-size: 1em;
+      font-weight: 600;
+      margin-left: 2px;
+      margin-right: 2px;
+      box-shadow: 0 1px 8px 0 rgba(25,118,210,0.09);
+      cursor: pointer;
+    }
+    #main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin: 0 3vw;
+    }
+    #chat-box {
+      min-height: 270px;
+      max-height: 340px;
+      overflow-y: auto;
+      background: #f4fdff;
+      padding: 13px 10px 8px 10px;
+      border-radius: 13px;
+      border: 1.9px solid #bae6fd;
+      box-shadow: 0 2px 13px 0 rgba(25,118,210,0.07);
+      margin-bottom: 12px;
+      font-size: 1em;
+    }
+    .input-row {
+      display: flex;
+      flex-direction: row;
+      gap: 8px;
+      align-items: center;
+      width: 100%;
+      margin-top: 2px;
+    }
+    #user-input {
+      flex: 1;
+      padding: 12px 9px;
+      font-size: 1em;
+      border-radius: 7px;
+      border: 1.5px solid #bae6fd;
+      background: #fff;
+    }
+    #user-input:focus { border-color: #20e3c2; }
+    #send-button, #mic-button {
+      background: linear-gradient(90deg,#1976d2,#20e3c2);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      font-weight: 600;
+      font-size: 1.07em;
+      padding: 10px 16px;
+      cursor: pointer;
+    }
+    #send-button:hover, #mic-button:hover {
+      background: linear-gradient(90deg,#1353a3,#1cd3be);
+    }
+    #mic-button.recording {
+      background: #be123c !important;
+      color: #fff;
+      animation: pulseRed 1s infinite;
+    }
+    @keyframes pulseRed {
+      0% { box-shadow: 0 0 0 0 #be123c77; }
+      70% { box-shadow: 0 0 0 8px #be123c22; }
+      100% { box-shadow: 0 0 0 0 #be123c00; }
+    }
+    #loading-spinner {
+      display: none;
+      text-align: center;
+      padding: 10px;
+    }
+    #skillSheetPane {
+      background: #f6fbff;
+      border-radius: 13px;
+      border: 1.7px solid #bae6fd;
+      padding: 8px 8px 8px 11px;
+      margin: 11px 0 0 0;
+      font-size: .98em;
+      box-shadow: 0 1px 8px 0 rgba(32,227,194,0.07);
+    }
+    #skillSheetPane h3 {
+      font-size: 1.07em;
+      margin: 0 0 7px 0;
+      color: #1976d2;
+      letter-spacing: 2px;
+      font-weight: 700;
+    }
+    #skillChecklist {
+      padding-left: 0;
+      list-style: none;
+      margin: 0 0 8px 0;
+    }
+    #skillChecklist li {
+      padding: 3px 0 3px 0;
+      border-bottom: 1px solid #bae6fd;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 1em;
+    }
+    #skillChecklist li:last-child { border-bottom: none; }
   </style>
-  <script src="app.js"></script>
-  <script src="router.js"></script>
-  <script src="grading.js"></script>
 </head>
 <body>
-  <div id="header" style="display:none;">
-    <div id="scenario-title">EMS Mobile Sim</div>
-  </div>
-  <div id="chat"></div>
-  <button id="skill-sheet-btn" onclick="showSkillSheet()" style="display:none;">✔️ Skill Sheet</button>
-  <div id="skill-sheet-panel">
-    <button id="close-skill-sheet" onclick="closeSkillSheet()">Close</button>
-    <h3>Medical Assessment Skill Sheet</h3>
-    <div id="skill-rows"></div>
-  </div>
-  <div id="input-bar" style="display:none;">
-    <button id="mic-btn" title="Record voice" onclick="startMic()">🎤</button>
-    <input id="user-input" placeholder="Type or say your assessment..." autocomplete="off" />
-    <button id="send-btn" onclick="sendInput()">Send</button>
-  </div>
-  <div id="landing">
-    <div id="landing-box">
-      <h2 style="margin-top:0;">Start a Scenario</h2>
-      <select id="scenario-select">
-        <option value="" disabled selected>Select scenario...</option>
+  <div id="header">EMS CODE SIM</div>
+  <div id="simulator">
+    <div id="scenario-picker-row">
+      <select id="scenario-picker">
         <option value="chest_pain_002">Chest Pain</option>
         <option value="allergic_reaction_001">Allergic Reaction</option>
-        <!-- Add more scenarios here -->
       </select>
-      <br>
-      <button id="start-btn" disabled>Start Scenario</button>
+      <button id="start-button">Start</button>
+      <button id="handoff-button">Handoff</button>
+    </div>
+    <div id="main-content">
+      <div id="chat-box"></div>
+      <div id="loading-spinner">
+        <svg width="38" height="38" viewBox="0 0 48 48" style="animation: spin 1s linear infinite;">
+          <circle cx="24" cy="24" r="20" stroke="#1976d2" stroke-width="5" fill="none" opacity="0.2"/>
+          <path d="M44 24a20 20 0 0 1-20 20" stroke="#20e3c2" stroke-width="5" fill="none" stroke-linecap="round"/>
+        </svg>
+        <div style="color:#1976d2;font-weight:bold;">Loading...</div>
+      </div>
+      <div class="input-row">
+        <input type="text" id="user-input" placeholder="Type your response here..." />
+        <button id="send-button">Send</button>
+        <button id="mic-button">🎤</button>
+      </div>
+      <div id="skillSheetPane">
+        <h3>Skill Sheet</h3>
+        <ul id="skillChecklist">
+          <li id="EMT-B-MED-1">BSI/PPE <span class="status"></span></li>
+          <li id="EMT-B-MED-2">Scene Safety <span class="status"></span></li>
+          <li id="EMT-B-MED-3">MOI/NOI <span class="status"></span></li>
+          <li id="EMT-B-MED-4">Number of Patients <span class="status"></span></li>
+          <li id="EMT-B-MED-5">Additional EMS <span class="status"></span></li>
+          <li id="EMT-B-MED-6">C-Spine <span class="status"></span></li>
+          <li id="EMT-B-MED-7">Impression <span class="status"></span></li>
+          <li id="EMT-B-MED-8">Responsiveness/LOC <span class="status"></span></li>
+          <li id="EMT-B-MED-9">Chief Complaint <span class="status"></span></li>
+          <li id="EMT-B-MED-10">Airway/Breathing <span class="status"></span></li>
+          <li id="EMT-B-MED-11">Oxygen Therapy <span class="status"></span></li>
+          <li id="EMT-B-MED-12">Circulation <span class="status"></span></li>
+          <li id="EMT-B-MED-13">Priority/Transport <span class="status"></span></li>
+          <li id="EMT-B-MED-14">Onset <span class="status"></span></li>
+          <li id="EMT-B-MED-15">Provocation <span class="status"></span></li>
+          <li id="EMT-B-MED-16">Quality <span class="status"></span></li>
+          <li id="EMT-B-MED-17">Radiation <span class="status"></span></li>
+          <li id="EMT-B-MED-18">Severity <span class="status"></span></li>
+          <li id="EMT-B-MED-19">Time <span class="status"></span></li>
+          <li id="EMT-B-MED-20">Signs/Symptoms <span class="status"></span></li>
+          <li id="EMT-B-MED-21">Allergies <span class="status"></span></li>
+          <li id="EMT-B-MED-22">Medications <span class="status"></span></li>
+          <li id="EMT-B-MED-23">PMH <span class="status"></span></li>
+          <li id="EMT-B-MED-24">Last Oral Intake <span class="status"></span></li>
+          <li id="EMT-B-MED-25">Events <span class="status"></span></li>
+          <li id="EMT-B-MED-26">Affected System <span class="status"></span></li>
+          <li id="EMT-B-MED-27">BP <span class="status"></span></li>
+          <li id="EMT-B-MED-28">Heart Rate <span class="status"></span></li>
+          <li id="EMT-B-MED-29">Respiratory Rate <span class="status"></span></li>
+          <li id="EMT-B-MED-30">Field Impression <span class="status"></span></li>
+          <li id="EMT-B-MED-31">Interventions <span class="status"></span></li>
+          <li id="EMT-B-MED-32">Reassess <span class="status"></span></li>
+        </ul>
+      </div>
     </div>
   </div>
+
+  <!-- SCRIPTS: Load in same order as desktop -->
+  <script type="module" src="scripts/grading.js"></script>
+  <script type="module" src="scripts/checklist.js"></script>
+  <script type="module" src="scripts/app.js"></script>
+  <script type="module" src="scripts/handoff_inline.js"></script>
+  <script type="module" src="scripts/mic.js"></script>
   <script>
-    let scenario = "";
-    let scenarioStarted = false;
-
-    document.getElementById('scenario-select').addEventListener('change', function() {
-      scenario = this.value;
-      document.getElementById('start-btn').disabled = !scenario;
+    // Event listeners to match desktop
+    document.addEventListener("DOMContentLoaded", function () {
+      const scenarioPicker = document.getElementById("scenario-picker");
+      const startBtn = document.getElementById("start-button");
+      const handoffBtn = document.getElementById("handoff-button");
+      const sendBtn = document.getElementById("send-button");
+      const micBtn = document.getElementById("mic-button");
+      const input = document.getElementById("user-input");
+      if (startBtn) startBtn.onclick = function () {
+        if (scenarioPicker) window.selectedScenario = scenarioPicker.value;
+        if (typeof window.startScenario === "function") window.startScenario();
+      };
+      if (sendBtn && input) sendBtn.onclick = function () {
+        if (typeof window.sendMessage === "function") window.sendMessage();
+      };
+      if (micBtn && typeof window.comboMic === "function") {
+        micBtn.onclick = async function () {
+          micBtn.classList.add("recording");
+          try { await window.comboMic(); } finally { micBtn.classList.remove("recording"); }
+        };
+      }
+      if (handoffBtn && typeof window.startHandoffInline === "function") {
+        handoffBtn.onclick = function () {
+          window.startHandoffInline();
+        };
+      }
     });
-
-    document.getElementById('start-btn').onclick = function() {
-      scenarioStarted = true;
-      window.selectedScenario = scenario;
-      document.getElementById('landing').style.display = 'none';
-      document.getElementById('header').style.display = '';
-      document.getElementById('input-bar').style.display = '';
-      document.getElementById('skill-sheet-btn').style.display = '';
-      if (typeof window.startScenarioLogic === "function") {
-        window.startScenarioLogic(scenario);
-      } else if (typeof window.startScenario === "function") {
-        window.startScenario(scenario);
-      } else {
-        alert("Scenario loader function not found!");
-      }
-      document.getElementById('scenario-title').innerText =
-        scenario.replace(/_/g, ' ').replace(/\d+$/, '').toUpperCase();
-    };
-
-    function addBubble(text, role) {
-      const bubble = document.createElement('div');
-      bubble.className = `bubble ${role}`;
-      bubble.innerText = text;
-      document.getElementById('chat').appendChild(bubble);
-      document.getElementById('chat').scrollTop = 99999;
-    }
-
-    async function sendInput() {
-      const input = document.getElementById('user-input');
-      const userText = input.value.trim();
-      if (!userText) return;
-      addBubble(userText, 'user');
-      input.value = '';
-      if (typeof window.handleUserInput === "function") {
-        window.handleUserInput(userText);
-      }
-      setTimeout(renderSkillSheet, 700);
-    }
-    document.getElementById('user-input').addEventListener('keydown', e => {
-      if (e.key === 'Enter') sendInput();
-    });
-    function startMic() {
-      if (typeof window.handleMicInput === "function") {
-        window.handleMicInput();
-      } else {
-        addBubble("[Voice input coming soon]", "system");
-      }
-    }
-
-    // --- Skill sheet and grading ---
-    function renderSkillSheet() {
-      let skillSheet = [];
-      if (typeof getSkillSheetStatus === "function") {
-        skillSheet = getSkillSheetStatus();
-      } else {
-        skillSheet = [
-          { text: "Scene safety/PPE", checked: false },
-          { text: "Determine MOI/NOI", checked: false },
-          { text: "Number of patients", checked: false },
-          { text: "Request additional resources", checked: false },
-          { text: "Consider C-spine", checked: false },
-          { text: "General impression", checked: false },
-          { text: "Responsiveness/LOC", checked: false },
-          { text: "Chief complaint", checked: false },
-          { text: "Airway", checked: false },
-          { text: "Breathing", checked: false },
-          { text: "Oxygen therapy", checked: false },
-          { text: "Circulation", checked: false },
-          { text: "Baseline vitals", checked: false },
-          { text: "SAMPLE/OPQRST", checked: false },
-          { text: "Field impression", checked: false },
-          { text: "Medication/EpiPen", checked: false },
-          { text: "Reassessment", checked: false },
-          { text: "Transport decision", checked: false }
-        ];
-      }
-      document.getElementById('skill-rows').innerHTML = skillSheet.map(
-        s => `<div class="skill-row">${s.checked ? `<span class="skill-check">✔️</span>` : `<span class="skill-check">⬜️</span>`}${s.text}</div>`
-      ).join('');
-    }
-    window.showSkillSheet = function() {
-      renderSkillSheet();
-      document.getElementById('skill-sheet-panel').style.display = 'block';
-    };
-    window.closeSkillSheet = function() {
-      document.getElementById('skill-sheet-panel').style.display = 'none';
-    };
-    // Optionally re-render when needed
   </script>
 </body>
 </html>
+
