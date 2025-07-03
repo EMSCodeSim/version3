@@ -1,11 +1,12 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>EMS Simulator - Mobile</title>
-  <link rel="stylesheet" href="styles/style.css" />
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>EMS Simulator - Mobile</title>
+<link href="styles/style.css" rel="stylesheet"/>
+<style>
     body {
       background: linear-gradient(120deg, #dbeafe 0%, #f4fdff 100%);
       min-height: 100vh;
@@ -157,80 +158,90 @@
       font-size: 1em;
     }
     #skillChecklist li:last-child { border-bottom: none; }
-  </style>
+  
+#mic-button.recording {
+  background: #be123c !important;
+  color: #fff;
+  animation: pulseRed 1s infinite;
+}
+@keyframes pulseRed {
+  0% { box-shadow: 0 0 0 0 #be123c77; }
+  70% { box-shadow: 0 0 0 8px #be123c22; }
+  100% { box-shadow: 0 0 0 0 #be123c00; }
+}
+</style>
 </head>
 <body>
-  <div id="header">EMS CODE SIM</div>
-  <div id="simulator">
-    <div id="scenario-picker-row">
-      <select id="scenario-picker">
-        <option value="chest_pain_002">Chest Pain</option>
-        <option value="allergic_reaction_001">Allergic Reaction</option>
-      </select>
-      <button id="start-button">Start</button>
-      <button id="handoff-button">Handoff</button>
-    </div>
-    <div id="main-content">
-      <div id="chat-box"></div>
-      <div id="loading-spinner">
-        <svg width="38" height="38" viewBox="0 0 48 48" style="animation: spin 1s linear infinite;">
-          <circle cx="24" cy="24" r="20" stroke="#1976d2" stroke-width="5" fill="none" opacity="0.2"/>
-          <path d="M44 24a20 20 0 0 1-20 20" stroke="#20e3c2" stroke-width="5" fill="none" stroke-linecap="round"/>
-        </svg>
-        <div style="color:#1976d2;font-weight:bold;">Loading...</div>
-      </div>
-      <div class="input-row">
-        <input type="text" id="user-input" placeholder="Type your response here..." />
-        <button id="send-button">Send</button>
-        <button id="mic-button">🎤</button>
-      </div>
-      <div id="skillSheetPane">
-        <h3>Skill Sheet</h3>
-        <ul id="skillChecklist">
-          <li id="EMT-B-MED-1">BSI/PPE <span class="status"></span></li>
-          <li id="EMT-B-MED-2">Scene Safety <span class="status"></span></li>
-          <li id="EMT-B-MED-3">MOI/NOI <span class="status"></span></li>
-          <li id="EMT-B-MED-4">Number of Patients <span class="status"></span></li>
-          <li id="EMT-B-MED-5">Additional EMS <span class="status"></span></li>
-          <li id="EMT-B-MED-6">C-Spine <span class="status"></span></li>
-          <li id="EMT-B-MED-7">Impression <span class="status"></span></li>
-          <li id="EMT-B-MED-8">Responsiveness/LOC <span class="status"></span></li>
-          <li id="EMT-B-MED-9">Chief Complaint <span class="status"></span></li>
-          <li id="EMT-B-MED-10">Airway/Breathing <span class="status"></span></li>
-          <li id="EMT-B-MED-11">Oxygen Therapy <span class="status"></span></li>
-          <li id="EMT-B-MED-12">Circulation <span class="status"></span></li>
-          <li id="EMT-B-MED-13">Priority/Transport <span class="status"></span></li>
-          <li id="EMT-B-MED-14">Onset <span class="status"></span></li>
-          <li id="EMT-B-MED-15">Provocation <span class="status"></span></li>
-          <li id="EMT-B-MED-16">Quality <span class="status"></span></li>
-          <li id="EMT-B-MED-17">Radiation <span class="status"></span></li>
-          <li id="EMT-B-MED-18">Severity <span class="status"></span></li>
-          <li id="EMT-B-MED-19">Time <span class="status"></span></li>
-          <li id="EMT-B-MED-20">Signs/Symptoms <span class="status"></span></li>
-          <li id="EMT-B-MED-21">Allergies <span class="status"></span></li>
-          <li id="EMT-B-MED-22">Medications <span class="status"></span></li>
-          <li id="EMT-B-MED-23">PMH <span class="status"></span></li>
-          <li id="EMT-B-MED-24">Last Oral Intake <span class="status"></span></li>
-          <li id="EMT-B-MED-25">Events <span class="status"></span></li>
-          <li id="EMT-B-MED-26">Affected System <span class="status"></span></li>
-          <li id="EMT-B-MED-27">BP <span class="status"></span></li>
-          <li id="EMT-B-MED-28">Heart Rate <span class="status"></span></li>
-          <li id="EMT-B-MED-29">Respiratory Rate <span class="status"></span></li>
-          <li id="EMT-B-MED-30">Field Impression <span class="status"></span></li>
-          <li id="EMT-B-MED-31">Interventions <span class="status"></span></li>
-          <li id="EMT-B-MED-32">Reassess <span class="status"></span></li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <!-- SCRIPTS: Load in same order as desktop -->
-  <script type="module" src="scripts/grading.js"></script>
-  <script type="module" src="scripts/checklist.js"></script>
-  <script type="module" src="scripts/app.js"></script>
-  <script type="module" src="scripts/handoff_inline.js"></script>
-  <script type="module" src="scripts/mic.js"></script>
-  <script>
+<div id="header">EMS CODE SIM</div>
+<div id="simulator">
+<div id="scenario-picker-row">
+<select id="scenario-picker">
+<option value="chest_pain_002">Chest Pain</option>
+<option value="allergic_reaction_001">Allergic Reaction</option>
+</select>
+<button id="start-button">Start</button>
+<button id="handoff-button">Handoff</button>
+</div>
+<div id="main-content">
+<div id="chat-box"></div>
+<div id="loading-spinner">
+<svg height="38" style="animation: spin 1s linear infinite;" viewbox="0 0 48 48" width="38">
+<circle cx="24" cy="24" fill="none" opacity="0.2" r="20" stroke="#1976d2" stroke-width="5"></circle>
+<path d="M44 24a20 20 0 0 1-20 20" fill="none" stroke="#20e3c2" stroke-linecap="round" stroke-width="5"></path>
+</svg>
+<div style="color:#1976d2;font-weight:bold;">Loading...</div>
+</div>
+<div class="input-row">
+<input id="user-input" placeholder="Type your response here..." type="text"/>
+<button id="send-button">Send</button>
+<button id="mic-button">🎤</button>
+</div>
+<div id="skillSheetPane">
+<h3>Skill Sheet</h3>
+<ul id="skillChecklist">
+<li id="EMT-B-MED-1">BSI/PPE <span class="status"></span></li>
+<li id="EMT-B-MED-2">Scene Safety <span class="status"></span></li>
+<li id="EMT-B-MED-3">MOI/NOI <span class="status"></span></li>
+<li id="EMT-B-MED-4">Number of Patients <span class="status"></span></li>
+<li id="EMT-B-MED-5">Additional EMS <span class="status"></span></li>
+<li id="EMT-B-MED-6">C-Spine <span class="status"></span></li>
+<li id="EMT-B-MED-7">Impression <span class="status"></span></li>
+<li id="EMT-B-MED-8">Responsiveness/LOC <span class="status"></span></li>
+<li id="EMT-B-MED-9">Chief Complaint <span class="status"></span></li>
+<li id="EMT-B-MED-10">Airway/Breathing <span class="status"></span></li>
+<li id="EMT-B-MED-11">Oxygen Therapy <span class="status"></span></li>
+<li id="EMT-B-MED-12">Circulation <span class="status"></span></li>
+<li id="EMT-B-MED-13">Priority/Transport <span class="status"></span></li>
+<li id="EMT-B-MED-14">Onset <span class="status"></span></li>
+<li id="EMT-B-MED-15">Provocation <span class="status"></span></li>
+<li id="EMT-B-MED-16">Quality <span class="status"></span></li>
+<li id="EMT-B-MED-17">Radiation <span class="status"></span></li>
+<li id="EMT-B-MED-18">Severity <span class="status"></span></li>
+<li id="EMT-B-MED-19">Time <span class="status"></span></li>
+<li id="EMT-B-MED-20">Signs/Symptoms <span class="status"></span></li>
+<li id="EMT-B-MED-21">Allergies <span class="status"></span></li>
+<li id="EMT-B-MED-22">Medications <span class="status"></span></li>
+<li id="EMT-B-MED-23">PMH <span class="status"></span></li>
+<li id="EMT-B-MED-24">Last Oral Intake <span class="status"></span></li>
+<li id="EMT-B-MED-25">Events <span class="status"></span></li>
+<li id="EMT-B-MED-26">Affected System <span class="status"></span></li>
+<li id="EMT-B-MED-27">BP <span class="status"></span></li>
+<li id="EMT-B-MED-28">Heart Rate <span class="status"></span></li>
+<li id="EMT-B-MED-29">Respiratory Rate <span class="status"></span></li>
+<li id="EMT-B-MED-30">Field Impression <span class="status"></span></li>
+<li id="EMT-B-MED-31">Interventions <span class="status"></span></li>
+<li id="EMT-B-MED-32">Reassess <span class="status"></span></li>
+</ul>
+</div>
+</div>
+</div>
+<!-- SCRIPTS: Load in same order as desktop -->
+<script src="scripts/grading.js" type="module"></script>
+<script src="scripts/checklist.js" type="module"></script>
+<script src="scripts/app.js" type="module"></script>
+<script src="scripts/handoff_inline.js" type="module"></script>
+<script src="scripts/mic.js" type="module"></script>
+<script>
     // Event listeners to match desktop
     document.addEventListener("DOMContentLoaded", function () {
       const scenarioPicker = document.getElementById("scenario-picker");
@@ -259,6 +270,52 @@
       }
     });
   </script>
-</body>
-</html>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const chatBox = document.getElementById("chat-box");
+  const scenarioPicker = document.getElementById("scenario-picker");
+  const startBtn = document.getElementById("start-button");
+  const handoffBtn = document.getElementById("handoff-button");
+  const sendBtn = document.getElementById("send-button");
+  const micBtn = document.getElementById("mic-button");
+  const input = document.getElementById("user-input");
 
+  // Show first-time instructions
+  if (chatBox && chatBox.children.length === 0) {
+    const intro = document.createElement("div");
+    intro.style.color = "#475569";
+    intro.style.fontSize = "1.05rem";
+    intro.style.paddingBottom = "12px";
+    intro.innerHTML = `
+      <b>Welcome to EMS CODE SIM!</b><br>
+      Choose a scenario and press <b>Start</b>.<br><br>
+      You can type or tap the 🎤 to speak.<br>
+      These instructions disappear when you start.`;
+    chatBox.appendChild(intro);
+  }
+
+  if (startBtn) startBtn.onclick = function () {
+    if (chatBox) chatBox.innerHTML = "";
+    if (scenarioPicker) window.selectedScenario = scenarioPicker.value;
+    if (typeof window.startScenario === "function") window.startScenario();
+  };
+
+  if (sendBtn && input) sendBtn.onclick = function () {
+    if (typeof window.sendMessage === "function") window.sendMessage();
+  };
+
+  if (micBtn && typeof window.comboMic === "function") {
+    micBtn.onclick = async function () {
+      micBtn.classList.add("recording");
+      try { await window.comboMic(); } finally { micBtn.classList.remove("recording"); }
+    };
+  }
+
+  if (handoffBtn && typeof window.startHandoffInline === "function") {
+    handoffBtn.onclick = function () {
+      window.startHandoffInline();
+    };
+  }
+});
+</script></body>
+</html>
