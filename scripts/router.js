@@ -6,7 +6,6 @@ window.hardcodedResponsesArray = hardcodedResponses;
 
 // Load hardcoded responses for current scenario
 export async function loadHardcodedResponses(scenarioPath) {
-  // Use scenarioPath, e.g. 'scenarios/allergic_reaction_001/'
   const files = [
     `${scenarioPath}ems_database_part1.json`,
     `${scenarioPath}ems_database_part2.json`,
@@ -18,7 +17,6 @@ export async function loadHardcodedResponses(scenarioPath) {
       const resp = await fetch(file);
       if (!resp.ok) throw new Error(`Failed to load ${file}`);
       const obj = await resp.json();
-      // Accept array or object style
       if (Array.isArray(obj)) {
         hardcodedResponses.push(...obj);
       } else {
@@ -31,7 +29,7 @@ export async function loadHardcodedResponses(scenarioPath) {
   window.hardcodedResponsesArray = hardcodedResponses;
 }
 
-// Load vector DB for current scenario
+// Load vector DB
 export async function loadVectorDb(scenarioPath) {
   const files = [
     `${scenarioPath}vector-db-1.json`,
@@ -67,7 +65,7 @@ function cosineSimilarity(a, b) {
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
-// Rephrase match: call Netlify function to rephrase user input
+// Rephrase match via GPT-3
 async function rephraseUserInput(input) {
   try {
     const res = await fetch('/.netlify/functions/gpt3_rephrase', {
@@ -86,7 +84,7 @@ async function rephraseUserInput(input) {
   }
 }
 
-// VECTOR MATCH (calls serverless function to get embedding)
+// Vector match
 async function findVectorMatch(userInput, threshold = 0.40) {
   const embedRes = await fetch('/.netlify/functions/embed', {
     method: 'POST',
@@ -109,14 +107,13 @@ async function findVectorMatch(userInput, threshold = 0.40) {
   return null;
 }
 
-// === Tag Match Logic ===
+// Tag match
 function findTagMatch(message) {
   const questionTokens = new Set(normalize(message).split(/\s+/));
   let bestEntry = null;
   let bestOverlap = 0;
   for (const entry of hardcodedResponses) {
     if (Array.isArray(entry.tags) && entry.tags.length > 0) {
-      // Overlap count
       const overlap = entry.tags.filter(t => questionTokens.has(normalize(t))).length;
       if (overlap > bestOverlap) {
         bestOverlap = overlap;
@@ -128,6 +125,21 @@ function findTagMatch(message) {
     return bestEntry;
   }
   return null;
+}
+
+// Firebase logging
+function logToFirebase({ scenarioId, question, answer, response_type }) {
+  if (!window.firebase || !window.firebase.database) return;
+  const timestamp = new Date().toISOString();
+  const logRef = window.firebase.database().ref("ai_responses_log");
+  logRef.push({ scenario_id: scenarioId, question, answer, response_type, timestamp });
+}
+
+// Unknown question log
+function logUnknown({ scenarioId, question }) {
+  if (!window.firebase || !window.firebase.database) return;
+  const unknownRef = window.firebase.database().ref("unknownQuestions");
+  unknownRef.push({ scenario_id: scenarioId, question, timestamp: new Date().toISOString() });
 }
 
 // === MATCH ORDER: exact → vector → rephrase → tag → GPT ===
@@ -147,17 +159,15 @@ export async function routeUserInput(message, { scenarioId, role }) {
   try {
     const vectorRes = await findVectorMatch(message, 0.80);
     if (vectorRes && (vectorRes.entry.response || vectorRes.entry.answer)) {
-      return {
-        response: vectorRes.entry.response || vectorRes.entry.answer,
-        source: "vector",
-        matchedEntry: vectorRes.entry
-      };
+      const answer = vectorRes.entry.response || vectorRes.entry.answer;
+      logToFirebase({ scenarioId, question: message, answer, response_type: "vector" });
+      return { response: answer, source: "vector", matchedEntry: vectorRes.entry };
     }
   } catch (err) {
     console.error("Vector search failed:", err);
   }
 
-  // 3. Rephrase match (uses gpt3_rephrase)
+  // 3. Rephrase match
   try {
     const rephrased = await rephraseUserInput(message);
     if (rephrased) {
@@ -166,7 +176,11 @@ export async function routeUserInput(message, { scenarioId, role }) {
         normalize(entry.userQuestion) === normalize(rephrased)
       );
       if (rephraseMatch && (rephraseMatch.response || rephraseMatch.answer)) {
-        return { response: rephraseMatch.response || rephraseMatch.answer, source: "rephrase", matchedEntry: rephraseMatch };
+        return {
+          response: rephraseMatch.response || rephraseMatch.answer,
+          source: "rephrase",
+          matchedEntry: rephraseMatch
+        };
       }
     }
   } catch (err) {
@@ -192,7 +206,12 @@ export async function routeUserInput(message, { scenarioId, role }) {
     });
     const data = await res.json();
     if (!res.ok || !data.reply) throw new Error(data.error || "GPT failed");
-    return { response: data.reply, source: "gpt", matchedEntry: null };
+
+    const answer = data.reply;
+    logToFirebase({ scenarioId, question: message, answer, response_type: "gpt" });
+    logUnknown({ scenarioId, question: message });
+
+    return { response: answer, source: "gpt", matchedEntry: null };
   } catch (err) {
     console.error("GPT fallback failed:", err.message);
     return { response: "❌ No response from AI.", source: "gpt", matchedEntry: null };
