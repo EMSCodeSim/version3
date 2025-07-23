@@ -2,6 +2,8 @@
 
 let hardcodedResponses = [];
 let vectorDb = [];
+let chatHistory = []; // running chat log for GPT
+
 window.hardcodedResponsesArray = hardcodedResponses;
 
 // Load hardcoded responses for current scenario
@@ -27,6 +29,7 @@ export async function loadHardcodedResponses(scenarioPath) {
     }
   }
   window.hardcodedResponsesArray = hardcodedResponses;
+  chatHistory = []; // reset history for new scenario
 }
 
 // Load vector DB
@@ -49,12 +52,10 @@ export async function loadVectorDb(scenarioPath) {
   window.vectorDbArray = vectorDb;
 }
 
-// Normalize helper
 function normalize(str) {
   return (str || "").trim().toLowerCase().replace(/[^\w\s]/g, "");
 }
 
-// Cosine similarity helper
 function cosineSimilarity(a, b) {
   let dot = 0, normA = 0, normB = 0;
   for (let i = 0; i < a.length; ++i) {
@@ -65,7 +66,6 @@ function cosineSimilarity(a, b) {
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
-// Rephrase match via GPT-3
 async function rephraseUserInput(input) {
   try {
     const res = await fetch('/.netlify/functions/gpt3_rephrase', {
@@ -84,7 +84,6 @@ async function rephraseUserInput(input) {
   }
 }
 
-// Vector match
 async function findVectorMatch(userInput, threshold = 0.40) {
   const embedRes = await fetch('/.netlify/functions/embed', {
     method: 'POST',
@@ -107,7 +106,6 @@ async function findVectorMatch(userInput, threshold = 0.40) {
   return null;
 }
 
-// Tag match
 function findTagMatch(message) {
   const questionTokens = new Set(normalize(message).split(/\s+/));
   let bestEntry = null;
@@ -127,7 +125,6 @@ function findTagMatch(message) {
   return null;
 }
 
-// Firebase logging
 function logToFirebase({ scenarioId, question, answer, response_type }) {
   if (!window.firebase || !window.firebase.database) return;
   const timestamp = new Date().toISOString();
@@ -135,7 +132,6 @@ function logToFirebase({ scenarioId, question, answer, response_type }) {
   logRef.push({ scenario_id: scenarioId, question, answer, response_type, timestamp });
 }
 
-// Unknown question log
 function logUnknown({ scenarioId, question }) {
   if (!window.firebase || !window.firebase.database) return;
   const unknownRef = window.firebase.database().ref("unknownQuestions");
@@ -152,16 +148,19 @@ export async function routeUserInput(message, { scenarioId, role }) {
     normalize(entry.userQuestion) === norm
   );
   if (match && (match.response || match.answer)) {
-    return { response: match.response || match.answer, source: "hardcoded", matchedEntry: match };
+    const reply = match.response || match.answer;
+    chatHistory.push({ role: "user", content: message }, { role: "assistant", content: reply });
+    return { response: reply, source: "hardcoded", matchedEntry: match };
   }
 
   // 2. Vector match
   try {
     const vectorRes = await findVectorMatch(message, 0.80);
     if (vectorRes && (vectorRes.entry.response || vectorRes.entry.answer)) {
-      const answer = vectorRes.entry.response || vectorRes.entry.answer;
-      logToFirebase({ scenarioId, question: message, answer, response_type: "vector" });
-      return { response: answer, source: "vector", matchedEntry: vectorRes.entry };
+      const reply = vectorRes.entry.response || vectorRes.entry.answer;
+      logToFirebase({ scenarioId, question: message, answer: reply, response_type: "vector" });
+      chatHistory.push({ role: "user", content: message }, { role: "assistant", content: reply });
+      return { response: reply, source: "vector", matchedEntry: vectorRes.entry };
     }
   } catch (err) {
     console.error("Vector search failed:", err);
@@ -176,11 +175,9 @@ export async function routeUserInput(message, { scenarioId, role }) {
         normalize(entry.userQuestion) === normalize(rephrased)
       );
       if (rephraseMatch && (rephraseMatch.response || rephraseMatch.answer)) {
-        return {
-          response: rephraseMatch.response || rephraseMatch.answer,
-          source: "rephrase",
-          matchedEntry: rephraseMatch
-        };
+        const reply = rephraseMatch.response || rephraseMatch.answer;
+        chatHistory.push({ role: "user", content: message }, { role: "assistant", content: reply });
+        return { response: reply, source: "rephrase", matchedEntry: rephraseMatch };
       }
     }
   } catch (err) {
@@ -191,7 +188,9 @@ export async function routeUserInput(message, { scenarioId, role }) {
   try {
     const tagEntry = findTagMatch(message);
     if (tagEntry) {
-      return { response: tagEntry.response || tagEntry.answer, source: "tag", matchedEntry: tagEntry };
+      const reply = tagEntry.response || tagEntry.answer;
+      chatHistory.push({ role: "user", content: message }, { role: "assistant", content: reply });
+      return { response: reply, source: "tag", matchedEntry: tagEntry };
     }
   } catch (err) {
     console.error("Tag match failed:", err);
@@ -202,16 +201,21 @@ export async function routeUserInput(message, { scenarioId, role }) {
     const res = await fetch("/.netlify/functions/gpt4-turbo", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: message })
+      body: JSON.stringify({
+        content: message,
+        scenarioId,
+        role,
+        history: chatHistory.slice(-10) // send last 10 messages for context
+      })
     });
     const data = await res.json();
-    if (!res.ok || !data.reply) throw new Error(data.error || "GPT failed");
+    const reply = data.reply || "I’m not sure how to respond to that.";
 
-    const answer = data.reply;
-    logToFirebase({ scenarioId, question: message, answer, response_type: "gpt" });
+    logToFirebase({ scenarioId, question: message, answer: reply, response_type: "gpt" });
     logUnknown({ scenarioId, question: message });
 
-    return { response: answer, source: "gpt", matchedEntry: null };
+    chatHistory.push({ role: "user", content: message }, { role: "assistant", content: reply });
+    return { response: reply, source: "gpt", matchedEntry: null };
   } catch (err) {
     console.error("GPT fallback failed:", err.message);
     return { response: "❌ No response from AI.", source: "gpt", matchedEntry: null };
