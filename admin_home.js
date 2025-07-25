@@ -1,58 +1,64 @@
-let responsesData = [];
+document.addEventListener("DOMContentLoaded", async () => {
+  const urls = [
+    "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json",
+    "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json",
+    "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json"
+  ];
 
-const filePaths = [
-  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json",
-  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json",
-  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json"
-];
+  let combinedEntries = [];
 
-async function fetchAllFiles() {
-  let all = [];
-
-  for (const path of filePaths) {
+  for (const url of urls) {
     try {
-      const res = await fetch(path);
-      const json = await res.json();
-      const entries = Array.isArray(json) ? json : json.responses || [];
-      console.log(`✅ Fetched ${entries.length} entries from ${path}`);
-      all = all.concat(entries);
+      const res = await fetch(url);
+      const data = await res.json();
+
+      // Handle object keyed by Firebase-like IDs
+      const entries = Object.keys(data).map(key => ({
+        id: key,
+        ...data[key]
+      }));
+
+      combinedEntries.push(...entries);
     } catch (err) {
-      console.error(`❌ Error loading ${path}: ${err.message}`);
+      console.error(`Failed to load from ${url}:`, err);
     }
   }
 
-  responsesData = all;
-  renderResponses();
-  log(`✅ Loaded ${responsesData.length} total entries.`);
-}
+  // Optional: Remove duplicates based on `question` + `answer`
+  const unique = [];
+  const seen = new Set();
 
-function log(message) {
-  document.getElementById("logBox").textContent = message;
-}
+  for (const entry of combinedEntries) {
+    const key = (entry.question || "") + "::" + (entry.answer || "");
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(entry);
+    }
+  }
 
-function renderResponses() {
-  const container = document.getElementById("responsesContainer");
-  container.innerHTML = "";
+  displayEntries(unique);
+  document.getElementById("statusBox").innerText = `✅ Loaded ${unique.length} entries.`;
+});
 
-  responsesData.forEach((entry, index) => {
-    const card = document.createElement("div");
-    card.className = "response";
-
-    card.innerHTML = `
-      <div class="row">
-        <div class="field">
-          <label>Question</label>
-          <input type="text" value="${entry.question || ""}" />
-        </div>
-        <div class="field">
-          <label>Answer</label>
-          <textarea>${entry.answer || ""}</textarea>
-        </div>
-      </div>
+function displayEntries(entries) {
+  const container = document.getElementById("entryContainer");
+  entries.forEach((entry, index) => {
+    const div = document.createElement("div");
+    div.className = "entry";
+    div.innerHTML = `
+      <p><strong>Question:</strong> ${entry.question || ""}</p>
+      <p><strong>Answer:</strong> ${entry.answer || ""}</p>
+      <p><strong>Tags:</strong> ${(entry.tags || []).join(", ")}</p>
+      <p><strong>Role:</strong> ${entry.role || ""}</p>
+      <p><strong>Score Category:</strong> ${entry.scoreCategory || ""}</p>
+      <button onclick="playVoice('${entry.ttsAudio || ""}')">🔊 Voice</button>
     `;
-
-    container.appendChild(card);
+    container.appendChild(div);
   });
 }
 
-document.addEventListener("DOMContentLoaded", fetchAllFiles);
+function playVoice(audioBase64) {
+  if (!audioBase64) return;
+  const audio = new Audio("data:audio/mp3;base64," + audioBase64);
+  audio.play();
+}
