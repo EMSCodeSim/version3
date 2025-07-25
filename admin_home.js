@@ -1,6 +1,9 @@
-// ✅ EMS Admin Panel Loader with TTS + Deduplication
 let responsesData = [];
-let audioContext;
+const filePaths = [
+  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json",
+  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json",
+  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json"
+];
 
 const firebaseApp = firebase.initializeApp({
   apiKey: "YOUR_API_KEY",
@@ -10,21 +13,17 @@ const firebaseApp = firebase.initializeApp({
 });
 const db = firebaseApp.database();
 
-const filePaths = [
-  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json",
-  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json",
-  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json"
-];
-
 async function fetchAllFiles() {
   let all = [];
   for (const path of filePaths) {
     try {
+      console.log("Fetching", path);
       const res = await fetch(path);
       const json = await res.json();
+      console.log(`✅ Loaded ${json.length} entries from ${path}`);
       all = all.concat(json);
     } catch (err) {
-      log(`Failed to load ${path}: ${err.message}`);
+      log(`❌ Failed to load ${path}: ${err.message}`);
     }
   }
   responsesData = deduplicate(all);
@@ -42,12 +41,8 @@ function deduplicate(dataArray) {
       deduped.push(entry);
     }
   }
-  log(`Loaded ${dataArray.length} entries, ${deduped.length} after deduplication.`);
+  log(`✅ Loaded ${dataArray.length} entries, ${deduped.length} after removing duplicates.`);
   return deduped;
-}
-
-function log(message) {
-  document.getElementById("logBox").textContent = message;
 }
 
 function renderResponses() {
@@ -57,7 +52,6 @@ function renderResponses() {
   responsesData.forEach((entry, index) => {
     const card = document.createElement("div");
     card.className = "response";
-
     card.innerHTML = `
       <div class="row">
         <div class="field">
@@ -84,12 +78,11 @@ function renderResponses() {
         </div>
       </div>
       <div class="row">
-        <button class="btn" onclick="generateTTS(${index})">🔊 Generate Voice</button>
+        <button class="btn" onclick="generateTTS(${index})">🔊 Voice</button>
         <button class="btn" onclick="deleteEntry(${index})">❌ Delete</button>
       </div>
       <audio id="audio-${index}" controls style="margin-top:6px;"></audio>
     `;
-
     container.appendChild(card);
   });
 
@@ -113,16 +106,19 @@ function bindInputListeners() {
 function deleteEntry(index) {
   responsesData.splice(index, 1);
   renderResponses();
-  log("Entry deleted.");
+  log("🗑️ Entry deleted.");
+}
+
+function log(message) {
+  document.getElementById("logBox").textContent = message;
 }
 
 async function generateTTS(index) {
   const text = responsesData[index].answer;
   const voice = responsesData[index].role === "proctor" ? "shimmer" : "onyx";
-  const url = "https://api.openai.com/v1/audio/speech";
 
   try {
-    const response = await fetch(url, {
+    const response = await fetch("https://api.openai.com/v1/audio/speech", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${OPENAI_API_KEY}`,
@@ -134,11 +130,10 @@ async function generateTTS(index) {
     const blob = await response.blob();
     const audio = document.getElementById(`audio-${index}`);
     audio.src = URL.createObjectURL(blob);
-    log("Voice generated.");
+    log("✅ Voice generated.");
   } catch (err) {
-    log("TTS error: " + err.message);
+    log("❌ TTS error: " + err.message);
   }
 }
 
-// Auto-run
 document.addEventListener("DOMContentLoaded", fetchAllFiles);
