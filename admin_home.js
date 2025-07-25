@@ -5,60 +5,53 @@ document.addEventListener("DOMContentLoaded", async () => {
     "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json"
   ];
 
+  const statusBox = document.getElementById("statusBox");
+  const container = document.getElementById("entryContainer");
   let combinedEntries = [];
 
   for (const url of urls) {
     try {
       const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
-      // Handle object keyed by Firebase-like IDs
-      const entries = Object.keys(data).map(key => ({
+      const entries = Object.entries(data).map(([key, value]) => ({
         id: key,
-        ...data[key]
+        ...value
       }));
 
       combinedEntries.push(...entries);
     } catch (err) {
-      console.error(`Failed to load from ${url}:`, err);
+      console.error("Failed to fetch or parse:", url, err);
+      statusBox.innerText = `❌ Failed to load from ${url}`;
+      return;
     }
   }
 
-  // Optional: Remove duplicates based on `question` + `answer`
-  const unique = [];
-  const seen = new Set();
-
-  for (const entry of combinedEntries) {
-    const key = (entry.question || "") + "::" + (entry.answer || "");
-    if (!seen.has(key)) {
-      seen.add(key);
-      unique.push(entry);
-    }
+  if (combinedEntries.length === 0) {
+    statusBox.innerText = "⚠️ No entries found.";
+    return;
   }
 
-  displayEntries(unique);
-  document.getElementById("statusBox").innerText = `✅ Loaded ${unique.length} entries.`;
-});
-
-function displayEntries(entries) {
-  const container = document.getElementById("entryContainer");
-  entries.forEach((entry, index) => {
+  combinedEntries.forEach(entry => {
     const div = document.createElement("div");
     div.className = "entry";
     div.innerHTML = `
       <p><strong>Question:</strong> ${entry.question || ""}</p>
       <p><strong>Answer:</strong> ${entry.answer || ""}</p>
-      <p><strong>Tags:</strong> ${(entry.tags || []).join(", ")}</p>
       <p><strong>Role:</strong> ${entry.role || ""}</p>
+      <p><strong>Tags:</strong> ${(entry.tags || []).join(", ")}</p>
       <p><strong>Score Category:</strong> ${entry.scoreCategory || ""}</p>
-      <button onclick="playVoice('${entry.ttsAudio || ""}')">🔊 Voice</button>
+      ${entry.ttsAudio ? `<button onclick="playAudio('${entry.ttsAudio}')">🔊 Play</button>` : ""}
+      <hr>
     `;
     container.appendChild(div);
   });
-}
 
-function playVoice(audioBase64) {
-  if (!audioBase64) return;
-  const audio = new Audio("data:audio/mp3;base64," + audioBase64);
+  statusBox.innerText = `✅ Loaded ${combinedEntries.length} total entries.`;
+});
+
+function playAudio(base64) {
+  const audio = new Audio("data:audio/mp3;base64," + base64);
   audio.play();
 }
