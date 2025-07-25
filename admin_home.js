@@ -1,115 +1,204 @@
-document.addEventListener("DOMContentLoaded", async () => {
-  const urls = [
-    "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json",
-    "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json",
-    "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json"
-  ];
+// admin_home.js with Firebase and local support
 
-  const statusBox = document.getElementById("statusBox");
-  const container = document.getElementById("entryContainer");
-  let combinedEntries = [];
+let responsesData = [];
+let firebaseResponses = [];
+let audioContext;
 
-  for (const url of urls) {
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+  projectId: "YOUR_PROJECT"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const filePaths = [
+  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json",
+  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json",
+  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json"
+];
+
+async function fetchAllFiles() {
+  let all = [];
+  for (const path of filePaths) {
     try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-
-      const entries = Object.entries(data).map(([key, value]) => ({
-        id: key,
-        ...value
-      }));
-
-      combinedEntries.push(...entries);
+      const res = await fetch(path);
+      const json = await res.json();
+      all = all.concat(json);
     } catch (err) {
-      console.error("Failed to fetch or parse:", url, err);
-      statusBox.innerText = `❌ Failed to load from ${url}`;
-      return;
+      log(`Failed to load ${path}: ${err.message}`);
     }
   }
-
-  if (combinedEntries.length === 0) {
-    statusBox.innerText = "⚠️ No entries found.";
-    return;
-  }
-
-  renderEntries(combinedEntries, container);
-  statusBox.innerText = `✅ Loaded ${combinedEntries.length} total entries.`;
-
-  document.getElementById("dedupBtn").addEventListener("click", () => {
-    const unique = [];
-    const seen = new Set();
-
-    for (const entry of combinedEntries) {
-      const key = (entry.question || "").toLowerCase().trim();
-      if (!seen.has(key)) {
-        seen.add(key);
-        unique.push(entry);
-      }
-    }
-
-    container.innerHTML = "";
-    renderEntries(unique, container);
-    statusBox.innerText = `🧹 Removed duplicates. Showing ${unique.length} entries.`;
-  });
-});
-
-function renderEntries(entries, container) {
-  container.innerHTML = "";
-
-  entries.forEach((entry, index) => {
-    const div = document.createElement("div");
-    div.className = "entry";
-    div.innerHTML = `
-      <p><strong>Question:</strong><br><input style="width: 100%;" type="text" value="${entry.question || ""}" data-index="${index}" data-key="question" /></p>
-      <p><strong>Answer:</strong><br><textarea style="width: 100%;" rows="3" data-index="${index}" data-key="answer">${entry.answer || ""}</textarea></p>
-      <p><strong>Role:</strong><br><input style="width: 100%;" type="text" value="${entry.role || ""}" data-index="${index}" data-key="role" /></p>
-      <p><strong>Tags:</strong><br><input style="width: 100%;" type="text" value="${(entry.tags || []).join(", ")}" data-index="${index}" data-key="tags" /></p>
-      <p><strong>Score Category:</strong><br><input style="width: 100%;" type="text" value="${entry.scoreCategory || ""}" data-index="${index}" data-key="scoreCategory" /></p>
-      <p><strong>Skill Sheet ID:</strong><br>
-        <select style="width: 100%;" data-index="${index}" data-key="skillSheetID">
-          <option value="">-- Select --</option>
-          <option value="sceneSizeUp">Scene Size-up</option>
-          <option value="primaryAssessment">Primary Assessment</option>
-          <option value="oxygenTherapy">Oxygen Therapy</option>
-          <option value="historyTaking">History Taking</option>
-          <option value="secondaryAssessment">Secondary Assessment</option>
-          <option value="vitalSigns">Vital Signs</option>
-          <option value="management">Management</option>
-          <option value="reassessment">Reassessment</option>
-        </select>
-      </p>
-      <p><strong>Points:</strong><br><input style="width: 100%;" type="number" value="${entry.points || 0}" data-index="${index}" data-key="points" /></p>
-      <p><strong>Critical Fail:</strong><br><input type="checkbox" ${entry.criticalFail ? "checked" : ""} data-index="${index}" data-key="criticalFail" /></p>
-      ${entry.ttsAudio ? `<button onclick="playAudio('${entry.ttsAudio}')">🔊 Play</button>` : ""}
-      <button onclick="this.parentElement.remove()">❌ Delete</button>
-      <hr>
-    `;
-
-    container.appendChild(div);
-  });
-
-  bindFieldListeners(entries);
+  responsesData = deduplicate(all);
+  renderResponses();
+  fetchFirebaseLogs(); // ⬅ Also load Firebase entries
 }
 
-function bindFieldListeners(entries) {
-  document.querySelectorAll("input, textarea, select").forEach(el => {
-    el.addEventListener("input", () => {
-      const index = parseInt(el.dataset.index);
-      const key = el.dataset.key;
+async function fetchFirebaseLogs() {
+  try {
+    const snapshot = await db.ref("gpt4turbo_logs/chest_pain_002").once("value");
+    firebaseResponses = Object.entries(snapshot.val() || {}).map(([key, val]) => ({
+      ...val,
+      firebaseKey: key
+    }));
+    log(`Loaded ${firebaseResponses.length} Firebase responses`);
+    renderFirebaseResponses();
+  } catch (err) {
+    log("Firebase error: " + err.message);
+  }
+}
 
+function deduplicate(dataArray) {
+  const seen = new Set();
+  const deduped = [];
+  for (const entry of dataArray) {
+    const key = `${entry.question?.toLowerCase().trim()}|${entry.answer?.toLowerCase().trim()}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      deduped.push(entry);
+    }
+  }
+  return deduped;
+}
+
+function renderResponses() {
+  const container = document.getElementById("responsesContainer");
+  container.innerHTML = "";
+  responsesData.forEach((entry, index) => {
+    container.appendChild(createResponseCard(entry, index, "json"));
+  });
+}
+
+function renderFirebaseResponses() {
+  const container = document.getElementById("firebaseContainer");
+  container.innerHTML = "";
+  firebaseResponses.forEach((entry, index) => {
+    container.appendChild(createResponseCard(entry, index, "firebase"));
+  });
+}
+
+function createResponseCard(entry, index, source) {
+  const card = document.createElement("div");
+  card.className = "response";
+
+  const skillSheetOptions = `
+    <option value="">-- Select --</option>
+    <option value="scene_size_up">Scene Size-Up</option>
+    <option value="primary_survey">Primary Survey</option>
+    <option value="history_taking">History Taking</option>
+    <option value="secondary_assessment">Secondary Assessment</option>
+    <option value="vital_signs">Vital Signs</option>
+    <option value="reassessment">Reassessment</option>
+    <option value="treatment">Treatment</option>
+    <option value="transport_decision">Transport Decision</option>
+  `;
+
+  card.innerHTML = `
+    <div class="row">
+      <div class="field">
+        <label>Question</label>
+        <input type="text" value="${entry.question || ""}" data-key="question" data-index="${index}" data-source="${source}" />
+      </div>
+      <div class="field">
+        <label>Answer</label>
+        <textarea data-key="answer" data-index="${index}" data-source="${source}">${entry.answer || ""}</textarea>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Tags</label>
+        <input type="text" value="${entry.tags?.join(", ") || ""}" data-key="tags" data-index="${index}" data-source="${source}" />
+      </div>
+      <div class="field">
+        <label>Role</label>
+        <input type="text" value="${entry.role || "patient"}" data-key="role" data-index="${index}" data-source="${source}" />
+      </div>
+      <div class="field">
+        <label>Score Category</label>
+        <select data-key="scoreCategory" data-index="${index}" data-source="${source}">
+          ${skillSheetOptions.replace(`value="${entry.scoreCategory}"`, `value="${entry.scoreCategory}" selected`)}
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn" onclick="generateTTS(${index}, '${source}')">🔊 Voice</button>
+      <button class="btn" onclick="deleteEntry(${index}, '${source}')">❌ Delete</button>
+    </div>
+    <audio id="audio-${source}-${index}" controls style="margin-top:6px;"></audio>
+  `;
+
+  return card;
+}
+
+function bindInputListeners() {
+  document.querySelectorAll("input, textarea, select").forEach((el) => {
+    el.addEventListener("input", (e) => {
+      const { key, index, source } = el.dataset;
+      const list = source === "firebase" ? firebaseResponses : responsesData;
       if (key === "tags") {
-        entries[index][key] = el.value.split(",").map(t => t.trim());
-      } else if (key === "criticalFail") {
-        entries[index][key] = el.checked;
+        list[index][key] = el.value.split(",").map(t => t.trim());
       } else {
-        entries[index][key] = el.value;
+        list[index][key] = el.value;
       }
     });
   });
 }
 
-function playAudio(base64) {
-  const audio = new Audio("data:audio/mp3;base64," + base64);
-  audio.play();
+function deleteEntry(index, source) {
+  if (source === "firebase") {
+    const entry = firebaseResponses[index];
+    db.ref(`gpt4turbo_logs/chest_pain_002/${entry.firebaseKey}`).remove();
+    firebaseResponses.splice(index, 1);
+    renderFirebaseResponses();
+  } else {
+    responsesData.splice(index, 1);
+    renderResponses();
+  }
+  log("Entry deleted.");
 }
+
+async function generateTTS(index, source) {
+  const list = source === "firebase" ? firebaseResponses : responsesData;
+  const text = list[index].answer;
+  const voice = list[index].role === "proctor" ? "shimmer" : "onyx";
+
+  try {
+    const res = await fetch("https://api.openai.com/v1/audio/speech", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ model: "tts-1", voice, input: text })
+    });
+    const blob = await res.blob();
+    const audio = document.getElementById(`audio-${source}-${index}`);
+    audio.src = URL.createObjectURL(blob);
+    log("TTS generated.");
+  } catch (err) {
+    log("TTS Error: " + err.message);
+  }
+}
+
+function log(msg) {
+  document.getElementById("logBox").textContent = msg;
+}
+
+function removeDuplicates() {
+  const seen = new Set();
+  responsesData = responsesData.filter((entry) => {
+    const key = `${entry.question?.toLowerCase().trim()}|${entry.answer?.toLowerCase().trim()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  renderResponses();
+  log("Duplicates removed.");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  fetchAllFiles();
+  setTimeout(bindInputListeners, 1500); // ensure inputs bind after render
+});
