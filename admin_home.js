@@ -1,5 +1,4 @@
-// ✅ UPDATED admin_home.js (with deduplication and loading all 3 files)
-
+// ✅ EMS Admin Panel Loader with TTS + Deduplication
 let responsesData = [];
 let audioContext;
 
@@ -12,9 +11,9 @@ const firebaseApp = firebase.initializeApp({
 const db = firebaseApp.database();
 
 const filePaths = [
-  "/chestpain_database.json",
-  "/chestpain_database2.json",
-  "/chestpain_database3.json"
+  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json",
+  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json",
+  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json"
 ];
 
 async function fetchAllFiles() {
