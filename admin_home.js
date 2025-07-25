@@ -1,4 +1,4 @@
-// ✅ UPDATED admin_home.js (cut and paste full version)
+// ✅ UPDATED admin_home.js (with deduplication and loading all 3 files)
 
 let responsesData = [];
 let audioContext;
@@ -28,8 +28,23 @@ async function fetchAllFiles() {
       log(`Failed to load ${path}: ${err.message}`);
     }
   }
-  responsesData = all;
+  responsesData = deduplicate(all);
   renderResponses();
+}
+
+function deduplicate(dataArray) {
+  const seen = new Set();
+  const deduped = [];
+
+  for (const entry of dataArray) {
+    const key = `${entry.question?.toLowerCase().trim()}|${entry.answer?.toLowerCase().trim()}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      deduped.push(entry);
+    }
+  }
+  log(`Loaded ${dataArray.length} entries, ${deduped.length} after deduplication.`);
+  return deduped;
 }
 
 function log(message) {
