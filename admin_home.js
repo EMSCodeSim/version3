@@ -1,57 +1,84 @@
-document.addEventListener("DOMContentLoaded", async () => {
-  const urls = [
-    "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json",
-    "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json",
-    "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json"
-  ];
+// admin_home.js (Updated with edit/delete and duplicate check support)
 
-  const statusBox = document.getElementById("statusBox");
-  const container = document.getElementById("entryContainer");
-  let combinedEntries = [];
+const dataURLs = [
+  'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json',
+  'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json',
+  'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json'
+];
 
-  for (const url of urls) {
+let allEntries = {};
+
+window.onload = async () => {
+  document.getElementById('statusBox').innerText = 'Loading...';
+
+  for (const url of dataURLs) {
     try {
       const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-
-      const entries = Object.entries(data).map(([key, value]) => ({
-        id: key,
-        ...value
-      }));
-
-      combinedEntries.push(...entries);
+      const json = await res.json();
+      Object.assign(allEntries, json);
     } catch (err) {
-      console.error("Failed to fetch or parse:", url, err);
-      statusBox.innerText = `❌ Failed to load from ${url}`;
-      return;
+      console.error(`Error loading ${url}`, err);
     }
   }
 
-  if (combinedEntries.length === 0) {
-    statusBox.innerText = "⚠️ No entries found.";
-    return;
-  }
+  document.getElementById('statusBox').innerText = `Loaded ${Object.keys(allEntries).length} total entries.`;
+  renderEntries();
+  addDuplicateCheckButton();
+};
 
-  combinedEntries.forEach(entry => {
-    const div = document.createElement("div");
-    div.className = "entry";
+function renderEntries() {
+  const container = document.getElementById('entryContainer');
+  container.innerHTML = '';
+
+  Object.entries(allEntries).forEach(([id, entry]) => {
+    const div = document.createElement('div');
+    div.className = 'entry';
     div.innerHTML = `
-      <p><strong>Question:</strong> ${entry.question || ""}</p>
-      <p><strong>Answer:</strong> ${entry.answer || ""}</p>
-      <p><strong>Role:</strong> ${entry.role || ""}</p>
-      <p><strong>Tags:</strong> ${(entry.tags || []).join(", ")}</p>
-      <p><strong>Score Category:</strong> ${entry.scoreCategory || ""}</p>
-      ${entry.ttsAudio ? `<button onclick="playAudio('${entry.ttsAudio}')">🔊 Play</button>` : ""}
-      <hr>
+      <p><strong>Question:</strong> <input type="text" value="${entry.question}" id="q_${id}" /></p>
+      <p><strong>Answer:</strong> <input type="text" value="${entry.answer}" id="a_${id}" style="width: 90%" /></p>
+      <button onclick="updateEntry('${id}')">Update</button>
+      <button onclick="deleteEntry('${id}')">Delete</button>
     `;
     container.appendChild(div);
   });
+}
 
-  statusBox.innerText = `✅ Loaded ${combinedEntries.length} total entries.`;
-});
+function updateEntry(id) {
+  const updatedQ = document.getElementById(`q_${id}`).value;
+  const updatedA = document.getElementById(`a_${id}`).value;
+  allEntries[id].question = updatedQ;
+  allEntries[id].answer = updatedA;
+  alert(`Entry ${id} updated.`);
+}
 
-function playAudio(base64) {
-  const audio = new Audio("data:audio/mp3;base64," + base64);
-  audio.play();
+function deleteEntry(id) {
+  if (confirm(`Delete entry ${id}?`)) {
+    delete allEntries[id];
+    renderEntries();
+  }
+}
+
+function addDuplicateCheckButton() {
+  const btn = document.createElement('button');
+  btn.innerText = 'Check & Remove Duplicate Questions';
+  btn.onclick = () => {
+    const seen = new Set();
+    const duplicates = [];
+
+    for (const [id, entry] of Object.entries(allEntries)) {
+      const key = entry.question.toLowerCase().trim();
+      if (seen.has(key)) {
+        duplicates.push(id);
+      } else {
+        seen.add(key);
+      }
+    }
+
+    duplicates.forEach((id) => delete allEntries[id]);
+    alert(`Removed ${duplicates.length} duplicate entries.`);
+    renderEntries();
+    document.getElementById('statusBox').innerText = `Loaded ${Object.keys(allEntries).length} total entries after removing duplicates.`;
+  };
+
+  document.body.insertBefore(btn, document.getElementById('entryContainer'));
 }
