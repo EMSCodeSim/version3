@@ -1,73 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>EMS Admin Panel</title>
   <style>
     body {
-      font-family: sans-serif;
+      font-family: Arial, sans-serif;
+      background-color: #ffffff;
       padding: 20px;
-      background: #f4f4f4;
     }
-    .response {
-      background: white;
-      padding: 12px;
-      margin-bottom: 12px;
-      border-radius: 8px;
-      box-shadow: 0 0 4px rgba(0,0,0,0.1);
+
+    h2 {
+      margin-bottom: 10px;
     }
-    .row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 10px;
-    }
-    .field {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-    input, textarea {
-      padding: 6px;
-      font-size: 14px;
-      width: 100%;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    textarea {
-      min-height: 60px;
-      resize: vertical;
-    }
-    .btn {
-      padding: 6px 10px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .btn:hover {
-      background-color: #0056b3;
-    }
-    #logBox {
-      background: #222;
-      color: lime;
+
+    #statusBox {
+      background-color: black;
+      color: limegreen;
       padding: 10px;
       font-family: monospace;
-      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+
+    .entry {
+      background-color: #f9f9f9;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+      padding: 10px;
+    }
+
+    .entry p {
+      margin: 4px 0;
+    }
+
+    button {
+      margin-top: 5px;
+      padding: 5px 10px;
     }
   </style>
 </head>
 <body>
 
   <h2>EMS Admin Panel</h2>
-  <div id="responsesContainer"></div>
-  <div id="logBox">Loading...</div>
+  <div id="statusBox">Loading...</div>
+  <div id="entryContainer"></div>
 
-  <!-- Firebase + Admin Script -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="admin_home.js"></script>
-
 </body>
 </html>
