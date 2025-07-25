@@ -1,9 +1,5 @@
 let responsesData = [];
-const filePaths = [
-  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json",
-  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json",
-  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json"
-];
+let audioContext;
 
 const firebaseApp = firebase.initializeApp({
   apiKey: "YOUR_API_KEY",
@@ -13,15 +9,22 @@ const firebaseApp = firebase.initializeApp({
 });
 const db = firebaseApp.database();
 
+// 🌐 Pull from hosted chest pain scenario parts
+const filePaths = [
+  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json",
+  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json",
+  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json"
+];
+
 async function fetchAllFiles() {
   let all = [];
   for (const path of filePaths) {
     try {
-      console.log("Fetching", path);
       const res = await fetch(path);
       const json = await res.json();
-      console.log(`✅ Loaded ${json.length} entries from ${path}`);
-      all = all.concat(json);
+      const entries = Array.isArray(json) ? json : (json.responses || []);
+      console.log(`✅ Loaded ${entries.length} entries from ${path}`);
+      all = all.concat(entries);
     } catch (err) {
       log(`❌ Failed to load ${path}: ${err.message}`);
     }
@@ -36,13 +39,17 @@ function deduplicate(dataArray) {
 
   for (const entry of dataArray) {
     const key = `${entry.question?.toLowerCase().trim()}|${entry.answer?.toLowerCase().trim()}`;
-    if (!seen.has(key)) {
+    if (!seen.has(key) && (entry.question || entry.answer)) {
       seen.add(key);
       deduped.push(entry);
     }
   }
   log(`✅ Loaded ${dataArray.length} entries, ${deduped.length} after removing duplicates.`);
   return deduped;
+}
+
+function log(message) {
+  document.getElementById("logBox").textContent = message;
 }
 
 function renderResponses() {
@@ -52,6 +59,7 @@ function renderResponses() {
   responsesData.forEach((entry, index) => {
     const card = document.createElement("div");
     card.className = "response";
+
     card.innerHTML = `
       <div class="row">
         <div class="field">
@@ -83,6 +91,7 @@ function renderResponses() {
       </div>
       <audio id="audio-${index}" controls style="margin-top:6px;"></audio>
     `;
+
     container.appendChild(card);
   });
 
@@ -91,7 +100,7 @@ function renderResponses() {
 
 function bindInputListeners() {
   document.querySelectorAll("#responsesContainer input, #responsesContainer textarea").forEach((el) => {
-    el.addEventListener("input", (e) => {
+    el.addEventListener("input", () => {
       const key = el.dataset.key;
       const index = parseInt(el.dataset.index);
       if (key === "tags") {
@@ -109,16 +118,13 @@ function deleteEntry(index) {
   log("🗑️ Entry deleted.");
 }
 
-function log(message) {
-  document.getElementById("logBox").textContent = message;
-}
-
 async function generateTTS(index) {
   const text = responsesData[index].answer;
   const voice = responsesData[index].role === "proctor" ? "shimmer" : "onyx";
+  const url = "https://api.openai.com/v1/audio/speech";
 
   try {
-    const response = await fetch("https://api.openai.com/v1/audio/speech", {
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${OPENAI_API_KEY}`,
@@ -130,9 +136,9 @@ async function generateTTS(index) {
     const blob = await response.blob();
     const audio = document.getElementById(`audio-${index}`);
     audio.src = URL.createObjectURL(blob);
-    log("✅ Voice generated.");
+    log("🎧 Voice generated.");
   } catch (err) {
-    log("❌ TTS error: " + err.message);
+    log("⚠️ TTS error: " + err.message);
   }
 }
 
