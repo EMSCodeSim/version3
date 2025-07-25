@@ -1,0 +1,31 @@
+{
+  "scenarioId": "chest_pain_002",
+  "scenarioName": "Chest Pain – Scenario 002",
+  "chiefComplaint": "Chest pain for 30 minutes",
+  "dispatch": "You are dispatched to a 58-year-old male with chest pain at a public park.",
+  "scene_description": "Patient is sitting on a bench, diaphoretic, clutching his chest.",
+  "patient_info": {
+    "age": 58,
+    "gender": "male"
+  },
+  "patient_history": {
+    "medical_history": ["Hypertension", "High Cholesterol"],
+    "surgical_history": ["Appendectomy in 2010"],
+    "allergies": ["Penicillin (rash)"],
+    "social_history": ["Smokes 1 pack per day", "Drinks socially"]
+  },
+  "current_medications": [
+    "Aspirin 81mg daily",
+    "Lisinopril",
+    "Nitroglycerin as needed for chest pain"
+  ],
+  "vitals": {
+    "initial": {
+      "blood_pressure": "150/90",
+      "heart_rate": 110,
+      "respiratory_rate": 24,
+      "oxygen_saturation": "94%",
+      "pain_scale": 8
+    }
+  }
+}
