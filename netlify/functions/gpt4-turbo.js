@@ -3,7 +3,6 @@ const admin = require("firebase-admin");
 const fs = require("fs");
 const path = require("path");
 
-// Initialize Firebase Admin only once
 let firebaseApp;
 if (!admin.apps.length) {
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
@@ -15,18 +14,7 @@ if (!admin.apps.length) {
   firebaseApp = admin.app();
 }
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
-// Helper: Safely load a file or return empty string
-function safeLoadFile(filePath) {
-  try {
-    return fs.readFileSync(filePath, "utf-8").trim();
-  } catch {
-    return "";
-  }
-}
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 exports.handler = async function(event, context) {
   try {
@@ -40,59 +28,69 @@ exports.handler = async function(event, context) {
       return { statusCode: 400, body: JSON.stringify({ error: "Missing content." }) };
     }
 
-    // --- Load scenario config if present ---
-    let scenarioConfig = null;
-    let scenarioBasePath = null;
-    let patientDescription = "";
-    let dispatchInfo = "";
-    let scenarioSummary = "";
-    let chiefComplaint = "";
-    let scenarioName = "";
-
+    // --- Load patient_data.json if available ---
+    let patientData = {};
     try {
-      scenarioBasePath = path.join(__dirname, "scenarios", scenarioId);
-      const configPath = path.join(scenarioBasePath, "config.json");
-      scenarioConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-      scenarioName = scenarioConfig.scenarioName || "";
-      chiefComplaint = scenarioConfig.chiefComplaint || "";
-      if (scenarioConfig.patientFile) {
-        patientDescription = safeLoadFile(path.join(__dirname, scenarioConfig.patientFile));
-      }
-      if (scenarioConfig.dispatchFile) {
-        dispatchInfo = safeLoadFile(path.join(__dirname, scenarioConfig.dispatchFile));
-      }
-      scenarioSummary = [
-        scenarioName ? `Scenario: ${scenarioName}` : "",
-        chiefComplaint ? `Chief Complaint: ${chiefComplaint}` : "",
-        dispatchInfo ? `Dispatch Information: ${dispatchInfo}` : "",
-      ].filter(Boolean).join("\n");
+      const dataPath = path.join(__dirname, "scenarios", scenarioId, "patient_data.json");
+      const raw = fs.readFileSync(dataPath, "utf-8");
+      patientData = JSON.parse(raw);
     } catch (err) {
-      scenarioSummary = "";
-      patientDescription = "";
-      dispatchInfo = "";
+      console.error("Could not load patient_data.json:", err);
+      patientData = {};
     }
 
-    // --- Build dynamic system prompt ---
+    // --- Build scenario and patient summaries ---
+    const summaryParts = [];
+
+    if (patientData.scenarioName) summaryParts.push(`Scenario: ${patientData.scenarioName}`);
+    if (patientData.chiefComplaint) summaryParts.push(`Chief Complaint: ${patientData.chiefComplaint}`);
+    if (patientData.dispatch) summaryParts.push(`Dispatch Information: ${patientData.dispatch}`);
+    if (patientData.scene_description) summaryParts.push(`Scene Description: ${patientData.scene_description}`);
+
+    const scenarioSummary = summaryParts.join("\n");
+
+    const patientDescription = `
+Patient Info:
+- Age: ${patientData.patient_info?.age || "unknown"}
+- Gender: ${patientData.patient_info?.gender || "unknown"}
+
+Medical History: ${patientData.patient_history?.medical_history?.join(", ") || "None"}
+Surgical History: ${patientData.patient_history?.surgical_history?.join(", ") || "None"}
+Allergies: ${patientData.patient_history?.allergies?.join(", ") || "None"}
+Social History: ${patientData.patient_history?.social_history?.join(", ") || "None"}
+Medications: ${patientData.current_medications?.join(", ") || "None"}
+
+Initial Vitals:
+- BP: ${patientData.vitals?.initial?.blood_pressure || "N/A"}
+- HR: ${patientData.vitals?.initial?.heart_rate || "N/A"}
+- RR: ${patientData.vitals?.initial?.respiratory_rate || "N/A"}
+- SpO₂: ${patientData.vitals?.initial?.oxygen_saturation || "N/A"}
+- Pain: ${patientData.vitals?.initial?.pain_scale || "N/A"}
+`.trim();
+
+    // --- Create system prompt ---
     let systemPrompt = "";
     if ((role || "").toLowerCase().includes("proctor")) {
-      systemPrompt =
-        `You are an NREMT exam proctor. Only provide objective, procedural, or measurable information. ` +
-        `Do NOT provide emotional, subjective, or symptom-based answers. Never play the patient. ` +
-        `If the question is for the patient, respond with 'This is a proctor-only question.' ` +
-        `If asked about assessment results, vitals, or scene information, answer concisely. ` +
-        `If asked for advice, say you can't assist.` +
-        (scenarioSummary ? "\n\nScenario Details:\n" + scenarioSummary : "");
+      systemPrompt = `
+You are an NREMT exam proctor. Only provide objective, procedural, or measurable information.
+Do NOT provide emotional, subjective, or symptom-based answers. Never play the patient.
+If the question is for the patient, respond with 'This is a proctor-only question.'
+If asked about assessment results, vitals, or scene information, answer concisely.
+If asked for advice, say you can't assist.
+${scenarioSummary ? "\n\nScenario Details:\n" + scenarioSummary : ""}
+`.trim();
     } else {
-      systemPrompt =
-        `You are playing the role of an EMS patient. Answer as the patient would, based on realistic symptoms, emotions, and history. ` +
-        `Respond to questions like a real patient—never provide proctor-style or test-answer feedback. Stay in character as the patient only.` +
-        (scenarioSummary ? "\n\nScenario Details:\n" + scenarioSummary : "") +
-        (patientDescription ? "\n\nPatient Description:\n" + patientDescription : "");
+      systemPrompt = `
+You are playing the role of an EMS patient. Answer as the patient would, based on realistic symptoms, emotions, and history.
+Respond to questions like a real patient—never provide proctor-style or test-answer feedback.
+Stay in character as the patient only.
+${scenarioSummary ? "\n\nScenario Details:\n" + scenarioSummary : ""}
+${patientDescription ? "\n\nPatient Description:\n" + patientDescription : ""}
+`.trim();
     }
 
-    // --- Build full message log for GPT ---
+    // --- Build full message history for GPT ---
     let messages = [{ role: "system", content: systemPrompt }];
-
     if (Array.isArray(history)) {
       for (const h of history) {
         if (h.role && h.content) {
@@ -100,10 +98,9 @@ exports.handler = async function(event, context) {
         }
       }
     }
-
     messages.push({ role: "user", content });
 
-    // --- Query ChatGPT ---
+    // --- Query GPT-4 Turbo ---
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages,
@@ -111,9 +108,9 @@ exports.handler = async function(event, context) {
       temperature: 0.6
     });
 
-    let reply = completion.choices?.[0]?.message?.content?.trim() || "";
+    const reply = completion.choices?.[0]?.message?.content?.trim() || "";
 
-    // --- Save Q&A to Firebase Realtime DB ---
+    // --- Save to Firebase ---
     try {
       const db = admin.database();
       const logRef = db.ref(`gpt4turbo_logs/${scenarioId}`);
@@ -124,8 +121,8 @@ exports.handler = async function(event, context) {
         role: role || "patient"
       };
       await logRef.push(logEntry);
-    } catch (fbErr) {
-      console.error("Firebase logging error:", fbErr);
+    } catch (err) {
+      console.error("Firebase logging error:", err);
     }
 
     return {
