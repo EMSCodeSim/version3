@@ -36,7 +36,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   renderEntries(combinedEntries, container);
   statusBox.innerText = `✅ Loaded ${combinedEntries.length} total entries.`;
 
-  // Deduplication button
   document.getElementById("dedupBtn").addEventListener("click", () => {
     const unique = [];
     const seen = new Set();
@@ -62,13 +61,13 @@ function renderEntries(entries, container) {
     const div = document.createElement("div");
     div.className = "entry";
     div.innerHTML = `
-      <p><strong>Question:</strong><br><input type="text" value="${entry.question || ""}" data-index="${index}" data-key="question" /></p>
-      <p><strong>Answer:</strong><br><textarea rows="3" data-index="${index}" data-key="answer">${entry.answer || ""}</textarea></p>
-      <p><strong>Role:</strong><br><input type="text" value="${entry.role || ""}" data-index="${index}" data-key="role" /></p>
-      <p><strong>Tags:</strong><br><input type="text" value="${(entry.tags || []).join(", ")}" data-index="${index}" data-key="tags" /></p>
-      <p><strong>Score Category:</strong><br><input type="text" value="${entry.scoreCategory || ""}" data-index="${index}" data-key="scoreCategory" /></p>
+      <p><strong>Question:</strong><br><input style="width: 100%;" type="text" value="${entry.question || ""}" data-index="${index}" data-key="question" /></p>
+      <p><strong>Answer:</strong><br><textarea style="width: 100%;" rows="3" data-index="${index}" data-key="answer">${entry.answer || ""}</textarea></p>
+      <p><strong>Role:</strong><br><input style="width: 100%;" type="text" value="${entry.role || ""}" data-index="${index}" data-key="role" /></p>
+      <p><strong>Tags:</strong><br><input style="width: 100%;" type="text" value="${(entry.tags || []).join(", ")}" data-index="${index}" data-key="tags" /></p>
+      <p><strong>Score Category:</strong><br><input style="width: 100%;" type="text" value="${entry.scoreCategory || ""}" data-index="${index}" data-key="scoreCategory" /></p>
       <p><strong>Skill Sheet ID:</strong><br>
-        <select data-index="${index}" data-key="skillSheetID">
+        <select style="width: 100%;" data-index="${index}" data-key="skillSheetID">
           <option value="">-- Select --</option>
           <option value="sceneSizeUp">Scene Size-up</option>
           <option value="primaryAssessment">Primary Assessment</option>
@@ -80,7 +79,7 @@ function renderEntries(entries, container) {
           <option value="reassessment">Reassessment</option>
         </select>
       </p>
-      <p><strong>Points:</strong><br><input type="number" value="${entry.points || 0}" data-index="${index}" data-key="points" /></p>
+      <p><strong>Points:</strong><br><input style="width: 100%;" type="number" value="${entry.points || 0}" data-index="${index}" data-key="points" /></p>
       <p><strong>Critical Fail:</strong><br><input type="checkbox" ${entry.criticalFail ? "checked" : ""} data-index="${index}" data-key="criticalFail" /></p>
       ${entry.ttsAudio ? `<button onclick="playAudio('${entry.ttsAudio}')">🔊 Play</button>` : ""}
       <button onclick="this.parentElement.remove()">❌ Delete</button>
