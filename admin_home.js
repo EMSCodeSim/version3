@@ -1,171 +1,153 @@
-let responsesData = [];
-const skillSheetIDs = [
-  "Scene Size-up", "Primary Survey/Resuscitation", "History Taking",
-  "Secondary Assessment", "Reassessment", "Vital Signs",
-  "OPQRST", "SAMPLE", "Field Impression", "Transport Decision"
-];
-
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "emscode-sim.firebaseapp.com",
-  databaseURL: "https://emscode-sim-default-rtdb.firebaseio.com",
-  projectId: "emscode-sim",
-};
-const firebaseApp = firebase.initializeApp(firebaseConfig);
-const db = firebaseApp.database();
-
-const filePaths = [
-  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json",
-  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json",
-  "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json"
-];
-
-async function fetchAllFiles() {
-  let all = [];
-  for (const path of filePaths) {
-    try {
-      const res = await fetch(path);
-      const json = await res.json();
-      all = all.concat(json);
-    } catch (err) {
-      log(`Failed to load ${path}: ${err.message}`);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EMS Admin Panel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f5f5f5;
     }
-  }
-  responsesData = deduplicate(all);
-  renderResponses();
-}
-
-async function fetchFirebaseResponses() {
-  try {
-    const snapshot = await db.ref("/hardcodedResponses").once("value");
-    const firebaseData = snapshot.val() || {};
-    const firebaseArray = Object.values(firebaseData);
-    responsesData = deduplicate(responsesData.concat(firebaseArray));
-    log(`Loaded ${firebaseArray.length} Firebase entries. Total: ${responsesData.length}`);
-    renderResponses();
-  } catch (err) {
-    log("Firebase load failed: " + err.message);
-  }
-}
-
-function deduplicate(dataArray) {
-  const seen = new Set();
-  const deduped = [];
-
-  for (const entry of dataArray) {
-    const key = `${entry.question?.toLowerCase().trim()}|${entry.answer?.toLowerCase().trim()}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      deduped.push(entry);
+    h1 {
+      color: #333;
     }
-  }
-  log(`Deduplicated to ${deduped.length} entries.`);
-  return deduped;
-}
+    h3 {
+      margin-top: 30px;
+      color: #004080;
+    }
+    .entry {
+      border: 1px solid #ccc;
+      background-color: #fff;
+      padding: 12px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+    }
+    .entry textarea, .entry input[type="text"] {
+      width: 100%;
+      padding: 6px;
+      margin-top: 4px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+    .entry label {
+      font-weight: bold;
+    }
+    .entry button {
+      margin-top: 5px;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>EMS Admin Panel</h1>
+  <div id="dataContainer">Loading...</div>
 
-function removeDuplicates() {
-  responsesData = deduplicate(responsesData);
-  renderResponses();
-}
+  <!-- Firebase Modules -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import {
+      getDatabase,
+      ref,
+      get,
+      set,
+      remove,
+      update
+    } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
 
-function renderResponses() {
-  const container = document.getElementById("responsesContainer");
-  container.innerHTML = "";
+    const firebaseConfig = {
+      apiKey: "AIzaSyA4-VhUuPBImHQDLVXiFtEu2KsGTRrViKE",
+      authDomain: "ems-code-sim-a315a.firebaseapp.com",
+      databaseURL: "https://ems-code-sim-a315a-default-rtdb.firebaseio.com",
+      projectId: "ems-code-sim-a315a",
+      storageBucket: "ems-code-sim-a315a.appspot.com",
+      messagingSenderId: "1006981192218",
+      appId: "1:1006981192218:web:3f5ae8d5a92f8dc9aa70b9"
+    };
 
-  responsesData.forEach((entry, index) => {
-    const card = document.createElement("div");
-    card.className = "response";
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const dataContainer = document.getElementById("dataContainer");
 
-    card.innerHTML = `
-      <div class="row">
-        <div class="field">
-          <label>Question</label>
-          <input type="text" value="${entry.question || ""}" data-key="question" data-index="${index}" />
-        </div>
-        <div class="field">
-          <label>Answer</label>
-          <textarea data-key="answer" data-index="${index}">${entry.answer || ""}</textarea>
-        </div>
-      </div>
-      <div class="row">
-        <div class="field">
-          <label>Tags (comma-separated)</label>
-          <input type="text" value="${entry.tags?.join(", ") || ""}" data-key="tags" data-index="${index}" />
-        </div>
-        <div class="field">
-          <label>Role</label>
-          <input type="text" value="${entry.role || "patient"}" data-key="role" data-index="${index}" />
-        </div>
-        <div class="field">
-          <label>Skill Sheet ID</label>
-          <select data-key="scoreCategory" data-index="${index}">
-            <option value="">-- Select --</option>
-            ${skillSheetIDs.map(id => `<option value="${id}" ${entry.scoreCategory === id ? "selected" : ""}>${id}</option>`).join("")}
-          </select>
-        </div>
-      </div>
-      <div class="row">
-        <button class="btn" onclick="generateTTS(${index})">🔊 Generate Voice</button>
-        <button class="btn" onclick="deleteEntry(${index})">❌ Delete</button>
-      </div>
-      <audio id="audio-${index}" controls style="margin-top:6px;"></audio>
-    `;
-
-    container.appendChild(card);
-  });
-
-  bindInputListeners();
-}
-
-function bindInputListeners() {
-  document.querySelectorAll("#responsesContainer input, #responsesContainer textarea, #responsesContainer select").forEach((el) => {
-    el.addEventListener("input", () => {
-      const key = el.dataset.key;
-      const index = parseInt(el.dataset.index);
-      if (key === "tags") {
-        responsesData[index][key] = el.value.split(",").map(t => t.trim());
-      } else {
-        responsesData[index][key] = el.value;
+    async function loadFirebaseResponses() {
+      const dbRef = ref(database, 'gpt4turbo_logs/scenarios/');
+      try {
+        const snapshot = await get(dbRef);
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          displayEntries(data);
+        } else {
+          dataContainer.innerHTML = "No data found.";
+        }
+      } catch (error) {
+        console.error("Firebase read error:", error);
+        dataContainer.innerHTML = "Error loading data.";
       }
-    });
-  });
-}
+    }
 
-function deleteEntry(index) {
-  responsesData.splice(index, 1);
-  renderResponses();
-  log("Entry deleted.");
-}
+    function displayEntries(data) {
+      dataContainer.innerHTML = "";
+      Object.entries(data).forEach(([scenarioKey, responses]) => {
+        const scenarioTitle = document.createElement("h3");
+        scenarioTitle.textContent = `Scenario: ${scenarioKey}`;
+        dataContainer.appendChild(scenarioTitle);
 
-async function generateTTS(index) {
-  const text = responsesData[index].answer;
-  const voice = responsesData[index].role === "proctor" ? "shimmer" : "onyx";
-  const url = "https://api.openai.com/v1/audio/speech";
+        Object.entries(responses).forEach(([id, entry]) => {
+          const div = document.createElement("div");
+          div.className = "entry";
+          div.innerHTML = `
+            <label>ID</label>
+            <input type="text" value="${id}" readonly />
 
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ model: "tts-1", voice, input: text })
-    });
+            <label>Question</label>
+            <textarea rows="2">${entry.question || ""}</textarea>
 
-    const blob = await response.blob();
-    const audio = document.getElementById(`audio-${index}`);
-    audio.src = URL.createObjectURL(blob);
-    log("Voice generated.");
-  } catch (err) {
-    log("TTS error: " + err.message);
-  }
-}
+            <label>Answer</label>
+            <textarea rows="4">${entry.answer || ""}</textarea>
 
-function log(message) {
-  document.getElementById("logBox").textContent = message;
-}
+            <label>Role</label>
+            <input type="text" value="${entry.role || ""}" />
 
-document.addEventListener("DOMContentLoaded", async () => {
-  await fetchAllFiles();
-  await fetchFirebaseResponses();
-});
+            <label>Score Category</label>
+            <input type="text" value="${entry.scoreCategory || ""}" />
+
+            <label>Skill Sheet ID</label>
+            <input type="text" value="${entry.skillSheetID || ""}" />
+
+            <label>Tags (comma separated)</label>
+            <input type="text" value="${(entry.tags || []).join(", ")}" />
+
+            <label>Critical Fail</label>
+            <input type="text" value="${entry.criticalFail || ""}" />
+
+            <label>Points</label>
+            <input type="text" value="${entry.points || 0}" />
+
+            <button onclick="alert('Edit feature coming soon')">Edit</button>
+            <button onclick="deleteEntry('${scenarioKey}', '${id}')">Delete</button>
+          `;
+          dataContainer.appendChild(div);
+        });
+      });
+    }
+
+    async function deleteEntry(scenarioKey, entryId) {
+      const confirmDelete = confirm(`Delete entry ${entryId}?`);
+      if (!confirmDelete) return;
+
+      const entryRef = ref(database, `gpt4turbo_logs/scenarios/${scenarioKey}/${entryId}`);
+      try {
+        await remove(entryRef);
+        alert("Entry deleted. Reloading...");
+        loadFirebaseResponses();
+      } catch (error) {
+        console.error("Delete failed:", error);
+        alert("Failed to delete entry.");
+      }
+    }
+
+    loadFirebaseResponses();
+  </script>
+</body>
+</html>
