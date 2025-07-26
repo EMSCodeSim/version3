@@ -1,50 +1,74 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>EMS Admin Panel</title>
+  <title>Admin Panel - EMS CODE SIM</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #ffffff;
-      padding: 20px;
+      background: #f2f2f2;
+      margin: 0;
+      padding: 0;
     }
-
-    h2 {
+    h1 {
+      background: #007bff;
+      color: white;
+      padding: 12px;
+      text-align: center;
+    }
+    #responsesContainer {
+      padding: 10px;
+    }
+    .response {
+      background: white;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.1);
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
       margin-bottom: 10px;
     }
-
-    #statusBox {
-      background-color: black;
-      color: limegreen;
+    .field {
+      flex: 1;
+      margin: 6px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 4px;
+    }
+    input[type="text"], textarea, select {
+      width: 100%;
+      padding: 6px;
+      font-size: 14px;
+    }
+    .btn {
+      padding: 6px 12px;
+      margin: 4px;
+      cursor: pointer;
+    }
+    #logBox {
       padding: 10px;
+      background: #222;
+      color: lime;
       font-family: monospace;
-      margin-bottom: 20px;
-    }
-
-    .entry {
-      background-color: #f9f9f9;
-      border: 1px solid #ccc;
-      margin-bottom: 10px;
-      padding: 10px;
-    }
-
-    .entry p {
-      margin: 4px 0;
-    }
-
-    button {
-      margin-top: 5px;
-      padding: 5px 10px;
+      font-size: 14px;
     }
   </style>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script src="admin_home.js" defer></script>
 </head>
 <body>
-
-  <h2>EMS Admin Panel</h2>
-  <div id="statusBox">Loading...</div>
-  <div id="entryContainer"></div>
-
-  <script src="admin_home.js"></script>
+  <h1>EMS Code Sim - Admin Home</h1>
+  <div style="padding:10px;">
+    <button class="btn" onclick="fetchAllFiles()">🔁 Reload Local JSON</button>
+    <button class="btn" onclick="fetchFirebaseResponses()">🔥 Load Firebase</button>
+    <button class="btn" onclick="removeDuplicates()">🧹 Remove Duplicates</button>
+  </div>
+  <div id="responsesContainer"></div>
+  <div id="logBox">Status log will appear here.</div>
 </body>
 </html>
