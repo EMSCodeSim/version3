@@ -1,7 +1,9 @@
-// ✅ FULL UPDATED admin_home.js with Firebase support and TTS
-
 let responsesData = [];
-let audioContext;
+const skillSheetIDs = [
+  "Scene Size-up", "Primary Survey/Resuscitation", "History Taking",
+  "Secondary Assessment", "Reassessment", "Vital Signs",
+  "OPQRST", "SAMPLE", "Field Impression", "Transport Decision"
+];
 
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
@@ -30,6 +32,7 @@ async function fetchAllFiles() {
     }
   }
   responsesData = deduplicate(all);
+  renderResponses();
 }
 
 async function fetchFirebaseResponses() {
@@ -37,7 +40,6 @@ async function fetchFirebaseResponses() {
     const snapshot = await db.ref("/hardcodedResponses").once("value");
     const firebaseData = snapshot.val() || {};
     const firebaseArray = Object.values(firebaseData);
-
     responsesData = deduplicate(responsesData.concat(firebaseArray));
     log(`Loaded ${firebaseArray.length} Firebase entries. Total: ${responsesData.length}`);
     renderResponses();
@@ -61,6 +63,11 @@ function deduplicate(dataArray) {
   return deduped;
 }
 
+function removeDuplicates() {
+  responsesData = deduplicate(responsesData);
+  renderResponses();
+}
+
 function renderResponses() {
   const container = document.getElementById("responsesContainer");
   container.innerHTML = "";
@@ -73,25 +80,28 @@ function renderResponses() {
       <div class="row">
         <div class="field">
           <label>Question</label>
-          <input type="text" value="${entry.question || ""}" data-key="question" data-index="${index}" style="width: 95%"/>
+          <input type="text" value="${entry.question || ""}" data-key="question" data-index="${index}" />
         </div>
         <div class="field">
           <label>Answer</label>
-          <textarea data-key="answer" data-index="${index}" style="width: 95%">${entry.answer || ""}</textarea>
+          <textarea data-key="answer" data-index="${index}">${entry.answer || ""}</textarea>
         </div>
       </div>
       <div class="row">
         <div class="field">
-          <label>Tags</label>
-          <input type="text" value="${entry.tags?.join(", ") || ""}" data-key="tags" data-index="${index}" style="width: 95%"/>
+          <label>Tags (comma-separated)</label>
+          <input type="text" value="${entry.tags?.join(", ") || ""}" data-key="tags" data-index="${index}" />
         </div>
         <div class="field">
           <label>Role</label>
-          <input type="text" value="${entry.role || "patient"}" data-key="role" data-index="${index}" style="width: 95%"/>
+          <input type="text" value="${entry.role || "patient"}" data-key="role" data-index="${index}" />
         </div>
         <div class="field">
-          <label>Score Category</label>
-          <input type="text" value="${entry.scoreCategory || ""}" data-key="scoreCategory" data-index="${index}" style="width: 95%"/>
+          <label>Skill Sheet ID</label>
+          <select data-key="scoreCategory" data-index="${index}">
+            <option value="">-- Select --</option>
+            ${skillSheetIDs.map(id => `<option value="${id}" ${entry.scoreCategory === id ? "selected" : ""}>${id}</option>`).join("")}
+          </select>
         </div>
       </div>
       <div class="row">
@@ -108,8 +118,8 @@ function renderResponses() {
 }
 
 function bindInputListeners() {
-  document.querySelectorAll("#responsesContainer input, #responsesContainer textarea").forEach((el) => {
-    el.addEventListener("input", (e) => {
+  document.querySelectorAll("#responsesContainer input, #responsesContainer textarea, #responsesContainer select").forEach((el) => {
+    el.addEventListener("input", () => {
       const key = el.dataset.key;
       const index = parseInt(el.dataset.index);
       if (key === "tags") {
@@ -155,7 +165,6 @@ function log(message) {
   document.getElementById("logBox").textContent = message;
 }
 
-// ✅ Load both local + Firebase on page load
 document.addEventListener("DOMContentLoaded", async () => {
   await fetchAllFiles();
   await fetchFirebaseResponses();
