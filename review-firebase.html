@@ -1,33 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Firebase Q/A Reviewer & Exporter</title>
+  <title>Q/A Reviewer & Editor</title>
   <style>
     body { font-family: sans-serif; background: #f9fafc; margin: 0; padding: 2rem; }
     #qa-table { border-collapse: collapse; width: 100%; }
-    #qa-table th, #qa-table td { border: 1px solid #ddd; padding: 8px; }
-    #qa-table th { background: #f3f3f3; }
-    tr.selected { background: #cfe7ff; }
-    .btn { padding: 6px 14px; border: none; background: #4285f4; color: #fff; border-radius: 5px; cursor: pointer; }
-    .btn:hover { background: #206bdb; }
-    .btn-delete { background: #e64b4b; }
-    .btn-delete:hover { background: #b90d0d; }
+    #qa-table th, #qa-table td { border: 1px solid #ccc; padding: 8px; }
+    #qa-table th { background: #f0f0f0; }
+    .btn { padding: 6px 12px; margin: 2px; border: none; border-radius: 5px; cursor: pointer; }
+    .btn-edit { background: #4CAF50; color: white; }
+    .btn-delete { background: #f44336; color: white; }
+    .btn-export { background: #4285f4; color: white; }
     textarea { width: 90%; min-height: 40px; }
   </style>
 </head>
 <body>
-  <h2>Firebase Q/A Reviewer & Exporter</h2>
-  <div>
-    <label for="scenario-select"><b>Scenario:</b></label>
-    <select id="scenario-select"></select>
-    <button class="btn" onclick="downloadJson()">Export Visible as JSON</button>
-    <span id="status"></span>
-  </div>
+  <h2>Hardcoded Q/A Editor (Firebase + Netlify)</h2>
+  <button class="btn btn-export" onclick="downloadJson()">Export All as JSON</button>
+  <span id="status"></span>
   <table id="qa-table"></table>
+
   <script type="module">
-    // --- FILL IN YOUR CONFIG BELOW (from Firebase Console, Web App) ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    import { getDatabase, ref, get, update, remove, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
@@ -41,126 +36,127 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // UI elements
     const table = document.getElementById('qa-table');
-    const scenarioSelect = document.getElementById('scenario-select');
     const statusSpan = document.getElementById('status');
+    let allData = []; // merged entries
 
-    let allLogs = {}; // All Q/A, { scenario: {key: {question,answer,...}} }
-    let currentScenario = null;
+    async function loadData() {
+      // Load Firebase
+      const firebaseRef = ref(db, "approvedResponses");
+      const firebaseSnap = await get(firebaseRef);
+      const firebaseEntries = [];
+      const firebaseMap = {};
 
-    // 1. Load scenario list
-    function loadScenarioList() {
-      const logsRef = ref(db, 'gpt4turbo_logs');
-      onValue(logsRef, (snap) => {
-        allLogs = snap.val() || {};
-        scenarioSelect.innerHTML = '';
-        Object.keys(allLogs).forEach(sc => {
-          const opt = document.createElement('option');
-          opt.value = sc;
-          opt.textContent = sc;
-          scenarioSelect.appendChild(opt);
+      if (firebaseSnap.exists()) {
+        Object.entries(firebaseSnap.val()).forEach(([key, entry]) => {
+          const obj = { ...entry, source: 'Firebase', _firebaseKey: key };
+          firebaseEntries.push(obj);
+          firebaseMap[key] = obj;
         });
-        if (!currentScenario || !allLogs[currentScenario]) {
-          currentScenario = Object.keys(allLogs)[0] || null;
-        }
-        scenarioSelect.value = currentScenario;
-        loadTable();
-      });
-    }
-    scenarioSelect.addEventListener('change', () => {
-      currentScenario = scenarioSelect.value;
-      loadTable();
-    });
-
-    // 2. Load Q/A table for selected scenario
-    function loadTable() {
-      table.innerHTML = '';
-      if (!currentScenario || !allLogs[currentScenario]) {
-        table.innerHTML = '<tr><td>No Q/A found for this scenario.</td></tr>';
-        return;
       }
-      const keys = Object.keys(allLogs[currentScenario]);
-      table.innerHTML = `<tr>
-        <th>#</th>
-        <th>Question</th>
-        <th>Answer</th>
-        <th>Role</th>
-        <th>Time</th>
-        <th>Edit</th>
-        <th>Delete</th>
-      </tr>`;
-      keys.forEach((k, idx) => {
+
+      // Load Netlify files
+      const netlifyFiles = ['ems_database_part1.json', 'ems_database_part2.json', 'ems_database_part3.json'];
+      let netlifyEntries = [];
+      for (let file of netlifyFiles) {
+        try {
+          const res = await fetch(file);
+          const data = await res.json();
+          const items = Array.isArray(data) ? data : Object.values(data);
+          items.forEach(entry => entry.source = 'Netlify');
+          netlifyEntries.push(...items);
+        } catch (err) {
+          console.warn("Failed to load:", file, err);
+        }
+      }
+
+      // Merge
+      allData = [...firebaseEntries, ...netlifyEntries];
+      renderTable();
+    }
+
+    function renderTable() {
+      table.innerHTML = `
+        <tr>
+          <th>#</th>
+          <th>Question</th>
+          <th>Answer</th>
+          <th>Tags</th>
+          <th>Source</th>
+          <th>Save</th>
+          <th>Delete</th>
+        </tr>
+      `;
+      allData.forEach((entry, i) => {
         const row = document.createElement('tr');
         row.innerHTML = `
-          <td>${idx+1}</td>
-          <td><textarea onchange="markDirty('${k}', 'question', this.value)">${allLogs[currentScenario][k].question||''}</textarea></td>
-          <td><textarea onchange="markDirty('${k}', 'answer', this.value)">${allLogs[currentScenario][k].answer||''}</textarea></td>
-          <td>${allLogs[currentScenario][k].role||''}</td>
-          <td>${formatTime(allLogs[currentScenario][k].timestamp||0)}</td>
-          <td><button class="btn" onclick="saveRow('${k}')">Save</button></td>
-          <td><button class="btn btn-delete" onclick="deleteRow('${k}')">X</button></td>
+          <td>${i + 1}</td>
+          <td><textarea id="q_${i}">${entry.question || ''}</textarea></td>
+          <td><textarea id="a_${i}">${entry.answer || entry.response || ''}</textarea></td>
+          <td><textarea id="t_${i}">${(entry.tags || []).join(', ')}</textarea></td>
+          <td>${entry.source}</td>
+          <td><button class="btn btn-edit" onclick="saveRow(${i})">Save</button></td>
+          <td><button class="btn btn-delete" onclick="deleteRow(${i})">X</button></td>
         `;
         table.appendChild(row);
       });
     }
 
-    // 3. Edit/save/delete helpers
-    window.markDirty = function(key, field, value) {
-      if (!allLogs[currentScenario][key]._dirty) allLogs[currentScenario][key]._dirty = {};
-      allLogs[currentScenario][key]._dirty[field] = value;
-    }
-    window.saveRow = function(key) {
-      const row = allLogs[currentScenario][key];
-      if (!row._dirty) return;
-      const updates = {};
-      if (row._dirty.question !== undefined) updates['question'] = row._dirty.question;
-      if (row._dirty.answer !== undefined) updates['answer'] = row._dirty.answer;
-      if (Object.keys(updates).length) {
-        const rowRef = ref(db, `gpt4turbo_logs/${currentScenario}/${key}`);
-        update(rowRef, updates).then(() => {
-          statusSpan.textContent = "Saved!";
-          setTimeout(()=>statusSpan.textContent="", 1200);
-        });
+    window.saveRow = async function(i) {
+      const entry = allData[i];
+      const updated = {
+        question: document.getElementById(`q_${i}`).value.trim(),
+        answer: document.getElementById(`a_${i}`).value.trim(),
+        tags: document.getElementById(`t_${i}`).value.trim().split(',').map(t => t.trim()).filter(Boolean)
+      };
+
+      if (entry.source === 'Firebase') {
+        const refKey = entry._firebaseKey;
+        const rowRef = ref(db, `approvedResponses/${refKey}`);
+        await update(rowRef, updated);
+        statusSpan.textContent = "✅ Updated Firebase entry.";
+      } else {
+        // Save to Firebase as new entry
+        const newRef = push(ref(db, 'approvedResponses'));
+        await update(newRef, updated);
+        statusSpan.textContent = "✅ Copied Netlify entry to Firebase.";
+        entry.source = 'Firebase';
       }
-      delete row._dirty;
-    }
-    window.deleteRow = function(key) {
-      if (!confirm("Delete this entry?")) return;
-      const rowRef = ref(db, `gpt4turbo_logs/${currentScenario}/${key}`);
-      remove(rowRef).then(() => {
-        statusSpan.textContent = "Deleted!";
-        setTimeout(()=>statusSpan.textContent="", 1200);
-      });
-    }
+      setTimeout(() => statusSpan.textContent = "", 1500);
+    };
 
-    // 4. Export visible as JSON
+    window.deleteRow = async function(i) {
+      const entry = allData[i];
+      if (entry.source !== 'Firebase') {
+        alert("❌ Netlify entries cannot be deleted.");
+        return;
+      }
+      if (!confirm("Delete this Firebase entry?")) return;
+      const refKey = entry._firebaseKey;
+      const rowRef = ref(db, `approvedResponses/${refKey}`);
+      await remove(rowRef);
+      statusSpan.textContent = "🗑️ Deleted.";
+      allData.splice(i, 1);
+      renderTable();
+    };
+
     window.downloadJson = function() {
-      if (!currentScenario || !allLogs[currentScenario]) return;
-      const arr = Object.values(allLogs[currentScenario]).map(entry => ({
-        question: entry.question,
-        answer: entry.answer,
-        role: entry.role || "",
-        timestamp: entry.timestamp || 0
+      const output = allData.map(e => ({
+        question: e.question,
+        answer: e.answer || e.response,
+        tags: e.tags || [],
+        source: e.source
       }));
-      const blob = new Blob([JSON.stringify(arr, null, 2)], {type: "application/json"});
+      const blob = new Blob([JSON.stringify(output, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `${currentScenario}_qa.json`;
-      document.body.appendChild(a);
+      a.download = "merged_qa.json";
       a.click();
-      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
-    }
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
 
-    function formatTime(ts) {
-      if (!ts) return "";
-      const d = new Date(ts);
-      return d.toLocaleString();
-    }
-
-    // On load
-    loadScenarioList();
+    loadData();
   </script>
 </body>
 </html>
