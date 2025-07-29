@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Firebase Q/A Reviewer & Exporter</title>
+  <title>Firebase + Netlify Q/A Reviewer</title>
   <style>
     body { font-family: sans-serif; background: #f9fafc; margin: 0; padding: 2rem; }
     #qa-table { border-collapse: collapse; width: 100%; }
     #qa-table th, #qa-table td { border: 1px solid #ddd; padding: 8px; }
     #qa-table th { background: #f3f3f3; }
-    tr.selected { background: #cfe7ff; }
-    .btn { padding: 6px 14px; border: none; background: #4285f4; color: #fff; border-radius: 5px; cursor: pointer; }
+    .btn { padding: 6px 14px; border: none; background: #4285f4; color: #fff; border-radius: 5px; cursor: pointer; margin: 5px; }
     .btn:hover { background: #206bdb; }
     .btn-delete { background: #e64b4b; }
     .btn-delete:hover { background: #b90d0d; }
@@ -21,13 +20,14 @@
     <label for="scenario-select"><b>Scenario:</b></label>
     <select id="scenario-select"></select>
     <button class="btn" onclick="downloadJson()">Export Visible as JSON</button>
+    <button class="btn" onclick="loadNetlifyFiles()">Load from Netlify</button>
     <span id="status"></span>
   </div>
   <table id="qa-table"></table>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    import { getDatabase, ref, onValue, update, remove, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
@@ -45,10 +45,9 @@
     const scenarioSelect = document.getElementById('scenario-select');
     const statusSpan = document.getElementById('status');
 
-    let allLogs = {}; // { scenarioId: { key: {question, answer...} } }
+    let allLogs = {};
     let currentScenario = null;
 
-    // Load scenario list
     function loadScenarioList() {
       const logsRef = ref(db, 'gpt4turbo_logs');
       onValue(logsRef, (snap) => {
@@ -63,9 +62,7 @@
           scenarioSelect.appendChild(opt);
         });
 
-        // Auto-select the first scenario
-        const firstValid = Object.keys(allLogs)[0];
-        currentScenario = firstValid || null;
+        currentScenario = Object.keys(allLogs)[0] || null;
         scenarioSelect.value = currentScenario;
         loadTable();
       });
@@ -76,7 +73,6 @@
       loadTable();
     });
 
-    // Load Q/A table for selected scenario
     function loadTable() {
       table.innerHTML = '';
       if (!currentScenario || !allLogs[currentScenario]) {
@@ -92,24 +88,20 @@
           <th>Answer</th>
           <th>Role</th>
           <th>Time</th>
-          <th>Edit</th>
+          <th>Save</th>
           <th>Delete</th>
         </tr>
       `;
 
       keys.forEach((k, idx) => {
         const row = document.createElement('tr');
-        const q = allLogs[currentScenario][k].question || '';
-        const a = allLogs[currentScenario][k].answer || '';
-        const r = allLogs[currentScenario][k].role || '';
-        const t = formatTime(allLogs[currentScenario][k].timestamp || 0);
-
+        const entry = allLogs[currentScenario][k];
         row.innerHTML = `
           <td>${idx + 1}</td>
-          <td><textarea onchange="markDirty('${k}', 'question', this.value)">${q}</textarea></td>
-          <td><textarea onchange="markDirty('${k}', 'answer', this.value)">${a}</textarea></td>
-          <td>${r}</td>
-          <td>${t}</td>
+          <td><textarea onchange="markDirty('${k}', 'question', this.value)">${entry.question || ''}</textarea></td>
+          <td><textarea onchange="markDirty('${k}', 'answer', this.value)">${entry.answer || ''}</textarea></td>
+          <td>${entry.role || ''}</td>
+          <td>${formatTime(entry.timestamp || 0)}</td>
           <td><button class="btn" onclick="saveRow('${k}')">Save</button></td>
           <td><button class="btn btn-delete" onclick="deleteRow('${k}')">X</button></td>
         `;
@@ -117,7 +109,6 @@
       });
     }
 
-    // Edit/save/delete helpers
     window.markDirty = function (key, field, value) {
       if (!allLogs[currentScenario][key]._dirty) allLogs[currentScenario][key]._dirty = {};
       allLogs[currentScenario][key]._dirty[field] = value;
@@ -126,19 +117,14 @@
     window.saveRow = function (key) {
       const row = allLogs[currentScenario][key];
       if (!row._dirty) return;
-
       const updates = {};
       if (row._dirty.question !== undefined) updates['question'] = row._dirty.question;
       if (row._dirty.answer !== undefined) updates['answer'] = row._dirty.answer;
-
-      if (Object.keys(updates).length) {
-        const rowRef = ref(db, `gpt4turbo_logs/${currentScenario}/${key}`);
-        update(rowRef, updates).then(() => {
-          statusSpan.textContent = "✅ Saved!";
-          setTimeout(() => statusSpan.textContent = "", 1200);
-        });
-      }
-
+      const rowRef = ref(db, `gpt4turbo_logs/${currentScenario}/${key}`);
+      update(rowRef, updates).then(() => {
+        statusSpan.textContent = "✅ Saved!";
+        setTimeout(() => statusSpan.textContent = "", 1200);
+      });
       delete row._dirty;
     };
 
@@ -178,7 +164,50 @@
       return d.toLocaleString();
     }
 
-    // Initialize
+    // 📦 Load from Netlify JSON files and display as a fake scenario
+    window.loadNetlifyFiles = async function () {
+      const files = ['ems_database_part1.json', 'ems_database_part2.json', 'ems_database_part3.json'];
+      const all = [];
+
+      for (let file of files) {
+        try {
+          const res = await fetch(file);
+          if (!res.ok) throw new Error(`Failed to load ${file}`);
+          const data = await res.json();
+          const entries = Array.isArray(data) ? data : Object.values(data);
+          all.push(...entries);
+        } catch (err) {
+          console.warn(`Error loading ${file}:`, err);
+        }
+      }
+
+      // convert to { key: { question, answer, ... } }
+      const imported = {};
+      all.forEach((entry, idx) => {
+        imported[`netlify_${idx}`] = {
+          question: entry.question || entry.userQuestion || '',
+          answer: entry.answer || entry.response || '',
+          role: entry.role || 'patient',
+          timestamp: Date.now()
+        };
+      });
+
+      allLogs["netlify_import"] = imported;
+      currentScenario = "netlify_import";
+
+      // Add to dropdown if not present
+      if (![...scenarioSelect.options].some(opt => opt.value === "netlify_import")) {
+        const opt = document.createElement('option');
+        opt.value = "netlify_import";
+        opt.textContent = "Netlify Import";
+        scenarioSelect.appendChild(opt);
+      }
+
+      scenarioSelect.value = "netlify_import";
+      loadTable();
+      statusSpan.textContent = `✅ Loaded ${Object.keys(imported).length} Netlify entries.`;
+    };
+
     loadScenarioList();
   </script>
 </body>
