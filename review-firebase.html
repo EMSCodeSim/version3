@@ -1,29 +1,29 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Firebase + Netlify Q/A Reviewer</title>
+  <title>Firebase Q/A Editor</title>
   <style>
     body { font-family: sans-serif; background: #f9fafc; margin: 0; padding: 2rem; }
     #qa-table { border-collapse: collapse; width: 100%; }
-    #qa-table th, #qa-table td { border: 1px solid #ddd; padding: 8px; }
-    #qa-table th { background: #f3f3f3; }
-    .btn { padding: 6px 14px; border: none; background: #4285f4; color: #fff; border-radius: 5px; cursor: pointer; margin: 5px; }
-    .btn:hover { background: #206bdb; }
-    .btn-delete { background: #e64b4b; }
-    .btn-delete:hover { background: #b90d0d; }
-    textarea { width: 90%; min-height: 40px; }
-    input { padding: 6px; margin-right: 6px; }
+    #qa-table th, #qa-table td { border: 1px solid #ccc; padding: 8px; }
+    #qa-table th { background: #f0f0f0; }
+    .btn { padding: 6px 12px; margin: 4px 6px 12px 0; border: none; border-radius: 5px; cursor: pointer; }
+    .btn-blue { background: #4285f4; color: white; }
+    .btn-red { background: #e53935; color: white; }
+    .btn-green { background: #43a047; color: white; }
+    textarea, select { width: 100%; min-height: 40px; font-family: inherit; }
+    input { padding: 6px; width: 220px; }
   </style>
 </head>
 <body>
-  <h2>Firebase Q/A Reviewer & Exporter</h2>
+  <h2>Firebase Q/A Editor</h2>
   <div>
     <label for="scenario-select"><b>Scenario:</b></label>
     <select id="scenario-select"></select>
-    <button class="btn" onclick="downloadJson()">Export Visible as JSON</button><br><br>
-
-    <input id="netlify-path" placeholder="Enter Netlify scenario (e.g. chest_pain_002)" />
-    <button class="btn" onclick="loadNetlifyFiles()">Load Netlify Scenario</button>
+    <button class="btn btn-blue" onclick="downloadJson()">Export JSON</button>
+    <button class="btn btn-red" onclick="deleteDuplicates()">Delete Duplicates</button><br><br>
+    <input id="netlify-path" placeholder="Netlify scenario folder (e.g. chest_pain_002)" />
+    <button class="btn btn-green" onclick="loadNetlifyFiles()">Load Netlify Scenario</button>
     <span id="status"></span>
   </div>
   <table id="qa-table"></table>
@@ -48,6 +48,41 @@
     const scenarioSelect = document.getElementById('scenario-select');
     const statusSpan = document.getElementById('status');
 
+    const SKILLS = [
+      { id: "EMT-B-MED-1", label: "BSI/PPE" },
+      { id: "EMT-B-MED-2", label: "Scene Safety" },
+      { id: "EMT-B-MED-3", label: "Determine MOI/NOI" },
+      { id: "EMT-B-MED-4", label: "Determine Number of Patients" },
+      { id: "EMT-B-MED-5", label: "Request Additional EMS Assistance" },
+      { id: "EMT-B-MED-6", label: "Consider C-Spine Stabilization" },
+      { id: "EMT-B-MED-7", label: "General Impression" },
+      { id: "EMT-B-MED-8", label: "Determine Responsiveness/LOC" },
+      { id: "EMT-B-MED-9", label: "Determine Chief Complaint" },
+      { id: "EMT-B-MED-10", label: "Assess Airway/Breathing" },
+      { id: "EMT-B-MED-11", label: "Initiate Oxygen Therapy" },
+      { id: "EMT-B-MED-12", label: "Assess Circulation" },
+      { id: "EMT-B-MED-13", label: "Patient Priority & Transport Decision" },
+      { id: "EMT-B-MED-14", label: "OPQRST - Onset" },
+      { id: "EMT-B-MED-15", label: "Provocation" },
+      { id: "EMT-B-MED-16", label: "Quality" },
+      { id: "EMT-B-MED-17", label: "Radiation" },
+      { id: "EMT-B-MED-18", label: "Severity" },
+      { id: "EMT-B-MED-19", label: "Time" },
+      { id: "EMT-B-MED-20", label: "SAMPLE - Signs/Symptoms" },
+      { id: "EMT-B-MED-21", label: "Allergies" },
+      { id: "EMT-B-MED-22", label: "Medications" },
+      { id: "EMT-B-MED-23", label: "Past Medical History" },
+      { id: "EMT-B-MED-24", label: "Last Oral Intake" },
+      { id: "EMT-B-MED-25", label: "Events Leading to Present Illness" },
+      { id: "EMT-B-MED-26", label: "Assess Affected Body/System" },
+      { id: "EMT-B-MED-27", label: "Vital Signs - BP" },
+      { id: "EMT-B-MED-28", label: "Heart Rate" },
+      { id: "EMT-B-MED-29", label: "Respiratory Rate" },
+      { id: "EMT-B-MED-30", label: "Field Impression of Patient" },
+      { id: "EMT-B-MED-31", label: "Interventions" },
+      { id: "EMT-B-MED-32", label: "How & When to Reassess" }
+    ];
+
     let allLogs = {};
     let currentScenario = null;
 
@@ -56,7 +91,6 @@
       onValue(logsRef, (snap) => {
         allLogs = snap.val() || {};
         scenarioSelect.innerHTML = '';
-
         Object.keys(allLogs).forEach(sc => {
           const label = sc && sc.trim() !== "" ? sc : "Unknown Scenario";
           const opt = document.createElement('option');
@@ -64,7 +98,6 @@
           opt.textContent = label;
           scenarioSelect.appendChild(opt);
         });
-
         currentScenario = Object.keys(allLogs)[0] || null;
         scenarioSelect.value = currentScenario;
         loadTable();
@@ -77,147 +110,121 @@
     });
 
     function loadTable() {
-      table.innerHTML = '';
-      if (!currentScenario || !allLogs[currentScenario]) {
-        table.innerHTML = '<tr><td>No Q/A found for this scenario.</td></tr>';
-        return;
-      }
-
-      const keys = Object.keys(allLogs[currentScenario]);
       table.innerHTML = `
         <tr>
-          <th>#</th>
-          <th>Question</th>
-          <th>Answer</th>
-          <th>Role</th>
-          <th>Time</th>
-          <th>Save</th>
-          <th>Delete</th>
-        </tr>
-      `;
-
-      keys.forEach((k, idx) => {
-        const row = document.createElement('tr');
-        const entry = allLogs[currentScenario][k];
-        row.innerHTML = `
-          <td>${idx + 1}</td>
-          <td><textarea onchange="markDirty('${k}', 'question', this.value)">${entry.question || ''}</textarea></td>
-          <td><textarea onchange="markDirty('${k}', 'answer', this.value)">${entry.answer || ''}</textarea></td>
-          <td>${entry.role || ''}</td>
-          <td>${formatTime(entry.timestamp || 0)}</td>
-          <td><button class="btn" onclick="saveRow('${k}')">Save</button></td>
-          <td><button class="btn btn-delete" onclick="deleteRow('${k}')">X</button></td>
-        `;
-        table.appendChild(row);
+          <th>#</th><th>Question</th><th>Answer</th><th>Role</th><th>SkillSheet ID</th><th>Time</th><th>Save</th><th>Delete</th>
+        </tr>`;
+      const keys = Object.keys(allLogs[currentScenario] || {});
+      keys.forEach((key, idx) => {
+        const entry = allLogs[currentScenario][key];
+        const skillOptions = SKILLS.map(s => `<option value="${s.id}" ${entry.skillSheetID === s.id ? 'selected' : ''}>${s.id} - ${s.label}</option>`).join('');
+        table.innerHTML += `
+          <tr>
+            <td>${idx + 1}</td>
+            <td><textarea onchange="markDirty('${key}', 'question', this.value)">${entry.question || ''}</textarea></td>
+            <td><textarea onchange="markDirty('${key}', 'answer', this.value)">${entry.answer || ''}</textarea></td>
+            <td>
+              <select onchange="markDirty('${key}', 'role', this.value)">
+                <option value="patient" ${entry.role === 'patient' ? 'selected' : ''}>patient</option>
+                <option value="proctor" ${entry.role === 'proctor' ? 'selected' : ''}>proctor</option>
+              </select>
+            </td>
+            <td>
+              <select onchange="markDirty('${key}', 'skillSheetID', this.value)">
+                <option value="">--</option>${skillOptions}
+              </select>
+            </td>
+            <td>${formatTime(entry.timestamp)}</td>
+            <td><button class="btn btn-blue" onclick="saveRow('${key}')">Save</button></td>
+            <td><button class="btn btn-red" onclick="deleteRow('${key}')">X</button></td>
+          </tr>`;
       });
     }
 
-    window.markDirty = function (key, field, value) {
+    window.markDirty = function(key, field, value) {
       if (!allLogs[currentScenario][key]._dirty) allLogs[currentScenario][key]._dirty = {};
       allLogs[currentScenario][key]._dirty[field] = value;
-    };
+    }
 
-    window.saveRow = function (key) {
+    window.saveRow = function(key) {
       const row = allLogs[currentScenario][key];
       if (!row._dirty) return;
-      const updates = {};
-      if (row._dirty.question !== undefined) updates['question'] = row._dirty.question;
-      if (row._dirty.answer !== undefined) updates['answer'] = row._dirty.answer;
-      const rowRef = ref(db, `gpt4turbo_logs/${currentScenario}/${key}`);
-      update(rowRef, updates).then(() => {
-        statusSpan.textContent = "✅ Saved!";
-        setTimeout(() => statusSpan.textContent = "", 1200);
-      });
+      const updates = { ...row._dirty };
+      update(ref(db, `gpt4turbo_logs/${currentScenario}/${key}`), updates);
       delete row._dirty;
-    };
+      statusSpan.textContent = "✅ Saved";
+      setTimeout(() => statusSpan.textContent = "", 1500);
+    }
 
-    window.deleteRow = function (key) {
-      if (!confirm("Delete this entry?")) return;
-      const rowRef = ref(db, `gpt4turbo_logs/${currentScenario}/${key}`);
-      remove(rowRef).then(() => {
-        statusSpan.textContent = "🗑️ Deleted!";
-        setTimeout(() => statusSpan.textContent = "", 1200);
-      });
-    };
+    window.deleteRow = function(key) {
+      remove(ref(db, `gpt4turbo_logs/${currentScenario}/${key}`));
+      delete allLogs[currentScenario][key];
+      loadTable();
+    }
 
-    window.downloadJson = function () {
-      if (!currentScenario || !allLogs[currentScenario]) return;
-      const arr = Object.values(allLogs[currentScenario]).map(entry => ({
-        question: entry.question,
-        answer: entry.answer,
-        role: entry.role || "",
-        timestamp: entry.timestamp || 0
-      }));
-      const blob = new Blob([JSON.stringify(arr, null, 2)], { type: "application/json" });
+    window.deleteDuplicates = function() {
+      const seen = new Set();
+      const dupKeys = [];
+      for (const [key, entry] of Object.entries(allLogs[currentScenario] || {})) {
+        const sig = (entry.question || '') + '|' + (entry.answer || '');
+        if (seen.has(sig)) dupKeys.push(key);
+        else seen.add(sig);
+      }
+      dupKeys.forEach(k => deleteRow(k));
+      statusSpan.textContent = `🗑️ Removed ${dupKeys.length} duplicates`;
+    }
+
+    window.downloadJson = function() {
+      const data = Object.values(allLogs[currentScenario] || {});
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${currentScenario || 'unknown'}_qa.json`;
-      document.body.appendChild(a);
+      a.download = `${currentScenario}.json`;
       a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 100);
-    };
+      URL.revokeObjectURL(url);
+    }
 
-    window.loadNetlifyFiles = async function () {
+    window.loadNetlifyFiles = async function() {
       const scenario = document.getElementById("netlify-path").value.trim();
-      if (!scenario) {
-        alert("Please enter a scenario folder name.");
-        return;
-      }
-
-      const baseUrl = `https://emscodesim3.netlify.app/scenarios/${scenario}/`;
+      if (!scenario) return alert("Enter a scenario folder name.");
+      const base = `https://emscodesim3.netlify.app/scenarios/${scenario}/`;
       const files = ['ems_database_part1.json', 'ems_database_part2.json', 'ems_database_part3.json'];
       const all = [];
-
-      for (let file of files) {
+      for (const f of files) {
         try {
-          const res = await fetch(baseUrl + file);
-          if (!res.ok) throw new Error(`Failed to load ${file}`);
-          const data = await res.json();
-          const entries = Array.isArray(data) ? data : Object.values(data);
-          all.push(...entries);
-        } catch (err) {
-          console.warn(`Error loading ${file}:`, err);
+          const res = await fetch(base + f);
+          if (!res.ok) throw new Error();
+          const json = await res.json();
+          all.push(...(Array.isArray(json) ? json : Object.values(json)));
+        } catch {
+          console.warn(`Missing ${f}`);
         }
       }
-
-      if (!all.length) {
-        statusSpan.textContent = `❌ No entries found for '${scenario}'.`;
-        return;
-      }
-
-      const key = `netlify_${scenario}`;
-      const imported = {};
-      all.forEach((entry, idx) => {
-        imported[`n_${idx}`] = {
-          question: entry.question || entry.userQuestion || '',
-          answer: entry.answer || entry.response || '',
-          role: entry.role || 'patient',
+      const entries = {};
+      all.forEach((e, i) => {
+        entries[`n_${i}`] = {
+          question: e.question || e.userQuestion || '',
+          answer: e.answer || e.response || '',
+          role: e.role || 'patient',
+          skillSheetID: '',
           timestamp: Date.now()
         };
       });
-
-      allLogs[key] = imported;
-      currentScenario = key;
-
-      if (![...scenarioSelect.options].some(opt => opt.value === key)) {
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.textContent = `Netlify: ${scenario}`;
-        scenarioSelect.appendChild(opt);
-      }
-
+      const key = `netlify_${scenario}`;
+      allLogs[key] = entries;
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = `Netlify: ${scenario}`;
+      scenarioSelect.appendChild(opt);
       scenarioSelect.value = key;
+      currentScenario = key;
       loadTable();
-      statusSpan.textContent = `✅ Loaded ${Object.keys(imported).length} Netlify entries from '${scenario}'.`;
-    };
+      statusSpan.textContent = `✅ Loaded ${Object.keys(entries).length} Netlify entries`;
+    }
 
     function formatTime(ts) {
-      if (!ts) return "";
-      const d = new Date(ts);
+      const d = new Date(ts || Date.now());
       return d.toLocaleString();
     }
 
