@@ -125,11 +125,11 @@ function findTagMatch(message) {
   return null;
 }
 
-function logToFirebase({ scenarioId, question, answer, response_type }) {
+function logToFirebase({ scenarioId, question, rephrased = null, answer, response_type }) {
   if (!window.firebase || !window.firebase.database) return;
   const timestamp = new Date().toISOString();
   const logRef = window.firebase.database().ref("ai_responses_log");
-  logRef.push({ scenario_id: scenarioId, question, answer, response_type, timestamp });
+  logRef.push({ scenario_id: scenarioId, question, rephrased, answer, response_type, timestamp });
 }
 
 function logUnknown({ scenarioId, question }) {
@@ -138,7 +138,7 @@ function logUnknown({ scenarioId, question }) {
   unknownRef.push({ scenario_id: scenarioId, question, timestamp: new Date().toISOString() });
 }
 
-// === MATCH ORDER: exact → vector → rephrase → tag → GPT ===
+// === MATCH ORDER: exact → vector → rephrase → rephrase+vector → tag → GPT ===
 export async function routeUserInput(message, { scenarioId, role }) {
   const norm = normalize(message);
 
@@ -153,7 +153,7 @@ export async function routeUserInput(message, { scenarioId, role }) {
     return { response: reply, source: "hardcoded", matchedEntry: match };
   }
 
-  // 2. Vector match
+  // 2. Vector match (original)
   try {
     const vectorRes = await findVectorMatch(message, 0.80);
     if (vectorRes && (vectorRes.entry.response || vectorRes.entry.answer)) {
@@ -166,22 +166,34 @@ export async function routeUserInput(message, { scenarioId, role }) {
     console.error("Vector search failed:", err);
   }
 
-  // 3. Rephrase match
+  // 3. Rephrase input
+  let rephrased = null;
   try {
-    const rephrased = await rephraseUserInput(message);
+    rephrased = await rephraseUserInput(message);
     if (rephrased) {
+      // 3a. Rephrase → hardcoded
       const rephraseMatch = hardcodedResponses.find(entry =>
         normalize(entry.question) === normalize(rephrased) ||
         normalize(entry.userQuestion) === normalize(rephrased)
       );
       if (rephraseMatch && (rephraseMatch.response || rephraseMatch.answer)) {
         const reply = rephraseMatch.response || rephraseMatch.answer;
+        logToFirebase({ scenarioId, question: message, rephrased, answer: reply, response_type: "rephrase" });
         chatHistory.push({ role: "user", content: message }, { role: "assistant", content: reply });
         return { response: reply, source: "rephrase", matchedEntry: rephraseMatch };
       }
+
+      // 3b. Rephrase → vector
+      const vectorRephraseRes = await findVectorMatch(rephrased, 0.75);
+      if (vectorRephraseRes && (vectorRephraseRes.entry.response || vectorRephraseRes.entry.answer)) {
+        const reply = vectorRephraseRes.entry.response || vectorRephraseRes.entry.answer;
+        logToFirebase({ scenarioId, question: message, rephrased, answer: reply, response_type: "vector_rephrased" });
+        chatHistory.push({ role: "user", content: message }, { role: "assistant", content: reply });
+        return { response: reply, source: "vector_rephrased", matchedEntry: vectorRephraseRes.entry };
+      }
     }
   } catch (err) {
-    console.error("Rephrase search failed:", err);
+    console.error("Rephrase or rephrase-vector match failed:", err);
   }
 
   // 4. Tag match
@@ -211,7 +223,7 @@ export async function routeUserInput(message, { scenarioId, role }) {
     const data = await res.json();
     const reply = data.reply || "I’m not sure how to respond to that.";
 
-    logToFirebase({ scenarioId, question: message, answer: reply, response_type: "gpt" });
+    logToFirebase({ scenarioId, question: message, rephrased, answer: reply, response_type: "gpt" });
     logUnknown({ scenarioId, question: message });
 
     chatHistory.push({ role: "user", content: message }, { role: "assistant", content: reply });
