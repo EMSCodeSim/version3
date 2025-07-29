@@ -12,6 +12,7 @@
     .btn-delete { background: #e64b4b; }
     .btn-delete:hover { background: #b90d0d; }
     textarea { width: 90%; min-height: 40px; }
+    input { padding: 6px; margin-right: 6px; }
   </style>
 </head>
 <body>
@@ -19,15 +20,17 @@
   <div>
     <label for="scenario-select"><b>Scenario:</b></label>
     <select id="scenario-select"></select>
-    <button class="btn" onclick="downloadJson()">Export Visible as JSON</button>
-    <button class="btn" onclick="loadNetlifyFiles()">Load from Netlify</button>
+    <button class="btn" onclick="downloadJson()">Export Visible as JSON</button><br><br>
+
+    <input id="netlify-path" placeholder="Enter Netlify scenario (e.g. chest_pain_002)" />
+    <button class="btn" onclick="loadNetlifyFiles()">Load Netlify Scenario</button>
     <span id="status"></span>
   </div>
   <table id="qa-table"></table>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getDatabase, ref, onValue, update, remove, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
@@ -158,20 +161,20 @@
       }, 100);
     };
 
-    function formatTime(ts) {
-      if (!ts) return "";
-      const d = new Date(ts);
-      return d.toLocaleString();
-    }
-
-    // 📦 Load from Netlify JSON files and display as a fake scenario
     window.loadNetlifyFiles = async function () {
+      const scenario = document.getElementById("netlify-path").value.trim();
+      if (!scenario) {
+        alert("Please enter a scenario folder name.");
+        return;
+      }
+
+      const baseUrl = `https://emscodesim3.netlify.app/scenarios/${scenario}/`;
       const files = ['ems_database_part1.json', 'ems_database_part2.json', 'ems_database_part3.json'];
       const all = [];
 
       for (let file of files) {
         try {
-          const res = await fetch(file);
+          const res = await fetch(baseUrl + file);
           if (!res.ok) throw new Error(`Failed to load ${file}`);
           const data = await res.json();
           const entries = Array.isArray(data) ? data : Object.values(data);
@@ -181,10 +184,15 @@
         }
       }
 
-      // convert to { key: { question, answer, ... } }
+      if (!all.length) {
+        statusSpan.textContent = `❌ No entries found for '${scenario}'.`;
+        return;
+      }
+
+      const key = `netlify_${scenario}`;
       const imported = {};
       all.forEach((entry, idx) => {
-        imported[`netlify_${idx}`] = {
+        imported[`n_${idx}`] = {
           question: entry.question || entry.userQuestion || '',
           answer: entry.answer || entry.response || '',
           role: entry.role || 'patient',
@@ -192,21 +200,26 @@
         };
       });
 
-      allLogs["netlify_import"] = imported;
-      currentScenario = "netlify_import";
+      allLogs[key] = imported;
+      currentScenario = key;
 
-      // Add to dropdown if not present
-      if (![...scenarioSelect.options].some(opt => opt.value === "netlify_import")) {
+      if (![...scenarioSelect.options].some(opt => opt.value === key)) {
         const opt = document.createElement('option');
-        opt.value = "netlify_import";
-        opt.textContent = "Netlify Import";
+        opt.value = key;
+        opt.textContent = `Netlify: ${scenario}`;
         scenarioSelect.appendChild(opt);
       }
 
-      scenarioSelect.value = "netlify_import";
+      scenarioSelect.value = key;
       loadTable();
-      statusSpan.textContent = `✅ Loaded ${Object.keys(imported).length} Netlify entries.`;
+      statusSpan.textContent = `✅ Loaded ${Object.keys(imported).length} Netlify entries from '${scenario}'.`;
     };
+
+    function formatTime(ts) {
+      if (!ts) return "";
+      const d = new Date(ts);
+      return d.toLocaleString();
+    }
 
     loadScenarioList();
   </script>
