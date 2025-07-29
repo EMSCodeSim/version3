@@ -1,234 +1,140 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Firebase Q/A Editor</title>
+  <meta charset="UTF-8">
+  <title>Review Responses</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <style>
-    body { font-family: sans-serif; background: #f9fafc; margin: 0; padding: 2rem; }
-    #qa-table { border-collapse: collapse; width: 100%; }
-    #qa-table th, #qa-table td { border: 1px solid #ccc; padding: 8px; }
-    #qa-table th { background: #f0f0f0; }
-    .btn { padding: 6px 12px; margin: 4px 6px 12px 0; border: none; border-radius: 5px; cursor: pointer; }
-    .btn-blue { background: #4285f4; color: white; }
-    .btn-red { background: #e53935; color: white; }
-    .btn-green { background: #43a047; color: white; }
-    textarea, select { width: 100%; min-height: 40px; font-family: inherit; }
-    input { padding: 6px; width: 220px; }
+    body { font-family: Arial; padding: 10px; background: #f0f0f0; }
+    button { margin: 5px; }
+    textarea { width: 100%; height: 60px; }
+    select, input { width: 100%; margin-top: 5px; }
+    .entry { background: white; padding: 10px; margin: 10px 0; border-radius: 8px; box-shadow: 1px 1px 5px #ccc; }
   </style>
 </head>
 <body>
-  <h2>Firebase Q/A Editor</h2>
-  <div>
-    <label for="scenario-select"><b>Scenario:</b></label>
-    <select id="scenario-select"></select>
-    <button class="btn btn-blue" onclick="downloadJson()">Export JSON</button>
-    <button class="btn btn-red" onclick="deleteDuplicates()">Delete Duplicates</button><br><br>
-    <input id="netlify-path" placeholder="Netlify scenario folder (e.g. chest_pain_002)" />
-    <button class="btn btn-green" onclick="loadNetlifyFiles()">Load Netlify Scenario</button>
-    <span id="status"></span>
-  </div>
-  <table id="qa-table"></table>
+  <h2>Review Hardcoded Responses</h2>
+  <button onclick="loadFirebase()">Load Firebase</button>
+  <button onclick="loadNetlify()">Load Netlify</button>
+  <button onclick="loadBoth()">Load Both</button>
+  <button onclick="removeDuplicates()">Remove Duplicates</button>
+  <input type="text" id="netlifyFolder" placeholder="e.g., chest_pain_002">
+  <div id="output"></div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
+  <script>
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "ems-code-sim-a315a.firebaseapp.com",
-      databaseURL: "https://ems-code-sim-a315a-default-rtdb.firebaseio.com",
-      projectId: "ems-code-sim-a315a",
-      storageBucket: "ems-code-sim-a315a.appspot.com",
-      messagingSenderId: "100284465695074997295",
-      appId: "YOUR_APP_ID"
+      apiKey: "AIzaSyCEXAMPLEKEY123",
+      authDomain: "yourapp.firebaseapp.com",
+      databaseURL: "https://yourapp.firebaseio.com",
+      projectId: "yourapp",
+      storageBucket: "yourapp.appspot.com",
+      messagingSenderId: "123456789",
+      appId: "1:123456789:web:abc123"
     };
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    const table = document.getElementById('qa-table');
-    const scenarioSelect = document.getElementById('scenario-select');
-    const statusSpan = document.getElementById('status');
+    const seenKeys = new Set();
 
-    const SKILLS = [
-      { id: "EMT-B-MED-1", label: "BSI/PPE" },
-      { id: "EMT-B-MED-2", label: "Scene Safety" },
-      { id: "EMT-B-MED-3", label: "Determine MOI/NOI" },
-      { id: "EMT-B-MED-4", label: "Determine Number of Patients" },
-      { id: "EMT-B-MED-5", label: "Request Additional EMS Assistance" },
-      { id: "EMT-B-MED-6", label: "Consider C-Spine Stabilization" },
-      { id: "EMT-B-MED-7", label: "General Impression" },
-      { id: "EMT-B-MED-8", label: "Determine Responsiveness/LOC" },
-      { id: "EMT-B-MED-9", label: "Determine Chief Complaint" },
-      { id: "EMT-B-MED-10", label: "Assess Airway/Breathing" },
-      { id: "EMT-B-MED-11", label: "Initiate Oxygen Therapy" },
-      { id: "EMT-B-MED-12", label: "Assess Circulation" },
-      { id: "EMT-B-MED-13", label: "Patient Priority & Transport Decision" },
-      { id: "EMT-B-MED-14", label: "OPQRST - Onset" },
-      { id: "EMT-B-MED-15", label: "Provocation" },
-      { id: "EMT-B-MED-16", label: "Quality" },
-      { id: "EMT-B-MED-17", label: "Radiation" },
-      { id: "EMT-B-MED-18", label: "Severity" },
-      { id: "EMT-B-MED-19", label: "Time" },
-      { id: "EMT-B-MED-20", label: "SAMPLE - Signs/Symptoms" },
-      { id: "EMT-B-MED-21", label: "Allergies" },
-      { id: "EMT-B-MED-22", label: "Medications" },
-      { id: "EMT-B-MED-23", label: "Past Medical History" },
-      { id: "EMT-B-MED-24", label: "Last Oral Intake" },
-      { id: "EMT-B-MED-25", label: "Events Leading to Present Illness" },
-      { id: "EMT-B-MED-26", label: "Assess Affected Body/System" },
-      { id: "EMT-B-MED-27", label: "Vital Signs - BP" },
-      { id: "EMT-B-MED-28", label: "Heart Rate" },
-      { id: "EMT-B-MED-29", label: "Respiratory Rate" },
-      { id: "EMT-B-MED-30", label: "Field Impression of Patient" },
-      { id: "EMT-B-MED-31", label: "Interventions" },
-      { id: "EMT-B-MED-32", label: "How & When to Reassess" }
-    ];
+    function createEntry(id, data, source = "firebase") {
+      if (seenKeys.has(data.question + data.answer)) return;
+      seenKeys.add(data.question + data.answer);
 
-    let allLogs = {};
-    let currentScenario = null;
+      const div = document.createElement("div");
+      div.className = "entry";
+      div.innerHTML = `
+        <strong>Source:</strong> ${source}<br>
+        <label>Question:</label><textarea>${data.question || ""}</textarea>
+        <label>Answer:</label><textarea>${data.answer || ""}</textarea>
+        <label>Tags (comma-separated):</label><input value="${(data.tags || []).join(", ")}">
+        <label>Role:</label>
+        <select>
+          <option ${data.role === "patient" ? "selected" : ""}>patient</option>
+          <option ${data.role === "proctor" ? "selected" : ""}>proctor</option>
+        </select>
+        <label>SkillSheet ID:</label>
+        <select>
+          ${Array.from({length: 32}, (_, i) => {
+            const n = i + 1;
+            const id = `EMT-B-MED-${n}`;
+            const label = {
+              1: "BSI/PPE", 2: "Scene Safety", 3: "Determine MOI/NOI", 4: "Determine Number of Patients", 5: "Request Additional EMS Assistance",
+              6: "Consider C-Spine Stabilization", 7: "General Impression", 8: "Determine Responsiveness/LOC", 9: "Determine Chief Complaint",
+              10: "Assess Airway/Breathing", 11: "Initiate Oxygen Therapy", 12: "Assess Circulation", 13: "Identify Priority & Transport",
+              14: "OPQRST - Onset", 15: "Provocation", 16: "Quality", 17: "Radiation", 18: "Severity", 19: "Time",
+              20: "SAMPLE - Signs/Symptoms", 21: "Allergies", 22: "Medications", 23: "Past Medical History", 24: "Last Oral Intake",
+              25: "Events Leading to Present Illness", 26: "Assess Affected Body/System", 27: "Vital Signs - BP", 28: "Heart Rate",
+              29: "Respiratory Rate", 30: "Field Impression", 31: "Interventions", 32: "Reassess"
+            }[n];
+            return `<option value="${id}" ${data.skillSheetID === id ? "selected" : ""}>${id} - ${label}</option>`;
+          }).join("")}
+        </select><br>
+        <button onclick="deleteEntry('${id}')">Delete</button>
+        <button onclick="saveEntry(this, '${id}')">Save</button>
+      `;
+      document.getElementById("output").appendChild(div);
+    }
 
-    function loadScenarioList() {
-      const logsRef = ref(db, 'gpt4turbo_logs');
-      onValue(logsRef, (snap) => {
-        allLogs = snap.val() || {};
-        scenarioSelect.innerHTML = '';
-        Object.keys(allLogs).forEach(sc => {
-          const label = sc && sc.trim() !== "" ? sc : "Unknown Scenario";
-          const opt = document.createElement('option');
-          opt.value = sc;
-          opt.textContent = label;
-          scenarioSelect.appendChild(opt);
-        });
-        currentScenario = Object.keys(allLogs)[0] || null;
-        scenarioSelect.value = currentScenario;
-        loadTable();
+    function loadFirebase() {
+      seenKeys.clear();
+      document.getElementById("output").innerHTML = "";
+      db.ref("gpt4turbo_logs").once("value", snap => {
+        const val = snap.val();
+        for (let id in val) createEntry(id, val[id], "firebase");
       });
     }
 
-    scenarioSelect.addEventListener('change', () => {
-      currentScenario = scenarioSelect.value;
-      loadTable();
-    });
-
-    function loadTable() {
-      table.innerHTML = `
-        <tr>
-          <th>#</th><th>Question</th><th>Answer</th><th>Role</th><th>SkillSheet ID</th><th>Time</th><th>Save</th><th>Delete</th>
-        </tr>`;
-      const keys = Object.keys(allLogs[currentScenario] || {});
-      keys.forEach((key, idx) => {
-        const entry = allLogs[currentScenario][key];
-        const skillOptions = SKILLS.map(s => `<option value="${s.id}" ${entry.skillSheetID === s.id ? 'selected' : ''}>${s.id} - ${s.label}</option>`).join('');
-        table.innerHTML += `
-          <tr>
-            <td>${idx + 1}</td>
-            <td><textarea onchange="markDirty('${key}', 'question', this.value)">${entry.question || ''}</textarea></td>
-            <td><textarea onchange="markDirty('${key}', 'answer', this.value)">${entry.answer || ''}</textarea></td>
-            <td>
-              <select onchange="markDirty('${key}', 'role', this.value)">
-                <option value="patient" ${entry.role === 'patient' ? 'selected' : ''}>patient</option>
-                <option value="proctor" ${entry.role === 'proctor' ? 'selected' : ''}>proctor</option>
-              </select>
-            </td>
-            <td>
-              <select onchange="markDirty('${key}', 'skillSheetID', this.value)">
-                <option value="">--</option>${skillOptions}
-              </select>
-            </td>
-            <td>${formatTime(entry.timestamp)}</td>
-            <td><button class="btn btn-blue" onclick="saveRow('${key}')">Save</button></td>
-            <td><button class="btn btn-red" onclick="deleteRow('${key}')">X</button></td>
-          </tr>`;
-      });
+    function loadNetlify() {
+      seenKeys.clear();
+      document.getElementById("output").innerHTML = "";
+      const folder = document.getElementById("netlifyFolder").value.trim();
+      if (!folder) return alert("Enter folder name (e.g., chest_pain_002)");
+      fetch(`https://emscodesim3.netlify.app/scenarios/${folder}/ems_database_part1.json`)
+        .then(res => res.json())
+        .then(data => {
+          Object.entries(data).forEach(([id, entry]) => createEntry(id, entry, "netlify"));
+        }).catch(err => alert("Failed to load Netlify JSON"));
     }
 
-    window.markDirty = function(key, field, value) {
-      if (!allLogs[currentScenario][key]._dirty) allLogs[currentScenario][key]._dirty = {};
-      allLogs[currentScenario][key]._dirty[field] = value;
+    function loadBoth() {
+      loadFirebase();
+      setTimeout(loadNetlify, 1000);
     }
 
-    window.saveRow = function(key) {
-      const row = allLogs[currentScenario][key];
-      if (!row._dirty) return;
-      const updates = { ...row._dirty };
-      update(ref(db, `gpt4turbo_logs/${currentScenario}/${key}`), updates);
-      delete row._dirty;
-      statusSpan.textContent = "✅ Saved";
-      setTimeout(() => statusSpan.textContent = "", 1500);
-    }
-
-    window.deleteRow = function(key) {
-      remove(ref(db, `gpt4turbo_logs/${currentScenario}/${key}`));
-      delete allLogs[currentScenario][key];
-      loadTable();
-    }
-
-    window.deleteDuplicates = function() {
+    function removeDuplicates() {
       const seen = new Set();
-      const dupKeys = [];
-      for (const [key, entry] of Object.entries(allLogs[currentScenario] || {})) {
-        const sig = (entry.question || '') + '|' + (entry.answer || '');
-        if (seen.has(sig)) dupKeys.push(key);
-        else seen.add(sig);
-      }
-      dupKeys.forEach(k => deleteRow(k));
-      statusSpan.textContent = `🗑️ Removed ${dupKeys.length} duplicates`;
-    }
-
-    window.downloadJson = function() {
-      const data = Object.values(allLogs[currentScenario] || {});
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${currentScenario}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    window.loadNetlifyFiles = async function() {
-      const scenario = document.getElementById("netlify-path").value.trim();
-      if (!scenario) return alert("Enter a scenario folder name.");
-      const base = `https://emscodesim3.netlify.app/scenarios/${scenario}/`;
-      const files = ['ems_database_part1.json', 'ems_database_part2.json', 'ems_database_part3.json'];
-      const all = [];
-      for (const f of files) {
-        try {
-          const res = await fetch(base + f);
-          if (!res.ok) throw new Error();
-          const json = await res.json();
-          all.push(...(Array.isArray(json) ? json : Object.values(json)));
-        } catch {
-          console.warn(`Missing ${f}`);
-        }
-      }
-      const entries = {};
-      all.forEach((e, i) => {
-        entries[`n_${i}`] = {
-          question: e.question || e.userQuestion || '',
-          answer: e.answer || e.response || '',
-          role: e.role || 'patient',
-          skillSheetID: '',
-          timestamp: Date.now()
-        };
+      const entries = [...document.querySelectorAll(".entry")];
+      entries.forEach(div => {
+        const q = div.querySelector("textarea").value.trim();
+        const a = div.querySelectorAll("textarea")[1].value.trim();
+        const key = q + a;
+        if (seen.has(key)) div.remove();
+        else seen.add(key);
       });
-      const key = `netlify_${scenario}`;
-      allLogs[key] = entries;
-      const opt = document.createElement('option');
-      opt.value = key;
-      opt.textContent = `Netlify: ${scenario}`;
-      scenarioSelect.appendChild(opt);
-      scenarioSelect.value = key;
-      currentScenario = key;
-      loadTable();
-      statusSpan.textContent = `✅ Loaded ${Object.keys(entries).length} Netlify entries`;
     }
 
-    function formatTime(ts) {
-      const d = new Date(ts || Date.now());
-      return d.toLocaleString();
+    function saveEntry(btn, id) {
+      const div = btn.parentElement;
+      const [q, a] = div.querySelectorAll("textarea");
+      const tags = div.querySelector("input").value.split(",").map(x => x.trim());
+      const role = div.querySelectorAll("select")[0].value;
+      const skill = div.querySelectorAll("select")[1].value;
+      const data = {
+        question: q.value.trim(),
+        answer: a.value.trim(),
+        tags,
+        role,
+        skillSheetID: skill
+      };
+      db.ref("gpt4turbo_logs/" + id).set(data);
+      alert("Saved to Firebase");
     }
 
-    loadScenarioList();
+    function deleteEntry(id) {
+      db.ref("gpt4turbo_logs/" + id).remove();
+      alert("Deleted from Firebase");
+    }
   </script>
 </body>
 </html>
