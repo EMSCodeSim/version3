@@ -7,16 +7,24 @@
     #qa-table { border-collapse: collapse; width: 100%; }
     #qa-table th, #qa-table td { border: 1px solid #ccc; padding: 8px; }
     #qa-table th { background: #f0f0f0; }
-    .btn { padding: 6px 12px; margin: 2px; border: none; border-radius: 5px; cursor: pointer; }
-    .btn-edit { background: #4CAF50; color: white; }
+    .btn { padding: 6px 12px; margin: 4px 4px 12px 0; border: none; border-radius: 5px; cursor: pointer; }
+    .btn-firebase { background: #ff9800; color: white; }
+    .btn-netlify { background: #4caf50; color: white; }
+    .btn-merge { background: #673ab7; color: white; }
+    .btn-edit { background: #2196f3; color: white; }
     .btn-delete { background: #f44336; color: white; }
-    .btn-export { background: #4285f4; color: white; }
+    .btn-export { background: #607d8b; color: white; float: right; }
     textarea { width: 90%; min-height: 40px; }
   </style>
 </head>
 <body>
-  <h2>Hardcoded Q/A Editor (Firebase + Netlify)</h2>
-  <button class="btn btn-export" onclick="downloadJson()">Export All as JSON</button>
+  <h2>Q/A Reviewer & Editor</h2>
+  <div>
+    <button class="btn btn-firebase" onclick="loadFirebaseOnly()">Load Firebase Only</button>
+    <button class="btn btn-netlify" onclick="loadNetlifyOnly()">Load Netlify Only</button>
+    <button class="btn btn-merge" onclick="loadBoth()">Load Both</button>
+    <button class="btn btn-export" onclick="downloadJson()">Export as JSON</button>
+  </div>
   <span id="status"></span>
   <table id="qa-table"></table>
 
@@ -33,46 +41,63 @@
       messagingSenderId: "100284465695074997295",
       appId: "YOUR_APP_ID"
     };
+
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-
     const table = document.getElementById('qa-table');
     const statusSpan = document.getElementById('status');
-    let allData = []; // merged entries
+    let allData = [];
 
-    async function loadData() {
-      // Load Firebase
+    async function fetchFirebase() {
       const firebaseRef = ref(db, "approvedResponses");
-      const firebaseSnap = await get(firebaseRef);
+      const snap = await get(firebaseRef);
       const firebaseEntries = [];
-      const firebaseMap = {};
-
-      if (firebaseSnap.exists()) {
-        Object.entries(firebaseSnap.val()).forEach(([key, entry]) => {
-          const obj = { ...entry, source: 'Firebase', _firebaseKey: key };
-          firebaseEntries.push(obj);
-          firebaseMap[key] = obj;
+      if (snap.exists()) {
+        Object.entries(snap.val()).forEach(([key, entry]) => {
+          firebaseEntries.push({ ...entry, source: 'Firebase', _firebaseKey: key });
         });
       }
+      return firebaseEntries;
+    }
 
-      // Load Netlify files
-      const netlifyFiles = ['ems_database_part1.json', 'ems_database_part2.json', 'ems_database_part3.json'];
-      let netlifyEntries = [];
-      for (let file of netlifyFiles) {
+    async function fetchNetlify() {
+      const files = ['ems_database_part1.json', 'ems_database_part2.json', 'ems_database_part3.json'];
+      const all = [];
+      for (let file of files) {
         try {
           const res = await fetch(file);
+          if (!res.ok) throw new Error(`Failed to load ${file}`);
           const data = await res.json();
-          const items = Array.isArray(data) ? data : Object.values(data);
-          items.forEach(entry => entry.source = 'Netlify');
-          netlifyEntries.push(...items);
+          const entries = Array.isArray(data) ? data : Object.values(data);
+          entries.forEach(e => e.source = 'Netlify');
+          all.push(...entries);
         } catch (err) {
-          console.warn("Failed to load:", file, err);
+          console.warn(`Error loading ${file}:`, err);
         }
       }
+      return all;
+    }
 
-      // Merge
-      allData = [...firebaseEntries, ...netlifyEntries];
+    async function loadFirebaseOnly() {
+      statusSpan.textContent = "Loading Firebase entries...";
+      allData = await fetchFirebase();
       renderTable();
+      statusSpan.textContent = `✅ Loaded ${allData.length} Firebase entries.`;
+    }
+
+    async function loadNetlifyOnly() {
+      statusSpan.textContent = "Loading Netlify entries...";
+      allData = await fetchNetlify();
+      renderTable();
+      statusSpan.textContent = `✅ Loaded ${allData.length} Netlify entries.`;
+    }
+
+    async function loadBoth() {
+      statusSpan.textContent = "Loading Firebase and Netlify entries...";
+      const [firebaseData, netlifyData] = await Promise.all([fetchFirebase(), fetchNetlify()]);
+      allData = [...firebaseData, ...netlifyData];
+      renderTable();
+      statusSpan.textContent = `✅ Loaded ${allData.length} total entries.`;
     }
 
     function renderTable() {
@@ -116,11 +141,10 @@
         await update(rowRef, updated);
         statusSpan.textContent = "✅ Updated Firebase entry.";
       } else {
-        // Save to Firebase as new entry
         const newRef = push(ref(db, 'approvedResponses'));
         await update(newRef, updated);
         statusSpan.textContent = "✅ Copied Netlify entry to Firebase.";
-        entry.source = 'Firebase';
+        allData[i].source = 'Firebase';
       }
       setTimeout(() => statusSpan.textContent = "", 1500);
     };
@@ -132,12 +156,11 @@
         return;
       }
       if (!confirm("Delete this Firebase entry?")) return;
-      const refKey = entry._firebaseKey;
-      const rowRef = ref(db, `approvedResponses/${refKey}`);
+      const rowRef = ref(db, `approvedResponses/${entry._firebaseKey}`);
       await remove(rowRef);
-      statusSpan.textContent = "🗑️ Deleted.";
       allData.splice(i, 1);
       renderTable();
+      statusSpan.textContent = "🗑️ Entry deleted.";
     };
 
     window.downloadJson = function() {
@@ -151,12 +174,10 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "merged_qa.json";
+      a.download = "qa_export.json";
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     };
-
-    loadData();
   </script>
 </body>
 </html>
