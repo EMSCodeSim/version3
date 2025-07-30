@@ -3,7 +3,7 @@ const admin = require("firebase-admin");
 const fs = require("fs");
 const path = require("path");
 
-// Initialize Firebase Admin using env vars
+// Initialize Firebase
 let firebaseApp;
 if (!admin.apps.length) {
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
@@ -23,23 +23,37 @@ exports.handler = async function(event, context) {
       return { statusCode: 405, body: "Method Not Allowed" };
     }
 
-    const { content, role, scenarioId = "unknown_scenario", history = [] } = JSON.parse(event.body);
+    const body = JSON.parse(event.body);
+    const content = body.content;
+    const role = body.role;
+    const history = Array.isArray(body.history) ? body.history : [];
 
-    if (!content || content.length < 1) {
+    // Fallback: use provided scenarioId or fallback to unknown
+    let scenarioId = body.scenarioId;
+    if (!scenarioId) {
+      if (event.path) {
+        scenarioId = event.path.split("/").pop(); // fallback: get last part of URL path
+      }
+      if (!scenarioId || scenarioId.length < 3) {
+        scenarioId = "unknown_scenario";
+      }
+    }
+
+    if (!content || content.trim().length < 1) {
       return { statusCode: 400, body: JSON.stringify({ error: "Missing content." }) };
     }
 
-    // Try to load patient_data.json if it exists for scenario
+    // Try loading patient_data.json if available
     let patientData = {};
     try {
       const dataPath = path.join(__dirname, "scenarios", scenarioId, "patient_data.json");
       const raw = fs.readFileSync(dataPath, "utf-8");
       patientData = JSON.parse(raw);
     } catch (err) {
-      console.warn("Could not load patient_data.json:", err.message);
+      console.warn(`Could not load patient_data.json for ${scenarioId}:`, err.message);
     }
 
-    // Build scenario summary
+    // Scenario + patient summary
     const summaryParts = [];
     if (patientData.scenarioName) summaryParts.push(`Scenario: ${patientData.scenarioName}`);
     if (patientData.chiefComplaint) summaryParts.push(`Chief Complaint: ${patientData.chiefComplaint}`);
@@ -66,7 +80,7 @@ Initial Vitals:
 - Pain: ${patientData.vitals?.initial?.pain_scale || "N/A"}
 `.trim();
 
-    // Role-based prompt
+    // Proctor or patient logic
     let systemPrompt = "";
     if ((role || "").toLowerCase().includes("proctor")) {
       systemPrompt = `
@@ -89,16 +103,14 @@ ${patientDescription ? "\n\nPatient Description:\n" + patientDescription : ""}
 `.trim();
     }
 
-    // Build messages
     const messages = [{ role: "system", content: systemPrompt }];
-    if (Array.isArray(history)) {
-      for (const h of history) {
-        if (h.role && h.content) messages.push({ role: h.role, content: h.content });
+    for (const h of history) {
+      if (h.role && h.content) {
+        messages.push({ role: h.role, content: h.content });
       }
     }
     messages.push({ role: "user", content });
 
-    // Call GPT
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages,
@@ -108,7 +120,7 @@ ${patientDescription ? "\n\nPatient Description:\n" + patientDescription : ""}
 
     const reply = completion.choices?.[0]?.message?.content?.trim() || "";
 
-    // Save to Firebase
+    // ✅ Save to Firebase at correct location
     try {
       const db = admin.database();
       const logRef = db.ref(`gpt4turbo_logs/${scenarioId}`);
@@ -119,9 +131,9 @@ ${patientDescription ? "\n\nPatient Description:\n" + patientDescription : ""}
         role: role || "patient"
       };
       await logRef.push(logEntry);
-      console.log("Saved to Firebase:", scenarioId);
+      console.log(`✅ Saved to Firebase: gpt4turbo_logs/${scenarioId}`);
     } catch (err) {
-      console.error("Firebase logging error:", err.message);
+      console.error("🔥 Firebase write failed:", err.message);
     }
 
     return {
@@ -129,7 +141,7 @@ ${patientDescription ? "\n\nPatient Description:\n" + patientDescription : ""}
       body: JSON.stringify({ reply })
     };
   } catch (err) {
-    console.error("GPT4 Turbo error:", err.message);
+    console.error("💥 GPT4 Turbo error:", err.message);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: err.message || "Unknown error." })
