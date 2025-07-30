@@ -21,7 +21,7 @@
     <label for="scenario-select"><b>Scenario:</b></label>
     <select id="scenario-select"></select>
     <button class="btn" onclick="downloadJson()">Export Visible as JSON</button>
-    <button class="btn" onclick="loadExternalJSON()">Load External JSON (Parts 1–3)</button>
+    <button class="btn" onclick="loadAllSources()">Load Firebase + Netlify</button>
     <span id="status"></span>
   </div>
   <table id="qa-table"></table>
@@ -47,25 +47,6 @@
 
     let allLogs = {};
     let currentScenario = null;
-
-    function loadScenarioList() {
-      const logsRef = ref(db, 'gpt4turbo_logs');
-      onValue(logsRef, (snap) => {
-        allLogs = snap.val() || {};
-        scenarioSelect.innerHTML = '';
-        Object.keys(allLogs).forEach(sc => {
-          const opt = document.createElement('option');
-          opt.value = sc;
-          opt.textContent = sc;
-          scenarioSelect.appendChild(opt);
-        });
-        if (!currentScenario || !allLogs[currentScenario]) {
-          currentScenario = Object.keys(allLogs)[0] || null;
-        }
-        scenarioSelect.value = currentScenario;
-        loadTable();
-      });
-    }
 
     scenarioSelect.addEventListener('change', () => {
       currentScenario = scenarioSelect.value;
@@ -157,37 +138,59 @@
       return d.toLocaleString();
     }
 
-    window.loadExternalJSON = async function() {
+    async function loadAllSources() {
+      statusSpan.textContent = "Loading all sources...";
+      allLogs = {};
+      scenarioSelect.innerHTML = '';
+
+      // 1. Load Firebase data
+      const logsRef = ref(db, 'gpt4turbo_logs');
+      const firebaseSnap = await new Promise(resolve => onValue(logsRef, resolve, { onlyOnce: true }));
+      const firebaseData = firebaseSnap.val() || {};
+      Object.assign(allLogs, firebaseData);
+
+      Object.keys(firebaseData).forEach(sc => {
+        const opt = document.createElement('option');
+        opt.value = sc;
+        opt.textContent = sc;
+        scenarioSelect.appendChild(opt);
+      });
+
+      // 2. Load Netlify JSON
       const urls = [
         'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json',
         'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json',
         'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json'
       ];
-      const combinedData = {};
+      const combinedExternal = {};
       try {
         for (let url of urls) {
           const res = await fetch(url);
           const json = await res.json();
-          Object.assign(combinedData, json);
+          Object.assign(combinedExternal, json);
         }
-        allLogs["external_combined"] = combinedData;
-        currentScenario = "external_combined";
-        if (![...scenarioSelect.options].some(o => o.value === "external_combined")) {
-          const opt = document.createElement("option");
-          opt.value = "external_combined";
-          opt.textContent = "external_combined";
-          scenarioSelect.appendChild(opt);
-        }
-        scenarioSelect.value = currentScenario;
-        loadTable();
-        statusSpan.textContent = "Loaded external parts 1–3.";
+        allLogs["external_combined"] = combinedExternal;
+
+        const opt = document.createElement("option");
+        opt.value = "external_combined";
+        opt.textContent = "external_combined";
+        scenarioSelect.appendChild(opt);
       } catch (err) {
-        console.error("Error loading JSON parts:", err);
-        statusSpan.textContent = "Failed to load JSON parts.";
+        console.error("Failed to load Netlify JSON:", err);
+        statusSpan.textContent = "Error loading Netlify data.";
+        return;
       }
+
+      // Set first scenario as default view
+      currentScenario = Object.keys(allLogs)[0] || "external_combined";
+      scenarioSelect.value = currentScenario;
+      loadTable();
+
+      statusSpan.textContent = "Loaded Firebase + Netlify.";
     }
 
-    loadScenarioList();
+    // Auto-load on page open
+    loadAllSources();
   </script>
 </body>
 </html>
