@@ -1,31 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Combined Scenario Viewer</title>
+  <title>EMS Log Viewer</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
     body { font-family: sans-serif; padding: 20px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    button { margin: 6px; padding: 6px 12px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td { border: 1px solid #ccc; padding: 8px; }
     th { background-color: #f2f2f2; }
-    button { margin: 6px 6px 6px 0; padding: 8px 12px; }
-    #count { margin-top: 10px; font-weight: bold; }
   </style>
 </head>
 <body>
-  <h2>Scenario Data Viewer</h2>
-  <button onclick="loadNetlify()">Load Netlify (All 3 Files)</button>
+  <h2>EMS Simulator Log Viewer</h2>
+  <button onclick="loadNetlify()">Load Netlify (All 3)</button>
   <button onclick="loadFirebase()">Load Firebase</button>
-  <button onclick="mergeAll()">Merge Firebase + Netlify</button>
-  <br>
+  <button onclick="mergeAll()">Merge All</button>
+  <br/>
   <label for="scenarioSelect">Select Source:</label>
   <select id="scenarioSelect" onchange="renderTable()"></select>
-  <div id="count"></div>
+  <div id="entryCount"></div>
   <table id="dataTable">
-    <thead>
-      <tr><th>#</th><th>Question</th><th>Answer</th><th>Role</th><th>Timestamp</th></tr>
-    </thead>
+    <thead><tr><th>#</th><th>Question</th><th>Answer</th><th>Role</th><th>Timestamp</th></tr></thead>
     <tbody></tbody>
   </table>
 
@@ -43,7 +40,6 @@
     const db = firebase.database();
 
     let logs = { netlify: [], firebase: [], merged: [] };
-    let current = "";
 
     async function loadNetlify() {
       const urls = [
@@ -57,22 +53,22 @@
           const res = await fetch(url);
           const json = await res.json();
           logs.netlify.push(...Object.values(json));
-        } catch (err) {
-          console.error(`Failed to load ${url}`, err);
+        } catch (e) {
+          console.error("Netlify fetch failed", e);
         }
       }
-      updateSelect();
+      updateDropdown();
     }
 
     async function loadFirebase() {
+      logs.firebase = [];
       try {
         const snap = await db.ref('gpt4turbo_logs').get();
         const data = snap.val() || {};
-        logs.firebase = [];
-        for (let scenario of Object.values(data)) {
-          logs.firebase.push(...Object.values(scenario));
+        for (const scenarioKey of Object.keys(data)) {
+          logs.firebase.push(...Object.values(data[scenarioKey]));
         }
-        updateSelect();
+        updateDropdown();
       } catch (err) {
         console.error("Firebase load error:", err);
       }
@@ -80,36 +76,37 @@
 
     function mergeAll() {
       logs.merged = [...logs.netlify, ...logs.firebase];
-      updateSelect();
+      updateDropdown();
     }
 
-    function updateSelect() {
+    function updateDropdown() {
       const sel = document.getElementById("scenarioSelect");
       sel.innerHTML = "";
-      for (let key of Object.keys(logs)) {
+      for (const key of Object.keys(logs)) {
         const opt = document.createElement("option");
         opt.value = key;
         opt.textContent = `${key} (${logs[key].length})`;
         sel.appendChild(opt);
       }
-      current = sel.value = Object.keys(logs)[0];
+      sel.value = Object.keys(logs)[0];
       renderTable();
     }
 
     function renderTable() {
-      current = document.getElementById("scenarioSelect").value;
+      const key = document.getElementById("scenarioSelect").value;
+      const data = logs[key] || [];
       const tbody = document.querySelector("#dataTable tbody");
+      const countBox = document.getElementById("entryCount");
       tbody.innerHTML = "";
-      const data = logs[current] || [];
-      document.getElementById("count").textContent = `Total Entries: ${data.length}`;
-      data.forEach((item, i) => {
+      countBox.textContent = `Total entries: ${data.length}`;
+      data.forEach((entry, i) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${i + 1}</td>
-          <td>${item.question || ""}</td>
-          <td>${item.answer || ""}</td>
-          <td>${item.role || ""}</td>
-          <td>${item.timestamp ? new Date(item.timestamp).toLocaleString() : ""}</td>
+          <td>${entry.question || ""}</td>
+          <td>${entry.answer || ""}</td>
+          <td>${entry.role || ""}</td>
+          <td>${entry.timestamp ? new Date(entry.timestamp).toLocaleString() : ""}</td>
         `;
         tbody.appendChild(tr);
       });
