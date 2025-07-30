@@ -5,10 +5,12 @@ const path = require("path");
 
 let firebaseApp;
 if (!admin.apps.length) {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+  const serviceAccount = JSON.parse(
+    fs.readFileSync(path.join(__dirname, "serviceAccountKey.json"), "utf-8")
+  );
   firebaseApp = admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    databaseURL: process.env.FIREBASE_DATABASE_URL
+    databaseURL: "https://ems-code-sim-a315a-default-rtdb.firebaseio.com" // <-- Hardcoded Firebase URL
   });
 } else {
   firebaseApp = admin.app();
@@ -36,17 +38,14 @@ exports.handler = async function(event, context) {
       patientData = JSON.parse(raw);
     } catch (err) {
       console.error("Could not load patient_data.json:", err);
-      patientData = {};
     }
 
-    // --- Build scenario and patient summaries ---
+    // --- Build system prompt ---
     const summaryParts = [];
-
     if (patientData.scenarioName) summaryParts.push(`Scenario: ${patientData.scenarioName}`);
     if (patientData.chiefComplaint) summaryParts.push(`Chief Complaint: ${patientData.chiefComplaint}`);
     if (patientData.dispatch) summaryParts.push(`Dispatch Information: ${patientData.dispatch}`);
     if (patientData.scene_description) summaryParts.push(`Scene Description: ${patientData.scene_description}`);
-
     const scenarioSummary = summaryParts.join("\n");
 
     const patientDescription = `
@@ -68,7 +67,6 @@ Initial Vitals:
 - Pain: ${patientData.vitals?.initial?.pain_scale || "N/A"}
 `.trim();
 
-    // --- Create system prompt ---
     let systemPrompt = "";
     if ((role || "").toLowerCase().includes("proctor")) {
       systemPrompt = `
@@ -77,6 +75,7 @@ Do NOT provide emotional, subjective, or symptom-based answers. Never play the p
 If the question is for the patient, respond with 'This is a proctor-only question.'
 If asked about assessment results, vitals, or scene information, answer concisely.
 If asked for advice, say you can't assist.
+
 ${scenarioSummary ? "\n\nScenario Details:\n" + scenarioSummary : ""}
 `.trim();
     } else {
@@ -84,23 +83,20 @@ ${scenarioSummary ? "\n\nScenario Details:\n" + scenarioSummary : ""}
 You are playing the role of an EMS patient. Answer as the patient would, based on realistic symptoms, emotions, and history.
 Respond to questions like a real patient—never provide proctor-style or test-answer feedback.
 Stay in character as the patient only.
+
 ${scenarioSummary ? "\n\nScenario Details:\n" + scenarioSummary : ""}
 ${patientDescription ? "\n\nPatient Description:\n" + patientDescription : ""}
 `.trim();
     }
 
-    // --- Build full message history for GPT ---
-    let messages = [{ role: "system", content: systemPrompt }];
+    const messages = [{ role: "system", content: systemPrompt }];
     if (Array.isArray(history)) {
       for (const h of history) {
-        if (h.role && h.content) {
-          messages.push({ role: h.role, content: h.content });
-        }
+        if (h.role && h.content) messages.push({ role: h.role, content: h.content });
       }
     }
     messages.push({ role: "user", content });
 
-    // --- Query GPT-4 Turbo ---
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages,
@@ -110,7 +106,7 @@ ${patientDescription ? "\n\nPatient Description:\n" + patientDescription : ""}
 
     const reply = completion.choices?.[0]?.message?.content?.trim() || "";
 
-    // --- Save to Firebase ---
+    // --- SAVE TO FIREBASE ---
     try {
       const db = admin.database();
       const logRef = db.ref(`gpt4turbo_logs/${scenarioId}`);
@@ -122,7 +118,7 @@ ${patientDescription ? "\n\nPatient Description:\n" + patientDescription : ""}
       };
       await logRef.push(logEntry);
     } catch (err) {
-      console.error("Firebase logging error:", err);
+      console.error("🔥 Firebase logging error:", err);
     }
 
     return {
@@ -130,7 +126,7 @@ ${patientDescription ? "\n\nPatient Description:\n" + patientDescription : ""}
       body: JSON.stringify({ reply })
     };
   } catch (err) {
-    console.error("GPT4 Turbo error:", err);
+    console.error("💥 GPT4 Turbo error:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: err.message || "Unknown error." })
