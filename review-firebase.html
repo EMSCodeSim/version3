@@ -1,139 +1,166 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Review & Edit Responses</title>
+  <title>Firebase Q/A Reviewer & Exporter</title>
   <style>
-    body { font-family: Arial; padding: 20px; background: #f5f5f5; }
-    textarea, input, select { width: 100%; padding: 5px; margin: 4px 0; }
-    .entry { background: white; padding: 15px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; }
-    button { margin: 5px 5px 10px 0; }
+    body { font-family: sans-serif; background: #f9fafc; margin: 0; padding: 2rem; }
+    #qa-table { border-collapse: collapse; width: 100%; }
+    #qa-table th, #qa-table td { border: 1px solid #ddd; padding: 8px; }
+    #qa-table th { background: #f3f3f3; }
+    tr.selected { background: #cfe7ff; }
+    .btn { padding: 6px 14px; border: none; background: #4285f4; color: #fff; border-radius: 5px; cursor: pointer; }
+    .btn:hover { background: #206bdb; }
+    .btn-delete { background: #e64b4b; }
+    .btn-delete:hover { background: #b90d0d; }
+    textarea { width: 90%; min-height: 40px; }
   </style>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
 <body>
+  <h2>Firebase Q/A Reviewer & Exporter</h2>
+  <div>
+    <label for="scenario-select"><b>Scenario:</b></label>
+    <select id="scenario-select"></select>
+    <button class="btn" onclick="downloadJson()">Export Visible as JSON</button>
+    <span id="status"></span>
+  </div>
+  <table id="qa-table"></table>
+  <script type="module">
+    // --- FILL IN YOUR CONFIG BELOW (from Firebase Console, Web App) ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-<h2>Response Editor</h2>
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "ems-code-sim-a315a.firebaseapp.com",
+      databaseURL: "https://ems-code-sim-a315a-default-rtdb.firebaseio.com",
+      projectId: "ems-code-sim-a315a",
+      storageBucket: "ems-code-sim-a315a.appspot.com",
+      messagingSenderId: "100284465695074997295",
+      appId: "YOUR_APP_ID"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-<button onclick="loadFirebase()">Load Firebase</button>
-<input type="text" id="netlifyUrl" placeholder="Netlify JSON URL">
-<button onclick="loadNetlify()">Load Netlify</button>
-<button onclick="loadBoth()">Load Both</button>
-<button onclick="removeDuplicates()">Remove Duplicates</button>
+    // UI elements
+    const table = document.getElementById('qa-table');
+    const scenarioSelect = document.getElementById('scenario-select');
+    const statusSpan = document.getElementById('status');
 
-<div id="container"></div>
+    let allLogs = {}; // All Q/A, { scenario: {key: {question,answer,...}} }
+    let currentScenario = null;
 
-<script>
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_DOMAIN",
-    databaseURL: "YOUR_DB_URL",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_BUCKET",
-    messagingSenderId: "YOUR_SENDER",
-    appId: "YOUR_APP"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-
-  const seen = new Set();
-
-  const skillOptions = [
-    "EMT-B-MED-1", "EMT-B-MED-2", "EMT-B-MED-3", "EMT-B-MED-4", "EMT-B-MED-5", "EMT-B-MED-6",
-    "EMT-B-MED-7", "EMT-B-MED-8", "EMT-B-MED-9", "EMT-B-MED-10", "EMT-B-MED-11", "EMT-B-MED-12",
-    "EMT-B-MED-13", "EMT-B-MED-14", "EMT-B-MED-15", "EMT-B-MED-16", "EMT-B-MED-17", "EMT-B-MED-18",
-    "EMT-B-MED-19", "EMT-B-MED-20", "EMT-B-MED-21", "EMT-B-MED-22", "EMT-B-MED-23", "EMT-B-MED-24",
-    "EMT-B-MED-25", "EMT-B-MED-26", "EMT-B-MED-27", "EMT-B-MED-28", "EMT-B-MED-29", "EMT-B-MED-30",
-    "EMT-B-MED-31", "EMT-B-MED-32"
-  ];
-
-  function createEntry(id, data, source = "firebase") {
-    const key = data.question?.toLowerCase()?.trim();
-    if (!key || seen.has(key)) return;
-    seen.add(key);
-
-    const container = document.getElementById("container");
-    const div = document.createElement("div");
-    div.className = "entry";
-
-    div.innerHTML = `
-      <b>ID:</b> ${id}<br>
-      <b>Source:</b> ${source}<br>
-      <label>Question:<textarea class="q">${data.question || ""}</textarea></label>
-      <label>Answer:<textarea class="a">${data.answer || ""}</textarea></label>
-      <label>Tags:<input class="tags" value="${(data.tags || []).join(", ")}"></label>
-      <label>Role:
-        <select class="role">
-          <option ${data.role === "patient" ? "selected" : ""}>patient</option>
-          <option ${data.role === "proctor" ? "selected" : ""}>proctor</option>
-        </select>
-      </label>
-      <label>SkillSheetID:
-        <select class="skill">
-          ${skillOptions.map(opt => `<option value="${opt}" ${data.skillSheetID === opt ? "selected" : ""}>${opt}</option>`).join("")}
-        </select>
-      </label>
-      <button onclick="saveToFirebase('${id}', this)">Save to Firebase</button>
-    `;
-
-    container.appendChild(div);
-  }
-
-  function loadFirebase() {
-    db.ref("gpt4turbo_logs").once("value").then(snapshot => {
-      const data = snapshot.val();
-      if (!data) return alert("No data in Firebase.");
-      Object.entries(data).forEach(([id, val]) => createEntry(id, val, "firebase"));
+    // 1. Load scenario list
+    function loadScenarioList() {
+      const logsRef = ref(db, 'gpt4turbo_logs');
+      onValue(logsRef, (snap) => {
+        allLogs = snap.val() || {};
+        scenarioSelect.innerHTML = '';
+        Object.keys(allLogs).forEach(sc => {
+          const opt = document.createElement('option');
+          opt.value = sc;
+          opt.textContent = sc;
+          scenarioSelect.appendChild(opt);
+        });
+        if (!currentScenario || !allLogs[currentScenario]) {
+          currentScenario = Object.keys(allLogs)[0] || null;
+        }
+        scenarioSelect.value = currentScenario;
+        loadTable();
+      });
+    }
+    scenarioSelect.addEventListener('change', () => {
+      currentScenario = scenarioSelect.value;
+      loadTable();
     });
-  }
 
-  function loadNetlify() {
-    const url = document.getElementById("netlifyUrl").value;
-    if (!url) return alert("Enter a valid Netlify JSON URL.");
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        Object.entries(data).forEach(([id, val]) => createEntry(id, val, "netlify"));
-      })
-      .catch(err => alert("Netlify fetch failed: " + err));
-  }
-
-  function loadBoth() {
-    loadFirebase();
-    loadNetlify();
-  }
-
-  function saveToFirebase(id, btn) {
-    const entry = btn.parentElement;
-    const question = entry.querySelector(".q").value.trim();
-    const answer = entry.querySelector(".a").value.trim();
-    const tags = entry.querySelector(".tags").value.split(",").map(t => t.trim());
-    const role = entry.querySelector(".role").value;
-    const skill = entry.querySelector(".skill").value;
-
-    if (!question || !answer) return alert("Missing question or answer.");
-    const newData = { question, answer, tags, role, skillSheetID: skill };
-
-    db.ref("gpt4turbo_logs").child(id).set(newData).then(() => {
-      alert("Saved to Firebase.");
-    });
-  }
-
-  function removeDuplicates() {
-    const unique = new Set();
-    const entries = document.querySelectorAll(".entry");
-    entries.forEach(div => {
-      const question = div.querySelector(".q").value.toLowerCase().trim();
-      if (unique.has(question)) {
-        div.remove();
-      } else {
-        unique.add(question);
+    // 2. Load Q/A table for selected scenario
+    function loadTable() {
+      table.innerHTML = '';
+      if (!currentScenario || !allLogs[currentScenario]) {
+        table.innerHTML = '<tr><td>No Q/A found for this scenario.</td></tr>';
+        return;
       }
-    });
-    alert("Duplicates removed.");
-  }
-</script>
+      const keys = Object.keys(allLogs[currentScenario]);
+      table.innerHTML = `<tr>
+        <th>#</th>
+        <th>Question</th>
+        <th>Answer</th>
+        <th>Role</th>
+        <th>Time</th>
+        <th>Edit</th>
+        <th>Delete</th>
+      </tr>`;
+      keys.forEach((k, idx) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${idx+1}</td>
+          <td><textarea onchange="markDirty('${k}', 'question', this.value)">${allLogs[currentScenario][k].question||''}</textarea></td>
+          <td><textarea onchange="markDirty('${k}', 'answer', this.value)">${allLogs[currentScenario][k].answer||''}</textarea></td>
+          <td>${allLogs[currentScenario][k].role||''}</td>
+          <td>${formatTime(allLogs[currentScenario][k].timestamp||0)}</td>
+          <td><button class="btn" onclick="saveRow('${k}')">Save</button></td>
+          <td><button class="btn btn-delete" onclick="deleteRow('${k}')">X</button></td>
+        `;
+        table.appendChild(row);
+      });
+    }
 
+    // 3. Edit/save/delete helpers
+    window.markDirty = function(key, field, value) {
+      if (!allLogs[currentScenario][key]._dirty) allLogs[currentScenario][key]._dirty = {};
+      allLogs[currentScenario][key]._dirty[field] = value;
+    }
+    window.saveRow = function(key) {
+      const row = allLogs[currentScenario][key];
+      if (!row._dirty) return;
+      const updates = {};
+      if (row._dirty.question !== undefined) updates['question'] = row._dirty.question;
+      if (row._dirty.answer !== undefined) updates['answer'] = row._dirty.answer;
+      if (Object.keys(updates).length) {
+        const rowRef = ref(db, `gpt4turbo_logs/${currentScenario}/${key}`);
+        update(rowRef, updates).then(() => {
+          statusSpan.textContent = "Saved!";
+          setTimeout(()=>statusSpan.textContent="", 1200);
+        });
+      }
+      delete row._dirty;
+    }
+    window.deleteRow = function(key) {
+      if (!confirm("Delete this entry?")) return;
+      const rowRef = ref(db, `gpt4turbo_logs/${currentScenario}/${key}`);
+      remove(rowRef).then(() => {
+        statusSpan.textContent = "Deleted!";
+        setTimeout(()=>statusSpan.textContent="", 1200);
+      });
+    }
+
+    // 4. Export visible as JSON
+    window.downloadJson = function() {
+      if (!currentScenario || !allLogs[currentScenario]) return;
+      const arr = Object.values(allLogs[currentScenario]).map(entry => ({
+        question: entry.question,
+        answer: entry.answer,
+        role: entry.role || "",
+        timestamp: entry.timestamp || 0
+      }));
+      const blob = new Blob([JSON.stringify(arr, null, 2)], {type: "application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentScenario}_qa.json`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+    }
+
+    function formatTime(ts) {
+      if (!ts) return "";
+      const d = new Date(ts);
+      return d.toLocaleString();
+    }
+
+    // On load
+    loadScenarioList();
+  </script>
 </body>
 </html>
