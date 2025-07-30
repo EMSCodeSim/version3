@@ -1,74 +1,81 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>EMS Log Viewer</title>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    button { margin: 6px; padding: 6px 12px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #ccc; padding: 8px; }
-    th { background-color: #f2f2f2; }
-  </style>
+  <title>Load Netlify + Firebase</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 </head>
-<body>
-  <h2>EMS Simulator Log Viewer</h2>
-  <button onclick="loadNetlify()">Load Netlify (All 3)</button>
+<body style="font-family:sans-serif;">
+  <h2>Combined Entry Loader</h2>
+
+  <button onclick="loadNetlify()">Load All 3 Netlify Files</button>
   <button onclick="loadFirebase()">Load Firebase</button>
-  <button onclick="mergeAll()">Merge All</button>
-  <br/>
-  <label for="scenarioSelect">Select Source:</label>
-  <select id="scenarioSelect" onchange="renderTable()"></select>
-  <div id="entryCount"></div>
-  <table id="dataTable">
-    <thead><tr><th>#</th><th>Question</th><th>Answer</th><th>Role</th><th>Timestamp</th></tr></thead>
-    <tbody></tbody>
-  </table>
+  <button onclick="mergeAll()">Merge Databases</button>
+
+  <h3 id="totalCount">Total entries: 0</h3>
+  <ul id="output"></ul>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyD2cJqczkThLhM_AqA9XpNhyMbqVo8Va9k",
-      authDomain: "ems-sim-prod.firebaseapp.com",
-      databaseURL: "https://ems-sim-prod-default-rtdb.firebaseio.com",
-      projectId: "ems-sim-prod",
-      storageBucket: "ems-sim-prod.appspot.com",
-      messagingSenderId: "536715798675",
-      appId: "1:536715798675:web:2b0ee7f77ec5a2d79cb4d2"
+    const logs = {
+      netlify: [],
+      firebase: [],
+      merged: []
     };
+
+    // Firebase Config (replace with yours if changed)
+    const firebaseConfig = {
+      apiKey: "AIzaSyA6XK9-u2zFiCMlqjV6P-bVG8DPJRXF5JE",
+      authDomain: "ems-code-sim-a315a.firebaseapp.com",
+      databaseURL: "https://ems-code-sim-a315a-default-rtdb.firebaseio.com",
+      projectId: "ems-code-sim-a315a",
+      storageBucket: "ems-code-sim-a315a.appspot.com",
+      messagingSenderId: "223469761761",
+      appId: "1:223469761761:web:c16118dbb2f429e5e6e346"
+    };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let logs = { netlify: [], firebase: [], merged: [] };
+    async function fetchNetlifyFile(url) {
+      const res = await fetch(url);
+      const json = await res.json();
+      return Object.values(json);
+    }
 
     async function loadNetlify() {
       const urls = [
-        'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json',
-        'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json',
-        'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json'
+        "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json",
+        "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json",
+        "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json"
       ];
       logs.netlify = [];
-      for (let url of urls) {
+      for (const url of urls) {
         try {
-          const res = await fetch(url);
-          const json = await res.json();
-          logs.netlify.push(...Object.values(json));
-        } catch (e) {
-          console.error("Netlify fetch failed", e);
+          const entries = await fetchNetlifyFile(url);
+          logs.netlify.push(...entries);
+        } catch (err) {
+          console.error("Netlify load failed:", url, err);
         }
       }
-      updateDropdown();
+      display(logs.netlify);
     }
 
     async function loadFirebase() {
       logs.firebase = [];
       try {
-        const snap = await db.ref('gpt4turbo_logs').get();
+        const snap = await db.ref("gpt4turbo_logs").get();
         const data = snap.val() || {};
-        for (const scenarioKey of Object.keys(data)) {
-          logs.firebase.push(...Object.values(data[scenarioKey]));
+        for (const scenarioKey in data) {
+          const entries = data[scenarioKey];
+          if (typeof entries === "object") {
+            Object.values(entries).forEach(entry => {
+              if (entry?.question && entry?.answer) {
+                logs.firebase.push(entry);
+              }
+            });
+          }
         }
-        updateDropdown();
+        display(logs.firebase);
       } catch (err) {
         console.error("Firebase load error:", err);
       }
@@ -76,39 +83,17 @@
 
     function mergeAll() {
       logs.merged = [...logs.netlify, ...logs.firebase];
-      updateDropdown();
+      display(logs.merged);
     }
 
-    function updateDropdown() {
-      const sel = document.getElementById("scenarioSelect");
-      sel.innerHTML = "";
-      for (const key of Object.keys(logs)) {
-        const opt = document.createElement("option");
-        opt.value = key;
-        opt.textContent = `${key} (${logs[key].length})`;
-        sel.appendChild(opt);
-      }
-      sel.value = Object.keys(logs)[0];
-      renderTable();
-    }
-
-    function renderTable() {
-      const key = document.getElementById("scenarioSelect").value;
-      const data = logs[key] || [];
-      const tbody = document.querySelector("#dataTable tbody");
-      const countBox = document.getElementById("entryCount");
-      tbody.innerHTML = "";
-      countBox.textContent = `Total entries: ${data.length}`;
-      data.forEach((entry, i) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${i + 1}</td>
-          <td>${entry.question || ""}</td>
-          <td>${entry.answer || ""}</td>
-          <td>${entry.role || ""}</td>
-          <td>${entry.timestamp ? new Date(entry.timestamp).toLocaleString() : ""}</td>
-        `;
-        tbody.appendChild(tr);
+    function display(data) {
+      const ul = document.getElementById("output");
+      ul.innerHTML = "";
+      document.getElementById("totalCount").innerText = "Total entries: " + data.length;
+      data.forEach(entry => {
+        const li = document.createElement("li");
+        li.innerHTML = `<b>Q:</b> ${entry.question}<br><b>A:</b> ${entry.answer}<br><b>Role:</b> ${entry.role || 'unknown'}<hr>`;
+        ul.appendChild(li);
       });
     }
   </script>
