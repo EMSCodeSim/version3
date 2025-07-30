@@ -1,28 +1,26 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Load Netlify + Firebase</title>
+  <title>Netlify + Firebase Editor</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    .entry { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
+    textarea, input { width: 100%; margin: 5px 0; }
+    button { margin-right: 10px; }
+  </style>
 </head>
-<body style="font-family:sans-serif;">
-  <h2>Combined Entry Loader</h2>
-
+<body>
+  <h2>Combined Netlify + Firebase Loader/Editor</h2>
   <button onclick="loadNetlify()">Load All 3 Netlify Files</button>
   <button onclick="loadFirebase()">Load Firebase</button>
   <button onclick="mergeAll()">Merge Databases</button>
-
   <h3 id="totalCount">Total entries: 0</h3>
-  <ul id="output"></ul>
+  <div id="output"></div>
 
   <script>
-    const logs = {
-      netlify: [],
-      firebase: [],
-      merged: []
-    };
-
-    // Firebase Config (replace with yours if changed)
+    const logs = { netlify: [], firebase: [], merged: [] };
     const firebaseConfig = {
       apiKey: "AIzaSyA6XK9-u2zFiCMlqjV6P-bVG8DPJRXF5JE",
       authDomain: "ems-code-sim-a315a.firebaseapp.com",
@@ -32,14 +30,13 @@
       messagingSenderId: "223469761761",
       appId: "1:223469761761:web:c16118dbb2f429e5e6e346"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
     async function fetchNetlifyFile(url) {
       const res = await fetch(url);
       const json = await res.json();
-      return Object.values(json);
+      return Object.entries(json).map(([key, val]) => ({ id: key, ...val, source: 'netlify' }));
     }
 
     async function loadNetlify() {
@@ -65,13 +62,13 @@
       try {
         const snap = await db.ref("gpt4turbo_logs").get();
         const data = snap.val() || {};
-        for (const scenarioKey in data) {
-          const entries = data[scenarioKey];
-          if (typeof entries === "object") {
-            Object.values(entries).forEach(entry => {
-              if (entry?.question && entry?.answer) {
-                logs.firebase.push(entry);
-              }
+        for (const scenario in data) {
+          for (const key in data[scenario]) {
+            logs.firebase.push({
+              id: key,
+              scenario,
+              ...data[scenario][key],
+              source: 'firebase'
             });
           }
         }
@@ -87,14 +84,42 @@
     }
 
     function display(data) {
-      const ul = document.getElementById("output");
-      ul.innerHTML = "";
-      document.getElementById("totalCount").innerText = "Total entries: " + data.length;
-      data.forEach(entry => {
-        const li = document.createElement("li");
-        li.innerHTML = `<b>Q:</b> ${entry.question}<br><b>A:</b> ${entry.answer}<br><b>Role:</b> ${entry.role || 'unknown'}<hr>`;
-        ul.appendChild(li);
+      const output = document.getElementById("output");
+      output.innerHTML = "";
+      document.getElementById("totalCount").innerText = `Total entries: ${data.length}`;
+      data.forEach((entry, i) => {
+        const div = document.createElement("div");
+        div.className = "entry";
+        div.innerHTML = `
+          <label>Question:</label>
+          <textarea id="q${i}">${entry.question || ""}</textarea>
+          <label>Answer:</label>
+          <textarea id="a${i}">${entry.answer || ""}</textarea>
+          <label>Role:</label>
+          <input id="r${i}" value="${entry.role || "unknown"}" />
+          <button onclick="saveEntry(${i})">Save</button>
+          ${entry.source === 'firebase' ? `<button onclick="deleteEntry('${entry.scenario}', '${entry.id}')">Delete</button>` : ''}
+        `;
+        output.appendChild(div);
       });
+    }
+
+    function saveEntry(index) {
+      const entry = logs.merged[index];
+      const question = document.getElementById(`q${index}`).value;
+      const answer = document.getElementById(`a${index}`).value;
+      const role = document.getElementById(`r${index}`).value;
+      if (entry.source === 'firebase') {
+        db.ref(`gpt4turbo_logs/${entry.scenario}/${entry.id}`).update({ question, answer, role });
+        alert("Firebase entry updated.");
+      } else {
+        alert("Netlify data is read-only.");
+      }
+    }
+
+    function deleteEntry(scenario, id) {
+      db.ref(`gpt4turbo_logs/${scenario}/${id}`).remove();
+      alert("Firebase entry deleted.");
     }
   </script>
 </body>
