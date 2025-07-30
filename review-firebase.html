@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>EMS Review Viewer</title>
+  <title>EMS Combined Review Viewer</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
@@ -9,20 +9,15 @@
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
     th { background-color: #f0f0f0; }
-    select { margin: 10px 0; padding: 5px; }
-    textarea { width: 100%; height: 60px; }
-    button { margin: 5px; padding: 6px 12px; }
+    select, button { margin: 10px 5px; padding: 5px; }
     .count { font-weight: bold; margin-top: 10px; }
   </style>
 </head>
 <body>
-  <h2>GPT Review Viewer</h2>
-  <span id="status">Initializing...</span><br>
-  <button onclick="loadFirebase()">Load Firebase Only</button>
-  <button onclick="loadNetlify()">Load Netlify Only</button>
-  <button onclick="loadAllSources()">Load Firebase + Netlify</button>
-  <br><br>
-  <label for="scenarioSelect">Choose Scenario:</label>
+  <h2>Combined GPT Review Viewer</h2>
+  <button onclick="loadAllCombined()">Load Firebase + Netlify (Combined)</button>
+  <span id="status">Idle...</span><br><br>
+  <label for="scenarioSelect">Scenario:</label>
   <select id="scenarioSelect" onchange="changeScenario()"></select>
   <div class="count" id="entryCount"></div>
   <table id="logTable">
@@ -53,88 +48,54 @@
   let allLogs = {};
   let currentScenario = "";
 
-  async function loadFirebase() {
-    document.getElementById("status").textContent = "Loading Firebase...";
-    const snap = await db.ref("gpt4turbo_logs").get();
-    allLogs = snap.val() || {};
-    populateScenarioDropdown();
-    document.getElementById("status").textContent = "Loaded Firebase";
-  }
-
-  async function loadNetlify() {
-    document.getElementById("status").textContent = "Loading Netlify...";
+  async function loadAllCombined() {
+    document.getElementById("status").textContent = "Loading Firebase + Netlify...";
     allLogs = {};
-    const urls = [
-      { url: 'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json', label: 'chest_pain_002_part1' },
-      { url: 'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json', label: 'chest_pain_002_part2' },
-      { url: 'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json', label: 'chest_pain_002_part3' }
-    ];
-    for (const { url, label } of urls) {
-      const res = await fetch(url);
-      const json = await res.json();
-      allLogs[label] = json;
-    }
-    populateScenarioDropdown();
-    document.getElementById("status").textContent = "Loaded Netlify";
-  }
 
-  async function loadAllSources() {
-    document.getElementById("status").textContent = "Loading all sources...";
-    allLogs = {};
-    document.getElementById("scenarioSelect").innerHTML = "";
+    let combined = [];
 
-    // Firebase
+    // 1. Load Firebase
     try {
       const snap = await db.ref("gpt4turbo_logs").get();
       const firebaseData = snap.val() || {};
-      for (const [scenario, data] of Object.entries(firebaseData)) {
-        allLogs[scenario] = data;
-        const opt = document.createElement("option");
-        opt.value = scenario;
-        opt.textContent = scenario;
-        scenarioSelect.appendChild(opt);
+      for (const scenario of Object.values(firebaseData)) {
+        combined.push(...Object.values(scenario));
       }
     } catch (e) {
-      console.error("Firebase error:", e);
+      console.error("Firebase load error:", e);
     }
 
-    // Netlify
+    // 2. Load Netlify part1/2/3
     const urls = [
-      { url: 'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json', label: 'chest_pain_002_part1' },
-      { url: 'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json', label: 'chest_pain_002_part2' },
-      { url: 'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json', label: 'chest_pain_002_part3' }
+      'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json',
+      'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json',
+      'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json'
     ];
-    for (const { url, label } of urls) {
+
+    for (const url of urls) {
       try {
         const res = await fetch(url);
         const json = await res.json();
-        allLogs[label] = json;
-        const opt = document.createElement("option");
-        opt.value = label;
-        opt.textContent = label;
-        scenarioSelect.appendChild(opt);
+        combined.push(...Object.values(json));
       } catch (e) {
-        console.error(`Failed to load ${label}:`, e);
+        console.error("Netlify load error:", e);
       }
     }
 
-    const first = Object.keys(allLogs)[0];
-    currentScenario = first;
-    scenarioSelect.value = first;
-    loadTable();
-    document.getElementById("status").textContent = "Loaded Firebase + Netlify";
+    // 3. Add to allLogs
+    allLogs["combined_all_sources"] = combined;
+    populateScenarioDropdown("combined_all_sources");
+    document.getElementById("status").textContent = `Loaded ${combined.length} entries from Firebase + Netlify`;
   }
 
-  function populateScenarioDropdown() {
+  function populateScenarioDropdown(scenarioKey) {
     const select = document.getElementById("scenarioSelect");
     select.innerHTML = "";
-    for (const key of Object.keys(allLogs)) {
-      const opt = document.createElement("option");
-      opt.value = key;
-      opt.textContent = key;
-      select.appendChild(opt);
-    }
-    currentScenario = Object.keys(allLogs)[0];
+    const opt = document.createElement("option");
+    opt.value = scenarioKey;
+    opt.textContent = scenarioKey;
+    select.appendChild(opt);
+    currentScenario = scenarioKey;
     select.value = currentScenario;
     loadTable();
   }
@@ -147,8 +108,7 @@
   function loadTable() {
     const tbody = document.querySelector("#logTable tbody");
     tbody.innerHTML = "";
-    const data = allLogs[currentScenario] || {};
-    const entries = Object.values(data);
+    const entries = allLogs[currentScenario] || [];
     document.getElementById("entryCount").textContent = `Total entries: ${entries.length}`;
     for (const item of entries) {
       const row = document.createElement("tr");
@@ -161,8 +121,6 @@
       tbody.appendChild(row);
     }
   }
-
-  loadFirebase(); // Load Firebase by default
 </script>
 </body>
 </html>
