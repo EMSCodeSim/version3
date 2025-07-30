@@ -22,7 +22,7 @@
     <label for="scenario-select"><b>Scenario:</b></label>
     <select id="scenario-select"></select>
     <button class="btn" onclick="downloadJson()">Export Visible as JSON</button>
-    <button class="btn" onclick="loadAllSources()">Load Firebase + Netlify</button>
+    <button class="btn" id="loadAllBtn">Load Firebase + Netlify</button>
     <span id="status"></span>
   </div>
   <div id="entry-count"></div>
@@ -150,10 +150,10 @@
       allLogs = {};
       scenarioSelect.innerHTML = '';
 
-      // Load Firebase
+      // Load Firebase first
       try {
-        const firebaseSnap = await get(ref(db, 'gpt4turbo_logs'));
-        const firebaseData = firebaseSnap.val() || {};
+        const snap = await get(ref(db, 'gpt4turbo_logs'));
+        const firebaseData = snap.val() || {};
         Object.assign(allLogs, firebaseData);
         Object.keys(firebaseData).forEach(sc => {
           const opt = document.createElement('option');
@@ -163,11 +163,10 @@
         });
       } catch (e) {
         console.error("Firebase error:", e);
-        statusSpan.textContent = "Failed to load Firebase.";
-        return;
+        statusSpan.textContent = "Firebase failed.";
       }
 
-      // Load Netlify
+      // Then load Netlify
       const urls = [
         'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json',
         'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json',
@@ -186,19 +185,18 @@
         opt.textContent = "external_combined";
         scenarioSelect.appendChild(opt);
       } catch (err) {
-        console.error("Failed to load Netlify JSON:", err);
-        statusSpan.textContent = "Error loading Netlify data.";
-        return;
+        console.error("Netlify error:", err);
+        statusSpan.textContent = "Netlify failed.";
       }
 
-      currentScenario = Object.keys(allLogs)[0] || "external_combined";
+      currentScenario = Object.keys(allLogs)[0];
       scenarioSelect.value = currentScenario;
       loadTable();
       statusSpan.textContent = "Loaded Firebase + Netlify.";
     }
 
-    // Auto-load on page open
-    loadAllSources();
+    // Attach event on button
+    document.getElementById("loadAllBtn").addEventListener("click", loadAllSources);
   </script>
 </body>
 </html>
