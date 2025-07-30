@@ -1,140 +1,139 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Review Responses</title>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <title>Review & Edit Responses</title>
   <style>
-    body { font-family: Arial; padding: 10px; background: #f0f0f0; }
-    button { margin: 5px; }
-    textarea { width: 100%; height: 60px; }
-    select, input { width: 100%; margin-top: 5px; }
-    .entry { background: white; padding: 10px; margin: 10px 0; border-radius: 8px; box-shadow: 1px 1px 5px #ccc; }
+    body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+    textarea, input, select { width: 100%; padding: 5px; margin: 4px 0; }
+    .entry { background: white; padding: 15px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; }
+    button { margin: 5px 5px 10px 0; }
   </style>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
 <body>
-  <h2>Review Hardcoded Responses</h2>
-  <button onclick="loadFirebase()">Load Firebase</button>
-  <button onclick="loadNetlify()">Load Netlify</button>
-  <button onclick="loadBoth()">Load Both</button>
-  <button onclick="removeDuplicates()">Remove Duplicates</button>
-  <input type="text" id="netlifyFolder" placeholder="e.g., chest_pain_002">
-  <div id="output"></div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyCEXAMPLEKEY123",
-      authDomain: "yourapp.firebaseapp.com",
-      databaseURL: "https://yourapp.firebaseio.com",
-      projectId: "yourapp",
-      storageBucket: "yourapp.appspot.com",
-      messagingSenderId: "123456789",
-      appId: "1:123456789:web:abc123"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+<h2>Response Editor</h2>
 
-    const seenKeys = new Set();
+<button onclick="loadFirebase()">Load Firebase</button>
+<input type="text" id="netlifyUrl" placeholder="Netlify JSON URL">
+<button onclick="loadNetlify()">Load Netlify</button>
+<button onclick="loadBoth()">Load Both</button>
+<button onclick="removeDuplicates()">Remove Duplicates</button>
 
-    function createEntry(id, data, source = "firebase") {
-      if (seenKeys.has(data.question + data.answer)) return;
-      seenKeys.add(data.question + data.answer);
+<div id="container"></div>
 
-      const div = document.createElement("div");
-      div.className = "entry";
-      div.innerHTML = `
-        <strong>Source:</strong> ${source}<br>
-        <label>Question:</label><textarea>${data.question || ""}</textarea>
-        <label>Answer:</label><textarea>${data.answer || ""}</textarea>
-        <label>Tags (comma-separated):</label><input value="${(data.tags || []).join(", ")}">
-        <label>Role:</label>
-        <select>
+<script>
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_DOMAIN",
+    databaseURL: "YOUR_DB_URL",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_BUCKET",
+    messagingSenderId: "YOUR_SENDER",
+    appId: "YOUR_APP"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const seen = new Set();
+
+  const skillOptions = [
+    "EMT-B-MED-1", "EMT-B-MED-2", "EMT-B-MED-3", "EMT-B-MED-4", "EMT-B-MED-5", "EMT-B-MED-6",
+    "EMT-B-MED-7", "EMT-B-MED-8", "EMT-B-MED-9", "EMT-B-MED-10", "EMT-B-MED-11", "EMT-B-MED-12",
+    "EMT-B-MED-13", "EMT-B-MED-14", "EMT-B-MED-15", "EMT-B-MED-16", "EMT-B-MED-17", "EMT-B-MED-18",
+    "EMT-B-MED-19", "EMT-B-MED-20", "EMT-B-MED-21", "EMT-B-MED-22", "EMT-B-MED-23", "EMT-B-MED-24",
+    "EMT-B-MED-25", "EMT-B-MED-26", "EMT-B-MED-27", "EMT-B-MED-28", "EMT-B-MED-29", "EMT-B-MED-30",
+    "EMT-B-MED-31", "EMT-B-MED-32"
+  ];
+
+  function createEntry(id, data, source = "firebase") {
+    const key = data.question?.toLowerCase()?.trim();
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+
+    const container = document.getElementById("container");
+    const div = document.createElement("div");
+    div.className = "entry";
+
+    div.innerHTML = `
+      <b>ID:</b> ${id}<br>
+      <b>Source:</b> ${source}<br>
+      <label>Question:<textarea class="q">${data.question || ""}</textarea></label>
+      <label>Answer:<textarea class="a">${data.answer || ""}</textarea></label>
+      <label>Tags:<input class="tags" value="${(data.tags || []).join(", ")}"></label>
+      <label>Role:
+        <select class="role">
           <option ${data.role === "patient" ? "selected" : ""}>patient</option>
           <option ${data.role === "proctor" ? "selected" : ""}>proctor</option>
         </select>
-        <label>SkillSheet ID:</label>
-        <select>
-          ${Array.from({length: 32}, (_, i) => {
-            const n = i + 1;
-            const id = `EMT-B-MED-${n}`;
-            const label = {
-              1: "BSI/PPE", 2: "Scene Safety", 3: "Determine MOI/NOI", 4: "Determine Number of Patients", 5: "Request Additional EMS Assistance",
-              6: "Consider C-Spine Stabilization", 7: "General Impression", 8: "Determine Responsiveness/LOC", 9: "Determine Chief Complaint",
-              10: "Assess Airway/Breathing", 11: "Initiate Oxygen Therapy", 12: "Assess Circulation", 13: "Identify Priority & Transport",
-              14: "OPQRST - Onset", 15: "Provocation", 16: "Quality", 17: "Radiation", 18: "Severity", 19: "Time",
-              20: "SAMPLE - Signs/Symptoms", 21: "Allergies", 22: "Medications", 23: "Past Medical History", 24: "Last Oral Intake",
-              25: "Events Leading to Present Illness", 26: "Assess Affected Body/System", 27: "Vital Signs - BP", 28: "Heart Rate",
-              29: "Respiratory Rate", 30: "Field Impression", 31: "Interventions", 32: "Reassess"
-            }[n];
-            return `<option value="${id}" ${data.skillSheetID === id ? "selected" : ""}>${id} - ${label}</option>`;
-          }).join("")}
-        </select><br>
-        <button onclick="deleteEntry('${id}')">Delete</button>
-        <button onclick="saveEntry(this, '${id}')">Save</button>
-      `;
-      document.getElementById("output").appendChild(div);
-    }
+      </label>
+      <label>SkillSheetID:
+        <select class="skill">
+          ${skillOptions.map(opt => `<option value="${opt}" ${data.skillSheetID === opt ? "selected" : ""}>${opt}</option>`).join("")}
+        </select>
+      </label>
+      <button onclick="saveToFirebase('${id}', this)">Save to Firebase</button>
+    `;
 
-    function loadFirebase() {
-      seenKeys.clear();
-      document.getElementById("output").innerHTML = "";
-      db.ref("gpt4turbo_logs").once("value", snap => {
-        const val = snap.val();
-        for (let id in val) createEntry(id, val[id], "firebase");
-      });
-    }
+    container.appendChild(div);
+  }
 
-    function loadNetlify() {
-      seenKeys.clear();
-      document.getElementById("output").innerHTML = "";
-      const folder = document.getElementById("netlifyFolder").value.trim();
-      if (!folder) return alert("Enter folder name (e.g., chest_pain_002)");
-      fetch(`https://emscodesim3.netlify.app/scenarios/${folder}/ems_database_part1.json`)
-        .then(res => res.json())
-        .then(data => {
-          Object.entries(data).forEach(([id, entry]) => createEntry(id, entry, "netlify"));
-        }).catch(err => alert("Failed to load Netlify JSON"));
-    }
+  function loadFirebase() {
+    db.ref("gpt4turbo_logs").once("value").then(snapshot => {
+      const data = snapshot.val();
+      if (!data) return alert("No data in Firebase.");
+      Object.entries(data).forEach(([id, val]) => createEntry(id, val, "firebase"));
+    });
+  }
 
-    function loadBoth() {
-      loadFirebase();
-      setTimeout(loadNetlify, 1000);
-    }
+  function loadNetlify() {
+    const url = document.getElementById("netlifyUrl").value;
+    if (!url) return alert("Enter a valid Netlify JSON URL.");
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        Object.entries(data).forEach(([id, val]) => createEntry(id, val, "netlify"));
+      })
+      .catch(err => alert("Netlify fetch failed: " + err));
+  }
 
-    function removeDuplicates() {
-      const seen = new Set();
-      const entries = [...document.querySelectorAll(".entry")];
-      entries.forEach(div => {
-        const q = div.querySelector("textarea").value.trim();
-        const a = div.querySelectorAll("textarea")[1].value.trim();
-        const key = q + a;
-        if (seen.has(key)) div.remove();
-        else seen.add(key);
-      });
-    }
+  function loadBoth() {
+    loadFirebase();
+    loadNetlify();
+  }
 
-    function saveEntry(btn, id) {
-      const div = btn.parentElement;
-      const [q, a] = div.querySelectorAll("textarea");
-      const tags = div.querySelector("input").value.split(",").map(x => x.trim());
-      const role = div.querySelectorAll("select")[0].value;
-      const skill = div.querySelectorAll("select")[1].value;
-      const data = {
-        question: q.value.trim(),
-        answer: a.value.trim(),
-        tags,
-        role,
-        skillSheetID: skill
-      };
-      db.ref("gpt4turbo_logs/" + id).set(data);
-      alert("Saved to Firebase");
-    }
+  function saveToFirebase(id, btn) {
+    const entry = btn.parentElement;
+    const question = entry.querySelector(".q").value.trim();
+    const answer = entry.querySelector(".a").value.trim();
+    const tags = entry.querySelector(".tags").value.split(",").map(t => t.trim());
+    const role = entry.querySelector(".role").value;
+    const skill = entry.querySelector(".skill").value;
 
-    function deleteEntry(id) {
-      db.ref("gpt4turbo_logs/" + id).remove();
-      alert("Deleted from Firebase");
-    }
-  </script>
+    if (!question || !answer) return alert("Missing question or answer.");
+    const newData = { question, answer, tags, role, skillSheetID: skill };
+
+    db.ref("gpt4turbo_logs").child(id).set(newData).then(() => {
+      alert("Saved to Firebase.");
+    });
+  }
+
+  function removeDuplicates() {
+    const unique = new Set();
+    const entries = document.querySelectorAll(".entry");
+    entries.forEach(div => {
+      const question = div.querySelector(".q").value.toLowerCase().trim();
+      if (unique.has(question)) {
+        div.remove();
+      } else {
+        unique.add(question);
+      }
+    });
+    alert("Duplicates removed.");
+  }
+</script>
+
 </body>
 </html>
