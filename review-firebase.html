@@ -16,6 +16,7 @@
   <button onclick="loadNetlify()">Load All 3 Netlify Files</button>
   <button onclick="loadFirebase()">Load Firebase</button>
   <button onclick="mergeAll()">Merge Databases</button>
+  <button onclick="downloadMerged()">Save to Hard Drive</button>
   <h3 id="totalCount">Total entries: 0</h3>
   <div id="output"></div>
 
@@ -34,15 +35,40 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const skillOptions = [
-      "EMT-B-MED-1", "EMT-B-MED-2", "EMT-B-MED-3", "EMT-B-MED-4", "EMT-B-MED-5",
-      "EMT-B-MED-6", "EMT-B-MED-7", "EMT-B-MED-8", "EMT-B-MED-9", "EMT-B-MED-10",
-      "EMT-B-MED-11", "EMT-B-MED-12", "EMT-B-MED-13", "EMT-B-MED-14", "EMT-B-MED-15",
-      "EMT-B-MED-16", "EMT-B-MED-17", "EMT-B-MED-18", "EMT-B-MED-19", "EMT-B-MED-20",
-      "EMT-B-MED-21", "EMT-B-MED-22", "EMT-B-MED-23", "EMT-B-MED-24", "EMT-B-MED-25",
-      "EMT-B-MED-26", "EMT-B-MED-27", "EMT-B-MED-28", "EMT-B-MED-29", "EMT-B-MED-30",
-      "EMT-B-MED-31", "EMT-B-MED-32"
-    ];
+    const skillMap = {
+      "EMT-B-MED-1": "BSI/PPE",
+      "EMT-B-MED-2": "Scene Safety",
+      "EMT-B-MED-3": "Determine MOI/NOI",
+      "EMT-B-MED-4": "Determine Number of Patients",
+      "EMT-B-MED-5": "Request Additional EMS Assistance",
+      "EMT-B-MED-6": "Consider C-Spine Stabilization",
+      "EMT-B-MED-7": "General Impression",
+      "EMT-B-MED-8": "Determine Responsiveness/LOC",
+      "EMT-B-MED-9": "Determine Chief Complaint",
+      "EMT-B-MED-10": "Assess Airway/Breathing",
+      "EMT-B-MED-11": "Initiate Oxygen Therapy",
+      "EMT-B-MED-12": "Assess Circulation (Pulse, Skin, Bleeding)",
+      "EMT-B-MED-13": "Identify Patient Priority & Transport Decision",
+      "EMT-B-MED-14": "OPQRST - Onset",
+      "EMT-B-MED-15": "Provocation",
+      "EMT-B-MED-16": "Quality",
+      "EMT-B-MED-17": "Radiation",
+      "EMT-B-MED-18": "Severity",
+      "EMT-B-MED-19": "Time",
+      "EMT-B-MED-20": "SAMPLE - Signs/Symptoms",
+      "EMT-B-MED-21": "Allergies",
+      "EMT-B-MED-22": "Medications",
+      "EMT-B-MED-23": "Past Medical History",
+      "EMT-B-MED-24": "Last Oral Intake",
+      "EMT-B-MED-25": "Events Leading to Present Illness",
+      "EMT-B-MED-26": "Assess Affected Body/System",
+      "EMT-B-MED-27": "Vital Signs - BP",
+      "EMT-B-MED-28": "Heart Rate",
+      "EMT-B-MED-29": "Respiratory Rate",
+      "EMT-B-MED-30": "Field Impression of Patient",
+      "EMT-B-MED-31": "Interventions",
+      "EMT-B-MED-32": "Demonstrate How & When to Reassess"
+    };
 
     async function fetchNetlifyFile(url) {
       const res = await fetch(url);
@@ -104,7 +130,7 @@
 
         const skillDropdown = `<select id="s${i}">
           <option value="">-- Select skillSheetID --</option>
-          ${skillOptions.map(id => `<option value="${id}" ${entry.skillSheetID === id ? 'selected' : ''}>${id}</option>`).join("")}
+          ${Object.entries(skillMap).map(([id, label]) => `<option value="${id}" ${entry.skillSheetID === id ? 'selected' : ''}>${label}</option>`).join("")}
         </select>`;
 
         div.innerHTML = `
@@ -128,7 +154,7 @@
       const question = document.getElementById(`q${index}`).value;
       const answer = document.getElementById(`a${index}`).value;
       const role = document.getElementById(`r${index}`).value;
-      const skillSheetID = document.getElementById(`s${index}`).value;
+      const skillSheetID = Object.keys(skillMap).find(id => skillMap[id] === document.getElementById(`s${index}`).options[document.getElementById(`s${index}`).selectedIndex].text);
       if (entry.source === 'firebase') {
         db.ref(`gpt4turbo_logs/${entry.scenario}/${entry.id}`).update({ question, answer, role, skillSheetID });
         alert("Firebase entry updated.");
@@ -140,6 +166,16 @@
     function deleteEntry(scenario, id) {
       db.ref(`gpt4turbo_logs/${scenario}/${id}`).remove();
       alert("Firebase entry deleted.");
+    }
+
+    function downloadMerged() {
+      const blob = new Blob([JSON.stringify(logs.merged, null, 2)], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'merged_database.json';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   </script>
 </body>
