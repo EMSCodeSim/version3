@@ -1,126 +1,116 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Netlify + Firebase Editor</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <title>Database Entry Editor</title>
   <style>
-    body { font-family: sans-serif; margin: 20px; }
+    body { font-family: Arial; }
     .entry { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
-    textarea, input { width: 100%; margin: 5px 0; }
-    button { margin-right: 10px; }
+    select, input { margin-top: 5px; }
+    button { margin-right: 5px; }
   </style>
 </head>
 <body>
-  <h2>Combined Netlify + Firebase Loader/Editor</h2>
-  <button onclick="loadNetlify()">Load All 3 Netlify Files</button>
-  <button onclick="loadFirebase()">Load Firebase</button>
-  <button onclick="mergeAll()">Merge Databases</button>
-  <h3 id="totalCount">Total entries: 0</h3>
-  <div id="output"></div>
+  <h1>EMS Database Entries</h1>
+  <div id="entryContainer"></div>
 
-  <script>
-    const logs = { netlify: [], firebase: [], merged: [] };
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getDatabase, ref, get, update, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
     const firebaseConfig = {
-      apiKey: "AIzaSyA6XK9-u2zFiCMlqjV6P-bVG8DPJRXF5JE",
-      authDomain: "ems-code-sim-a315a.firebaseapp.com",
-      databaseURL: "https://ems-code-sim-a315a-default-rtdb.firebaseio.com",
-      projectId: "ems-code-sim-a315a",
-      storageBucket: "ems-code-sim-a315a.appspot.com",
-      messagingSenderId: "223469761761",
-      appId: "1:223469761761:web:c16118dbb2f429e5e6e346"
+      databaseURL: "https://ems-code-sim-a315a-default-rtdb.firebaseio.com/"
     };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
 
-    async function fetchNetlifyFile(url) {
-      const res = await fetch(url);
-      const json = await res.json();
-      return Object.entries(json).map(([key, val]) => ({ id: key, ...val, source: 'netlify' }));
-    }
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-    async function loadNetlify() {
-      const urls = [
-        "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json",
-        "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json",
-        "https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json"
-      ];
-      logs.netlify = [];
-      for (const url of urls) {
-        try {
-          const entries = await fetchNetlifyFile(url);
-          logs.netlify.push(...entries);
-        } catch (err) {
-          console.error("Netlify load failed:", url, err);
-        }
+    const SKILLS = [
+      { id: "EMT-B-MED-1", label: "BSI/PPE" },
+      { id: "EMT-B-MED-2", label: "Scene Safety" },
+      { id: "EMT-B-MED-3", label: "Determine MOI/NOI" },
+      { id: "EMT-B-MED-4", label: "Determine Number of Patients" },
+      { id: "EMT-B-MED-5", label: "Request Additional EMS Assistance" },
+      { id: "EMT-B-MED-6", label: "Consider C-Spine Stabilization" },
+      { id: "EMT-B-MED-7", label: "General Impression" },
+      { id: "EMT-B-MED-8", label: "Determine Responsiveness/LOC" },
+      { id: "EMT-B-MED-9", label: "Determine Chief Complaint" },
+      { id: "EMT-B-MED-10", label: "Assess Airway/Breathing" },
+      { id: "EMT-B-MED-11", label: "Initiate Oxygen Therapy" },
+      { id: "EMT-B-MED-12", label: "Assess Circulation (Pulse, Skin, Bleeding)" },
+      { id: "EMT-B-MED-13", label: "Identify Patient Priority & Transport Decision" },
+      { id: "EMT-B-MED-14", label: "OPQRST - Onset" },
+      { id: "EMT-B-MED-15", label: "Provocation" },
+      { id: "EMT-B-MED-16", label: "Quality" },
+      { id: "EMT-B-MED-17", label: "Radiation" },
+      { id: "EMT-B-MED-18", label: "Severity" },
+      { id: "EMT-B-MED-19", label: "Time" },
+      { id: "EMT-B-MED-20", label: "SAMPLE - Signs/Symptoms" },
+      { id: "EMT-B-MED-21", label: "Allergies" },
+      { id: "EMT-B-MED-22", label: "Medications" },
+      { id: "EMT-B-MED-23", label: "Past Medical History" },
+      { id: "EMT-B-MED-24", label: "Last Oral Intake" },
+      { id: "EMT-B-MED-25", label: "Events Leading to Present Illness" },
+      { id: "EMT-B-MED-26", label: "Assess Affected Body/System" },
+      { id: "EMT-B-MED-27", label: "Vital Signs - BP" },
+      { id: "EMT-B-MED-28", label: "Heart Rate" },
+      { id: "EMT-B-MED-29", label: "Respiratory Rate" },
+      { id: "EMT-B-MED-30", label: "Field Impression of Patient" },
+      { id: "EMT-B-MED-31", label: "Interventions" },
+      { id: "EMT-B-MED-32", label: "Demonstrate How & When to Reassess" }
+    ];
+
+    async function loadEntries() {
+      const entriesRef = ref(db, 'gpt4turbo_logs/chest_pain_002');
+      const snapshot = await get(entriesRef);
+      const entries = snapshot.val();
+      const container = document.getElementById('entryContainer');
+      container.innerHTML = '';
+
+      if (!entries) {
+        container.innerText = 'No entries found.';
+        return;
       }
-      display(logs.netlify);
-    }
 
-    async function loadFirebase() {
-      logs.firebase = [];
-      try {
-        const snap = await db.ref("gpt4turbo_logs").get();
-        const data = snap.val() || {};
-        for (const scenario in data) {
-          for (const key in data[scenario]) {
-            logs.firebase.push({
-              id: key,
-              scenario,
-              ...data[scenario][key],
-              source: 'firebase'
-            });
-          }
-        }
-        display(logs.firebase);
-      } catch (err) {
-        console.error("Firebase load error:", err);
-      }
-    }
-
-    function mergeAll() {
-      logs.merged = [...logs.netlify, ...logs.firebase];
-      display(logs.merged);
-    }
-
-    function display(data) {
-      const output = document.getElementById("output");
-      output.innerHTML = "";
-      document.getElementById("totalCount").innerText = `Total entries: ${data.length}`;
-      data.forEach((entry, i) => {
-        const div = document.createElement("div");
-        div.className = "entry";
+      Object.entries(entries).forEach(([id, data]) => {
+        const div = document.createElement('div');
+        div.className = 'entry';
         div.innerHTML = `
-          <label>Question:</label>
-          <textarea id="q${i}">${entry.question || ""}</textarea>
-          <label>Answer:</label>
-          <textarea id="a${i}">${entry.answer || ""}</textarea>
-          <label>Role:</label>
-          <input id="r${i}" value="${entry.role || "unknown"}" />
-          <button onclick="saveEntry(${i})">Save</button>
-          ${entry.source === 'firebase' ? `<button onclick="deleteEntry('${entry.scenario}', '${entry.id}')">Delete</button>` : ''}
+          <b>Question:</b> <input value="${data.question || ''}" id="q-${id}"><br>
+          <b>Answer:</b> <input value="${data.answer || ''}" id="a-${id}"><br>
+          <b>Role:</b> <input value="${data.role || ''}" id="r-${id}"><br>
+          <b>Skill Sheet ID:</b>
+          <select id="s-${id}">
+            <option value="">-- Select Skill --</option>
+            ${SKILLS.map(skill => `<option value="${skill.id}" ${data.skillSheetID === skill.id ? 'selected' : ''}>${skill.label}</option>`).join('')}
+          </select><br>
+          <button onclick="saveEntry('${id}')">Save</button>
+          <button onclick="deleteEntry('${id}')">Delete</button>
         `;
-        output.appendChild(div);
+        container.appendChild(div);
       });
     }
 
-    function saveEntry(index) {
-      const entry = logs.merged[index];
-      const question = document.getElementById(`q${index}`).value;
-      const answer = document.getElementById(`a${index}`).value;
-      const role = document.getElementById(`r${index}`).value;
-      if (entry.source === 'firebase') {
-        db.ref(`gpt4turbo_logs/${entry.scenario}/${entry.id}`).update({ question, answer, role });
-        alert("Firebase entry updated.");
-      } else {
-        alert("Netlify data is read-only.");
-      }
-    }
+    window.saveEntry = async (id) => {
+      const question = document.getElementById(`q-${id}`).value;
+      const answer = document.getElementById(`a-${id}`).value;
+      const role = document.getElementById(`r-${id}`).value;
+      const skill = document.getElementById(`s-${id}`).value;
+      const entryRef = ref(db, `gpt4turbo_logs/chest_pain_002/${id}`);
 
-    function deleteEntry(scenario, id) {
-      db.ref(`gpt4turbo_logs/${scenario}/${id}`).remove();
-      alert("Firebase entry deleted.");
-    }
+      await update(entryRef, { question, answer, role, skillSheetID: skill });
+      alert('Entry saved.');
+    };
+
+    window.deleteEntry = async (id) => {
+      if (confirm('Are you sure you want to delete this entry?')) {
+        const entryRef = ref(db, `gpt4turbo_logs/chest_pain_002/${id}`);
+        await remove(entryRef);
+        alert('Entry deleted.');
+        loadEntries();
+      }
+    };
+
+    loadEntries();
   </script>
 </body>
 </html>
