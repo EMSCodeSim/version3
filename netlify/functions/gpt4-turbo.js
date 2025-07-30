@@ -28,15 +28,20 @@ exports.handler = async function(event, context) {
     const role = body.role;
     const history = Array.isArray(body.history) ? body.history : [];
 
-    // Fallback: use provided scenarioId or fallback to unknown
+    // Get scenarioId or fallback
     let scenarioId = body.scenarioId;
     if (!scenarioId) {
       if (event.path) {
-        scenarioId = event.path.split("/").pop(); // fallback: get last part of URL path
+        scenarioId = event.path.split("/").pop();
       }
       if (!scenarioId || scenarioId.length < 3) {
         scenarioId = "unknown_scenario";
       }
+    }
+
+    // ✅ Remove accidental "scenarios/" prefix if passed
+    if (scenarioId.startsWith("scenarios/")) {
+      scenarioId = scenarioId.replace("scenarios/", "");
     }
 
     if (!content || content.trim().length < 1) {
@@ -80,7 +85,7 @@ Initial Vitals:
 - Pain: ${patientData.vitals?.initial?.pain_scale || "N/A"}
 `.trim();
 
-    // Proctor or patient logic
+    // Proctor or patient prompt
     let systemPrompt = "";
     if ((role || "").toLowerCase().includes("proctor")) {
       systemPrompt = `
@@ -120,7 +125,7 @@ ${patientDescription ? "\n\nPatient Description:\n" + patientDescription : ""}
 
     const reply = completion.choices?.[0]?.message?.content?.trim() || "";
 
-    // ✅ Save to Firebase at correct location
+    // ✅ Write to correct Firebase location
     try {
       const db = admin.database();
       const logRef = db.ref(`gpt4turbo_logs/${scenarioId}`);
