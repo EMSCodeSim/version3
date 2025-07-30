@@ -13,6 +13,7 @@
     .btn-delete { background: #e64b4b; }
     .btn-delete:hover { background: #b90d0d; }
     textarea { width: 90%; min-height: 40px; }
+    #entry-count { margin-top: 10px; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -24,10 +25,12 @@
     <button class="btn" onclick="loadAllSources()">Load Firebase + Netlify</button>
     <span id="status"></span>
   </div>
+  <div id="entry-count"></div>
   <table id="qa-table"></table>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    import { getDatabase, ref, get, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
@@ -38,12 +41,14 @@
       messagingSenderId: "100284465695074997295",
       appId: "YOUR_APP_ID"
     };
+
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
     const table = document.getElementById('qa-table');
     const scenarioSelect = document.getElementById('scenario-select');
     const statusSpan = document.getElementById('status');
+    const entryCount = document.getElementById('entry-count');
 
     let allLogs = {};
     let currentScenario = null;
@@ -57,9 +62,11 @@
       table.innerHTML = '';
       if (!currentScenario || !allLogs[currentScenario]) {
         table.innerHTML = '<tr><td>No Q/A found for this scenario.</td></tr>';
+        entryCount.textContent = "Total Entries: 0";
         return;
       }
       const keys = Object.keys(allLogs[currentScenario]);
+      entryCount.textContent = `Total Entries: ${keys.length}`;
       table.innerHTML = `<tr>
         <th>#</th>
         <th>Question</th>
@@ -72,11 +79,11 @@
       keys.forEach((k, idx) => {
         const row = document.createElement('tr');
         row.innerHTML = `
-          <td>${idx+1}</td>
-          <td><textarea onchange="markDirty('${k}', 'question', this.value)">${allLogs[currentScenario][k].question||''}</textarea></td>
-          <td><textarea onchange="markDirty('${k}', 'answer', this.value)">${allLogs[currentScenario][k].answer||''}</textarea></td>
-          <td>${allLogs[currentScenario][k].role||''}</td>
-          <td>${formatTime(allLogs[currentScenario][k].timestamp||0)}</td>
+          <td>${idx + 1}</td>
+          <td><textarea onchange="markDirty('${k}', 'question', this.value)">${allLogs[currentScenario][k].question || ''}</textarea></td>
+          <td><textarea onchange="markDirty('${k}', 'answer', this.value)">${allLogs[currentScenario][k].answer || ''}</textarea></td>
+          <td>${allLogs[currentScenario][k].role || ''}</td>
+          <td>${formatTime(allLogs[currentScenario][k].timestamp || 0)}</td>
           <td><button class="btn" onclick="saveRow('${k}')">Save</button></td>
           <td><button class="btn btn-delete" onclick="deleteRow('${k}')">X</button></td>
         `;
@@ -84,12 +91,12 @@
       });
     }
 
-    window.markDirty = function(key, field, value) {
+    window.markDirty = function (key, field, value) {
       if (!allLogs[currentScenario][key]._dirty) allLogs[currentScenario][key]._dirty = {};
       allLogs[currentScenario][key]._dirty[field] = value;
-    }
+    };
 
-    window.saveRow = function(key) {
+    window.saveRow = function (key) {
       const row = allLogs[currentScenario][key];
       if (!row._dirty) return;
       const updates = {};
@@ -99,22 +106,22 @@
         const rowRef = ref(db, `gpt4turbo_logs/${currentScenario}/${key}`);
         update(rowRef, updates).then(() => {
           statusSpan.textContent = "Saved!";
-          setTimeout(()=>statusSpan.textContent="", 1200);
+          setTimeout(() => statusSpan.textContent = "", 1200);
         });
       }
       delete row._dirty;
-    }
+    };
 
-    window.deleteRow = function(key) {
+    window.deleteRow = function (key) {
       if (!confirm("Delete this entry?")) return;
       const rowRef = ref(db, `gpt4turbo_logs/${currentScenario}/${key}`);
       remove(rowRef).then(() => {
         statusSpan.textContent = "Deleted!";
-        setTimeout(()=>statusSpan.textContent="", 1200);
+        setTimeout(() => statusSpan.textContent = "", 1200);
       });
-    }
+    };
 
-    window.downloadJson = function() {
+    window.downloadJson = function () {
       if (!currentScenario || !allLogs[currentScenario]) return;
       const arr = Object.values(allLogs[currentScenario]).map(entry => ({
         question: entry.question,
@@ -122,7 +129,7 @@
         role: entry.role || "",
         timestamp: entry.timestamp || 0
       }));
-      const blob = new Blob([JSON.stringify(arr, null, 2)], {type: "application/json"});
+      const blob = new Blob([JSON.stringify(arr, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -130,7 +137,7 @@
       document.body.appendChild(a);
       a.click();
       setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
-    }
+    };
 
     function formatTime(ts) {
       if (!ts) return "";
@@ -143,20 +150,24 @@
       allLogs = {};
       scenarioSelect.innerHTML = '';
 
-      // 1. Load Firebase data
-      const logsRef = ref(db, 'gpt4turbo_logs');
-      const firebaseSnap = await new Promise(resolve => onValue(logsRef, resolve, { onlyOnce: true }));
-      const firebaseData = firebaseSnap.val() || {};
-      Object.assign(allLogs, firebaseData);
+      // Load Firebase
+      try {
+        const firebaseSnap = await get(ref(db, 'gpt4turbo_logs'));
+        const firebaseData = firebaseSnap.val() || {};
+        Object.assign(allLogs, firebaseData);
+        Object.keys(firebaseData).forEach(sc => {
+          const opt = document.createElement('option');
+          opt.value = sc;
+          opt.textContent = sc;
+          scenarioSelect.appendChild(opt);
+        });
+      } catch (e) {
+        console.error("Firebase error:", e);
+        statusSpan.textContent = "Failed to load Firebase.";
+        return;
+      }
 
-      Object.keys(firebaseData).forEach(sc => {
-        const opt = document.createElement('option');
-        opt.value = sc;
-        opt.textContent = sc;
-        scenarioSelect.appendChild(opt);
-      });
-
-      // 2. Load Netlify JSON
+      // Load Netlify
       const urls = [
         'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json',
         'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json',
@@ -170,7 +181,6 @@
           Object.assign(combinedExternal, json);
         }
         allLogs["external_combined"] = combinedExternal;
-
         const opt = document.createElement("option");
         opt.value = "external_combined";
         opt.textContent = "external_combined";
@@ -181,11 +191,9 @@
         return;
       }
 
-      // Set first scenario as default view
       currentScenario = Object.keys(allLogs)[0] || "external_combined";
       scenarioSelect.value = currentScenario;
       loadTable();
-
       statusSpan.textContent = "Loaded Firebase + Netlify.";
     }
 
