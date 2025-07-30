@@ -8,7 +8,7 @@
     #qa-table th, #qa-table td { border: 1px solid #ddd; padding: 8px; }
     #qa-table th { background: #f3f3f3; }
     tr.selected { background: #cfe7ff; }
-    .btn { padding: 6px 14px; border: none; background: #4285f4; color: #fff; border-radius: 5px; cursor: pointer; }
+    .btn { padding: 6px 14px; border: none; background: #4285f4; color: #fff; border-radius: 5px; cursor: pointer; margin-right: 10px; }
     .btn:hover { background: #206bdb; }
     .btn-delete { background: #e64b4b; }
     .btn-delete:hover { background: #b90d0d; }
@@ -21,11 +21,11 @@
     <label for="scenario-select"><b>Scenario:</b></label>
     <select id="scenario-select"></select>
     <button class="btn" onclick="downloadJson()">Export Visible as JSON</button>
+    <button class="btn" onclick="loadExternalJSON()">Load External JSON (Parts 1–3)</button>
     <span id="status"></span>
   </div>
   <table id="qa-table"></table>
   <script type="module">
-    // --- FILL IN YOUR CONFIG BELOW (from Firebase Console, Web App) ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
@@ -41,15 +41,13 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // UI elements
     const table = document.getElementById('qa-table');
     const scenarioSelect = document.getElementById('scenario-select');
     const statusSpan = document.getElementById('status');
 
-    let allLogs = {}; // All Q/A, { scenario: {key: {question,answer,...}} }
+    let allLogs = {};
     let currentScenario = null;
 
-    // 1. Load scenario list
     function loadScenarioList() {
       const logsRef = ref(db, 'gpt4turbo_logs');
       onValue(logsRef, (snap) => {
@@ -68,12 +66,12 @@
         loadTable();
       });
     }
+
     scenarioSelect.addEventListener('change', () => {
       currentScenario = scenarioSelect.value;
       loadTable();
     });
 
-    // 2. Load Q/A table for selected scenario
     function loadTable() {
       table.innerHTML = '';
       if (!currentScenario || !allLogs[currentScenario]) {
@@ -105,11 +103,11 @@
       });
     }
 
-    // 3. Edit/save/delete helpers
     window.markDirty = function(key, field, value) {
       if (!allLogs[currentScenario][key]._dirty) allLogs[currentScenario][key]._dirty = {};
       allLogs[currentScenario][key]._dirty[field] = value;
     }
+
     window.saveRow = function(key) {
       const row = allLogs[currentScenario][key];
       if (!row._dirty) return;
@@ -125,6 +123,7 @@
       }
       delete row._dirty;
     }
+
     window.deleteRow = function(key) {
       if (!confirm("Delete this entry?")) return;
       const rowRef = ref(db, `gpt4turbo_logs/${currentScenario}/${key}`);
@@ -134,7 +133,6 @@
       });
     }
 
-    // 4. Export visible as JSON
     window.downloadJson = function() {
       if (!currentScenario || !allLogs[currentScenario]) return;
       const arr = Object.values(allLogs[currentScenario]).map(entry => ({
@@ -159,7 +157,36 @@
       return d.toLocaleString();
     }
 
-    // On load
+    window.loadExternalJSON = async function() {
+      const urls = [
+        'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json',
+        'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json',
+        'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json'
+      ];
+      const combinedData = {};
+      try {
+        for (let url of urls) {
+          const res = await fetch(url);
+          const json = await res.json();
+          Object.assign(combinedData, json);
+        }
+        allLogs["external_combined"] = combinedData;
+        currentScenario = "external_combined";
+        if (![...scenarioSelect.options].some(o => o.value === "external_combined")) {
+          const opt = document.createElement("option");
+          opt.value = "external_combined";
+          opt.textContent = "external_combined";
+          scenarioSelect.appendChild(opt);
+        }
+        scenarioSelect.value = currentScenario;
+        loadTable();
+        statusSpan.textContent = "Loaded external parts 1–3.";
+      } catch (err) {
+        console.error("Error loading JSON parts:", err);
+        statusSpan.textContent = "Failed to load JSON parts.";
+      }
+    }
+
     loadScenarioList();
   </script>
 </body>
