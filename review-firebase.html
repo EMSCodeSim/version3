@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>EMS Combined Review Viewer</title>
+  <title>EMS Review Viewer</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
@@ -9,17 +9,23 @@
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
     th { background-color: #f0f0f0; }
-    select, button { margin: 10px 5px; padding: 5px; }
+    select, button { margin: 10px 5px; padding: 6px 12px; }
     .count { font-weight: bold; margin-top: 10px; }
   </style>
 </head>
 <body>
-  <h2>Combined GPT Review Viewer</h2>
-  <button onclick="loadAllCombined()">Load Firebase + Netlify (Combined)</button>
+  <h2>EMS GPT Review Viewer</h2>
+  <div>
+    <button onclick="loadFirebase()">Load Firebase</button>
+    <button onclick="loadNetlify()">Load Netlify (All 3 Parts)</button>
+    <button onclick="combineFirebaseAndNetlify()">Merge Firebase + Netlify</button>
+  </div>
   <span id="status">Idle...</span><br><br>
-  <label for="scenarioSelect">Scenario:</label>
+
+  <label for="scenarioSelect">Select Scenario:</label>
   <select id="scenarioSelect" onchange="changeScenario()"></select>
   <div class="count" id="entryCount"></div>
+
   <table id="logTable">
     <thead>
       <tr>
@@ -48,30 +54,60 @@
   let allLogs = {};
   let currentScenario = "";
 
-  async function loadAllCombined() {
-    document.getElementById("status").textContent = "Loading Firebase + Netlify...";
+  async function loadFirebase() {
+    document.getElementById("status").textContent = "Loading Firebase...";
+    const snap = await db.ref("gpt4turbo_logs").get();
+    const data = snap.val() || {};
     allLogs = {};
+    for (const [scenario, entries] of Object.entries(data)) {
+      allLogs[scenario] = Object.values(entries);
+    }
+    populateScenarioDropdown();
+    document.getElementById("status").textContent = "Loaded Firebase";
+  }
 
+  async function loadNetlify() {
+    document.getElementById("status").textContent = "Loading Netlify...";
+    const parts = [
+      { url: 'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json', label: 'netlify_part1' },
+      { url: 'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json', label: 'netlify_part2' },
+      { url: 'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json', label: 'netlify_part3' }
+    ];
+    allLogs = {};
+    for (const { url, label } of parts) {
+      try {
+        const res = await fetch(url);
+        const json = await res.json();
+        allLogs[label] = Object.values(json);
+      } catch (e) {
+        console.error(`Error loading ${label}`, e);
+      }
+    }
+    populateScenarioDropdown();
+    document.getElementById("status").textContent = "Loaded Netlify";
+  }
+
+  async function combineFirebaseAndNetlify() {
+    document.getElementById("status").textContent = "Combining Firebase + Netlify...";
     let combined = [];
 
-    // 1. Load Firebase
+    // Firebase
     try {
       const snap = await db.ref("gpt4turbo_logs").get();
-      const firebaseData = snap.val() || {};
-      for (const scenario of Object.values(firebaseData)) {
+      const data = snap.val() || {};
+      for (const scenario of Object.values(data)) {
         combined.push(...Object.values(scenario));
       }
     } catch (e) {
       console.error("Firebase load error:", e);
     }
 
-    // 2. Load Netlify part1/2/3
+    // Netlify
     const urls = [
       'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part1.json',
       'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part2.json',
       'https://emscodesim3.netlify.app/scenarios/chest_pain_002/ems_database_part3.json'
     ];
-
     for (const url of urls) {
       try {
         const res = await fetch(url);
@@ -82,20 +118,21 @@
       }
     }
 
-    // 3. Add to allLogs
-    allLogs["combined_all_sources"] = combined;
-    populateScenarioDropdown("combined_all_sources");
-    document.getElementById("status").textContent = `Loaded ${combined.length} entries from Firebase + Netlify`;
+    allLogs = { combined_all: combined };
+    populateScenarioDropdown("combined_all");
+    document.getElementById("status").textContent = "Loaded Firebase + Netlify";
   }
 
-  function populateScenarioDropdown(scenarioKey) {
+  function populateScenarioDropdown(selectKey = null) {
     const select = document.getElementById("scenarioSelect");
     select.innerHTML = "";
-    const opt = document.createElement("option");
-    opt.value = scenarioKey;
-    opt.textContent = scenarioKey;
-    select.appendChild(opt);
-    currentScenario = scenarioKey;
+    for (const key of Object.keys(allLogs)) {
+      const opt = document.createElement("option");
+      opt.value = key;
+      opt.textContent = key;
+      select.appendChild(opt);
+    }
+    currentScenario = selectKey || Object.keys(allLogs)[0];
     select.value = currentScenario;
     loadTable();
   }
@@ -108,9 +145,9 @@
   function loadTable() {
     const tbody = document.querySelector("#logTable tbody");
     tbody.innerHTML = "";
-    const entries = allLogs[currentScenario] || [];
-    document.getElementById("entryCount").textContent = `Total entries: ${entries.length}`;
-    for (const item of entries) {
+    const data = allLogs[currentScenario] || [];
+    document.getElementById("entryCount").textContent = `Total entries: ${data.length}`;
+    for (const item of data) {
       const row = document.createElement("tr");
       row.innerHTML = `
         <td>${item.question || ""}</td>
