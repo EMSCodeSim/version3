@@ -162,8 +162,6 @@ function speakOnce(text, voiceName = "", rate = 1.0, callback) {
 function logErrorToDatabase(errorInfo) {
   console.error("🔴", errorInfo);
 }
-
-// --- MAIN: Start Scenario ---
 async function startScenario(selectedId) {
   if (window.scenarioStarted) return;
   window.scenarioStarted = true;
@@ -173,7 +171,6 @@ async function startScenario(selectedId) {
   }
   showScenarioPicker(false);
 
-  // Show scenario title (both layouts)
   const scenarioTitle = document.getElementById('scenario-title');
   if (scenarioTitle) scenarioTitle.innerText = currentScenarioId.replace(/_/g, ' ').replace(/\d+$/, '').toUpperCase();
 
@@ -181,9 +178,29 @@ async function startScenario(selectedId) {
   try {
     if (spinner) spinner.style.display = "block";
 
-    // Load hardcoded and vector DB
-    await loadHardcodedResponses(currentScenarioPath);
-    await loadVectorDb(currentScenarioPath);
+    let localFileUsed = false;
+
+    // Try loading from local hard drive
+    try {
+      const localPath = 'file:///C:/ems/merged_database.json';
+      const localRes = await fetch(localPath);
+      if (localRes.ok) {
+        const localData = await localRes.json();
+        await loadHardcodedResponses(null, localData); // Add support in router.js if needed
+        await loadVectorDb(null, localData);
+        displayChatPair("", "📁 Loaded from local file", "system");
+        localFileUsed = true;
+      }
+    } catch (localErr) {
+      console.log("Local scenario not available or fetch blocked:", localErr.message);
+    }
+
+    // If local load failed, fall back to scenario folder
+    if (!localFileUsed) {
+      await loadHardcodedResponses(currentScenarioPath);
+      await loadVectorDb(currentScenarioPath);
+      displayChatPair("", "🌐 Loaded from online scenario folder", "system");
+    }
 
     // Load config
     const configRes = await fetch(`${currentScenarioPath}config.json`);
@@ -199,7 +216,7 @@ async function startScenario(selectedId) {
       if (window.updateSkillChecklistUI) window.updateSkillChecklistUI();
     }
 
-    // Load dispatch and patient files from config
+    // Load dispatch and patient files
     const dispatchRes = await fetch(config.dispatchFile);
     if (!dispatchRes.ok) throw new Error("Missing dispatch.txt");
     const dispatch = await dispatchRes.text();
@@ -210,7 +227,6 @@ async function startScenario(selectedId) {
 
     if (window.resetSkillChecklistUI) window.resetSkillChecklistUI();
 
-    // --- Show scenario image (scene1.PNG) at the top ---
     const chatBox = document.getElementById('chat-box') || document.getElementById('chat');
     if (chatBox) {
       chatBox.innerHTML = "";
@@ -223,7 +239,6 @@ async function startScenario(selectedId) {
       chatBox.appendChild(img);
     }
 
-    // Show dispatch info as the next bubble (system response only)
     displayChatPair("", `🚑 ${dispatch}`, "dispatch");
     speakOnce(dispatch, "", 1.0);
 
