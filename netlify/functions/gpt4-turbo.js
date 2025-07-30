@@ -3,14 +3,13 @@ const admin = require("firebase-admin");
 const fs = require("fs");
 const path = require("path");
 
+// Initialize Firebase Admin using env vars
 let firebaseApp;
 if (!admin.apps.length) {
-  const serviceAccount = JSON.parse(
-    fs.readFileSync(path.join(__dirname, "serviceAccountKey.json"), "utf-8")
-  );
+  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
   firebaseApp = admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    databaseURL: "https://ems-code-sim-a315a-default-rtdb.firebaseio.com" // <-- Hardcoded Firebase URL
+    databaseURL: process.env.FIREBASE_DATABASE_URL
   });
 } else {
   firebaseApp = admin.app();
@@ -30,17 +29,17 @@ exports.handler = async function(event, context) {
       return { statusCode: 400, body: JSON.stringify({ error: "Missing content." }) };
     }
 
-    // --- Load patient_data.json if available ---
+    // Try to load patient_data.json if it exists for scenario
     let patientData = {};
     try {
       const dataPath = path.join(__dirname, "scenarios", scenarioId, "patient_data.json");
       const raw = fs.readFileSync(dataPath, "utf-8");
       patientData = JSON.parse(raw);
     } catch (err) {
-      console.error("Could not load patient_data.json:", err);
+      console.warn("Could not load patient_data.json:", err.message);
     }
 
-    // --- Build system prompt ---
+    // Build scenario summary
     const summaryParts = [];
     if (patientData.scenarioName) summaryParts.push(`Scenario: ${patientData.scenarioName}`);
     if (patientData.chiefComplaint) summaryParts.push(`Chief Complaint: ${patientData.chiefComplaint}`);
@@ -67,6 +66,7 @@ Initial Vitals:
 - Pain: ${patientData.vitals?.initial?.pain_scale || "N/A"}
 `.trim();
 
+    // Role-based prompt
     let systemPrompt = "";
     if ((role || "").toLowerCase().includes("proctor")) {
       systemPrompt = `
@@ -89,6 +89,7 @@ ${patientDescription ? "\n\nPatient Description:\n" + patientDescription : ""}
 `.trim();
     }
 
+    // Build messages
     const messages = [{ role: "system", content: systemPrompt }];
     if (Array.isArray(history)) {
       for (const h of history) {
@@ -97,6 +98,7 @@ ${patientDescription ? "\n\nPatient Description:\n" + patientDescription : ""}
     }
     messages.push({ role: "user", content });
 
+    // Call GPT
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages,
@@ -106,7 +108,7 @@ ${patientDescription ? "\n\nPatient Description:\n" + patientDescription : ""}
 
     const reply = completion.choices?.[0]?.message?.content?.trim() || "";
 
-    // --- SAVE TO FIREBASE ---
+    // Save to Firebase
     try {
       const db = admin.database();
       const logRef = db.ref(`gpt4turbo_logs/${scenarioId}`);
@@ -117,8 +119,9 @@ ${patientDescription ? "\n\nPatient Description:\n" + patientDescription : ""}
         role: role || "patient"
       };
       await logRef.push(logEntry);
+      console.log("Saved to Firebase:", scenarioId);
     } catch (err) {
-      console.error("🔥 Firebase logging error:", err);
+      console.error("Firebase logging error:", err.message);
     }
 
     return {
@@ -126,7 +129,7 @@ ${patientDescription ? "\n\nPatient Description:\n" + patientDescription : ""}
       body: JSON.stringify({ reply })
     };
   } catch (err) {
-    console.error("💥 GPT4 Turbo error:", err);
+    console.error("GPT4 Turbo error:", err.message);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: err.message || "Unknown error." })
